@@ -12,7 +12,7 @@ const CouponStore = () => {
 
     const fetchCoupons = async () => {
         try {
-            const response = await api.get('/api/coupons/');
+            const response = await api.get('/api/coupons');
             if (response.data.success) {
                 setCoupons(response.data.data);
             }
