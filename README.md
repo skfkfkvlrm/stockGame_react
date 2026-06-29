@@ -17,12 +17,12 @@ Vite와 React를 기반으로 구축된 SchoolStock 프론트엔드 어플리케
 
 ## 🚀 기술 스택
 
-- **Core**: React 18, Vite
-- **Routing**: React Router DOM (v6)
-- **Styling**: Vanilla CSS (CSS Modules / Global CSS)
-- **HTTP Client**: Axios (with credentials, Interceptors)
+- **Core**: React 19, Vite 8
+- **Routing**: React Router DOM (v7)
+- **Styling**: Vanilla CSS (Global CSS)
+- **HTTP Client**: Axios (with credentials, 401 Interceptor)
 - **Charts**: ApexCharts (`react-apexcharts`)
-- **WebSocket (추후 고도화)**: `@stomp/stompjs` 기반 실시간 호가/알림 연동
+- **WebSocket**: `@stomp/stompjs` + `sockjs-client` 기반 실시간 호가/알림 연동
 
 ## 📦 실행 방법
 
@@ -36,4 +36,5 @@ npm install
 npm run dev
 ```
 
-> **Note**: 백엔드 API와의 통신을 위해 Spring Boot 서버(디폴트 포트: 8882)가 실행 중이어야 합니다. `vite.config.js`에 프록시가 설정되어 있어 CORS 이슈를 방지합니다.
+> **Note**: 백엔드 API와의 통신을 위해 Spring Boot 서버(디폴트 포트: **8882**)가 실행 중이어야 합니다.  
+> `axiosConfig.js`의 `baseURL`이 `http://localhost:8882`로 직접 지정되어 있습니다. (Vite Proxy 미설정 — 추후 개선 예정)
