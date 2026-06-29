@@ -12,7 +12,7 @@ const NewsList = () => {
 
     const fetchNews = async () => {
         try {
-            const response = await api.get('/api/news/');
+            const response = await api.get('/api/news');
             if (response.data.success) {
                 setNews(response.data.data);
             }
@@ -30,11 +30,9 @@ const NewsList = () => {
             <h2>시장 뉴스</h2>
             <div className="news-grid">
                 {news.length > 0 ? (
-                    news.map(item => (
-                        <div key={item.id} className="news-card">
-                            <span className="news-date">{item.publishedAt}</span>
-                            <h3 className="news-title">{item.title}</h3>
-                            <p className="news-content">{item.content}</p>
+                    news.map((item, index) => (
+                        <div key={index} className="news-card">
+                            <p className="news-content">{item}</p>
                         </div>
                     ))
                 ) : (
