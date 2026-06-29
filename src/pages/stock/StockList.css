@@ -1,0 +1,33 @@
+/* StockList.css */
+.stock-list-container {
+    width: 100%;
+}
+
+.stock-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stock-table th, .stock-table td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.stock-table th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.stock-row:hover {
+    background-color: #f1f2f6;
+}
+
+.up {
+    color: #e74c3c;
+}
+
+.down {
+    color: #3498db;
+}
