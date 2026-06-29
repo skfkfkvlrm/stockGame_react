@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import './StockList.css';
 
 const StockList = () => {
     const [stockList, setStockList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStocks = async () => {
@@ -57,7 +59,7 @@ const StockList = () => {
                                 const sign = isUp ? '+' : '';
 
                                 return (
-                                    <tr key={stock.stockId} className="stock-row" style={{ cursor: 'pointer' }}>
+                                    <tr key={stock.stockId} className="stock-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/stocks/${stock.stockId}`)}>
                                         <td>{stock.stockName}</td>
                                         <td className="current-price">{stock.nowPrice.toLocaleString()}P</td>
                                         <td className="prev-price">{stock.prevPrice.toLocaleString()}P</td>

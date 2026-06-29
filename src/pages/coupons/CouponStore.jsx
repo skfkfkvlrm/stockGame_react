@@ -48,12 +48,12 @@ const CouponStore = () => {
             <div className="coupon-grid">
                 {coupons.length > 0 ? (
                     coupons.map(coupon => (
-                        <div key={coupon.id} className="coupon-card">
+                        <div key={coupon.couponId} className="coupon-card">
                             <h3 className="coupon-name">{coupon.name}</h3>
                             <p className="coupon-desc">{coupon.description}</p>
                             <div className="coupon-footer">
                                 <span className="coupon-price">{coupon.price?.toLocaleString()} P</span>
-                                <button onClick={() => handleBuyCoupon(coupon.id)} className="buy-btn">구매하기</button>
+                                <button onClick={() => handleBuyCoupon(coupon.couponId)} className="buy-btn">구매하기</button>
                             </div>
                         </div>
                     ))

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import './Dashboard.css';
 
 const Dashboard = () => {
     const [data, setData] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -33,16 +35,16 @@ const Dashboard = () => {
                         <p className="amount">{totalAsset?.toLocaleString()}P</p>
                     </div>
                     <div className="card">
-                        <h3>가용 포인트</h3>
+                        <h3>보유 포인트</h3>
                         <p className="amount">{totalPoint?.toLocaleString()}P</p>
                     </div>
                     <div className="card">
-                        <h3>총 수익금</h3>
+                        <h3>총 손익</h3>
                         <p className={`amount ${totalProfit >= 0 ? 'profit-up' : 'profit-down'}`}>
                             {totalProfit > 0 ? '+' : ''}{totalProfit?.toLocaleString()}P
                         </p>
                     </div>
-                    <div className="card">
+                    <div className="card" onClick={() => navigate('/my-coupons')} style={{ cursor: 'pointer' }}>
                         <h3>보유 쿠폰</h3>
                         <p className="amount">{totalCoupon}장</p>
                     </div>

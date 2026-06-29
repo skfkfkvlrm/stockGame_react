@@ -1,125 +1,167 @@
+/* StockDetail.css */
 .stock-detail-page {
-    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    animation: fadeIn 0.4s ease-out;
 }
 
-.detail-header {
+.header-top {
     display: flex;
     align-items: center;
     gap: 20px;
     margin-bottom: 20px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 15px;
 }
 
 .back-btn {
-    background: none;
-    border: none;
-    color: #007bff;
-    font-size: 16px;
-    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--bg-panel-border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
 }
 
-.price-info {
-    margin-left: auto;
+.back-btn:hover {
+    color: white;
+    background: rgba(255,255,255,0.1);
 }
 
-.current-price {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
+.stock-title {
+    font-size: 2.2rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.price-info-card {
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.current-price-wrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.current-price-wrap .label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.current-price-wrap .current-price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
 .detail-content {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 30px;
+    gap: 25px;
 }
 
 .chart-section {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     padding: 20px;
+    height: fit-content;
 }
 
 .order-section {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    padding: 20px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .order-tabs {
     display: flex;
-    margin-bottom: 20px;
+    gap: 10px;
+    background: rgba(0,0,0,0.2);
+    padding: 5px;
+    border-radius: 10px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 10px;
-    border: none;
-    background: #f0f0f0;
-    cursor: pointer;
-    font-weight: bold;
+    background: transparent;
+    padding: 12px;
+    color: var(--text-muted);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
 .tab-btn.active.buy {
-    background: #e74c3c;
+    background: var(--accent-red);
     color: white;
+    box-shadow: 0 0 15px rgba(255, 77, 79, 0.4);
 }
 
 .tab-btn.active.sell {
-    background: #3498db;
+    background: var(--accent-blue);
     color: white;
+    box-shadow: 0 0 15px rgba(24, 144, 255, 0.4);
+}
+
+.order-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
 
 .form-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--bg-panel-border);
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2rem;
+    font-family: var(--mono);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(170, 59, 255, 0.2);
 }
 
 .submit-order-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
+    padding: 18px;
+    font-size: 1.2rem;
     font-weight: bold;
-    cursor: pointer;
+    border-radius: 8px;
     color: white;
+    margin-top: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .submit-order-btn.buy {
-    background-color: #e74c3c;
+    background: var(--accent-red);
 }
-
 .submit-order-btn.buy:hover {
-    background-color: #c0392b;
+    box-shadow: 0 5px 20px rgba(255, 77, 79, 0.5);
+    transform: translateY(-2px);
 }
 
 .submit-order-btn.sell {
-    background-color: #3498db;
+    background: var(--accent-blue);
 }
-
 .submit-order-btn.sell:hover {
-    background-color: #2980b9;
-}
-
-.order-msg {
-    color: #e74c3c;
-    margin-bottom: 10px;
-    text-align: center;
+    box-shadow: 0 5px 20px rgba(24, 144, 255, 0.5);
+    transform: translateY(-2px);
 }

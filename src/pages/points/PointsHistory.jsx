@@ -39,7 +39,7 @@ const PointsHistory = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {history.length > 0 ? (
+                        {history && history.length > 0 ? (
                             history.map(item => (
                                 <tr key={item.id}>
                                     <td>{item.createdAt || item.date}</td>

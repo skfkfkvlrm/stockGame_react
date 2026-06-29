@@ -29,3 +29,6 @@
 2. **실시간 데이터 바인딩 고도화**
    - WebSocket 클라이언트를 연결하여 실시간 호가 변동 및 개인 체결 알림 토스트 메시지 렌더링
    - 차트 라이브러리(ApexCharts 등)를 이용한 OHLCV 캔들스틱 차트 구현
+3. **최근 픽스 내역**
+   - `vite.config.js`에 프록시 설정 반영하여 `/api`, `/ws` 상대 경로로 호출 구조 개편 완료
+   - `StockDetail.jsx`의 웹소켓 `deactivate()` 누락에 의한 좀비 커넥션(메모리 누수) 해결 완료 (`frontend_phase1_result.md` 참고)

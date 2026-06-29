@@ -9,6 +9,7 @@ import StockDetail from './pages/stock/StockDetail';
 import NewsList from './pages/news/NewsList';
 import PointsHistory from './pages/points/PointsHistory';
 import CouponStore from './pages/coupons/CouponStore';
+import MyCoupons from './pages/coupons/MyCoupons';
 import './App.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="news" element={<NewsList />} />
             <Route path="points" element={<PointsHistory />} />
             <Route path="coupons" element={<CouponStore />} />
+            <Route path="my-coupons" element={<MyCoupons />} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
