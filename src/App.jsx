@@ -1,33 +1,35 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Dashboard from './pages/dashboard/Dashboard';
+import StockList from './pages/stock/StockList';
+import StockDetail from './pages/stock/StockDetail';
+import NewsList from './pages/news/NewsList';
+import PointsHistory from './pages/points/PointsHistory';
+import CouponStore from './pages/coupons/CouponStore';
 import './App.css';
-
-// TODO: 앞으로 구현할 컴포넌트들
-const Login = () => <div><h2>로그인 페이지</h2><p>기존 Login.jsp를 대체할 컴포넌트</p></div>;
-const Dashboard = () => <div><h2>자산 대시보드</h2><p>기존 MyAssets.jsp를 대체할 컴포넌트</p></div>;
-const StockList = () => <div><h2>주식 종목 목록</h2><p>기존 StockList.jsp를 대체할 컴포넌트</p></div>;
-const StockDetail = () => <div><h2>주식 상세 (차트 및 호가창)</h2><p>기존 StockDetail.jsp를 대체할 컴포넌트</p></div>;
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="App">
-        <header>
-          <h1>Stock Game</h1>
-          <nav>
-            <a href="/">대시보드</a> | <a href="/stocks">주식 목록</a> | <a href="/login">로그인</a>
-          </nav>
-        </header>
+      <Routes>
+        {/* 로그인은 레이아웃 외부에서 단독 렌더링 */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         
-        <main style={{ padding: '20px' }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/stocks" element={<StockList />} />
-            <Route path="/stocks/:stockId" element={<StockDetail />} />
-          </Routes>
-        </main>
-      </div>
+        {/* 내부 페이지들은 MainLayout 내에서 렌더링 */}
+        <Route path="/" element={<MainLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="stocks" element={<StockList />} />
+            <Route path="stocks/:stockId" element={<StockDetail />} />
+            <Route path="news" element={<NewsList />} />
+            <Route path="points" element={<PointsHistory />} />
+            <Route path="coupons" element={<CouponStore />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

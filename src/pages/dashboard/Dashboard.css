@@ -1,0 +1,84 @@
+/* Dashboard.css */
+.dashboard {
+    width: 100%;
+}
+
+.hd-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.summary-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex: 1;
+    text-align: center;
+}
+
+.card.pointer {
+    cursor: pointer;
+}
+
+.card .label {
+    display: block;
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.card .value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.card .value.plus {
+    color: #e74c3c;
+}
+
+.card .value.minus {
+    color: #3498db;
+}
+
+.panel {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#stock-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#stock-table th, #stock-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+#stock-table th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+}
+
+.plus { color: #e74c3c; }
+.minus { color: #3498db; }
