@@ -165,3 +165,158 @@
     box-shadow: 0 5px 20px rgba(24, 144, 255, 0.5);
     transform: translateY(-2px);
 }
+
+.my-orders-section {
+    padding: 25px;
+    margin-top: 20px;
+    grid-column: 1 / -1;
+}
+
+.my-orders-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-main);
+    font-size: 1.5rem;
+}
+
+.no-orders {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px 20px;
+    border-radius: 10px;
+    border-left: 4px solid transparent;
+}
+
+.order-item.buy {
+    border-left-color: var(--accent-red);
+}
+
+.order-item.sell {
+    border-left-color: var(--accent-blue);
+}
+
+.order-info {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.order-type {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.buy-label {
+    background: rgba(255, 77, 79, 0.1);
+    color: var(--accent-red);
+}
+
+.sell-label {
+    background: rgba(24, 144, 255, 0.1);
+    color: var(--accent-blue);
+}
+
+.order-price, .order-amount {
+    color: var(--text-main);
+    font-family: var(--mono);
+    font-size: 1.1rem;
+}
+
+.cancel-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--bg-panel-border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.ai-advisor-btn {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #333;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(253, 160, 133, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-size: 1rem;
+}
+
+.ai-advisor-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(253, 160, 133, 0.6);
+}
+
+.ai-advisor-btn:disabled {
+    background: #555;
+    color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.advisor-message-box {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border-left: 4px solid #fda085;
+    animation: slideIn 0.3s ease-out;
+}
+
+.advisor-avatar {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.advisor-speech-bubble {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 12px;
+    border-top-left-radius: 0;
+    color: #fff;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.advisor-speech-bubble::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -10px;
+    border-width: 10px 10px 0 0;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.3) transparent transparent transparent;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

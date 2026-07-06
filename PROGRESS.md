@@ -23,6 +23,10 @@
    - `useEffect`와 `useState`를 이용해 화면 진입 시 서버에서 JSON 데이터를 Fetching하여 상태 업데이트 구현 완료 (`/api/members/me`, `/api/asset/`, `/api/stock`, `/api/members/login` 연동)
    - 로그인, 대시보드, 주식 목록 화면 브라우저 통합 테스트 통과 확인 (세션 쿠키 및 데이터 정상 렌더링)
 
+### 🔥 최신 스프린트 진행 상황
+- `[x]` `vite.config.js` 프록시 설정 하드코딩 제거 (`.env` 파일 추가 및 `loadEnv` 적용 완료)
+- `[x]` `StockDetail.jsx` WebSocket 연결 누수(cleanup) 해결 (기반영됨 확인 완료)
+
 ### 📌 향후 계획 (5단계)
 1. **나머지 컴포넌트 순차 변환 및 연동**
    - 주식 상세(차트 및 호가창 `StockDetail.jsp`), 뉴스, 회원가입, 포인트 내역 등

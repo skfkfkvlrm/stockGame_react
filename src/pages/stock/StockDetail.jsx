@@ -16,10 +16,14 @@ const StockDetail = () => {
     const [orderType, setOrderType] = useState('buy'); // 'buy' or 'sell'
     const [amount, setAmount] = useState('');
     const [price, setPrice] = useState('');
+    const [myOrders, setMyOrders] = useState([]);
+    const [advisorMessage, setAdvisorMessage] = useState('');
+    const [advisorLoading, setAdvisorLoading] = useState(false);
 
     useEffect(() => {
         fetchStockDetail();
         fetchStockHistory();
+        fetchMyPendingOrders();
         const stompClient = connectWebSocket();
 
         return () => {
@@ -54,6 +58,49 @@ const StockDetail = () => {
             }
         } catch (error) {
             console.error('Failed to fetch stock history', error);
+        }
+    };
+
+    const fetchMyPendingOrders = async () => {
+        try {
+            const response = await api.get(`/api/stock/${stockId}/orders/my`);
+            if (response.data.success) {
+                setMyOrders(response.data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch my orders', error);
+        }
+    };
+
+    const cancelOrder = async (orderId) => {
+        try {
+            const response = await api.post(`/api/orders/cancel?orderId=${orderId}&stockId=${stockId}`);
+            if (response.data.success) {
+                toast.success('주문이 취소되었습니다.');
+                fetchMyPendingOrders();
+            } else {
+                toast.error(response.data.message || '주문 취소 실패');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || '주문 취소 중 오류 발생');
+        }
+    };
+
+    const handleGetAdvisor = async () => {
+        setAdvisorLoading(true);
+        setAdvisorMessage('');
+        try {
+            const response = await api.get(`/api/ai/advisor?stockId=${stockId}`);
+            if (response.data.success) {
+                setAdvisorMessage(response.data.data);
+            } else {
+                toast.error(response.data.message || '조언 생성 실패');
+            }
+        } catch (error) {
+            console.error('Failed to get AI advisor', error);
+            toast.error('AI 조언을 가져오는 중 오류가 발생했습니다.');
+        } finally {
+            setAdvisorLoading(false);
         }
     };
 
@@ -98,6 +145,7 @@ const StockDetail = () => {
                 toast.success(`${orderType === 'buy' ? '매수' : '매도'} 주문이 접수되었습니다.`);
                 setAmount('');
                 fetchStockDetail();
+                fetchMyPendingOrders();
             } else {
                 toast.error(response.data.message || '주문 실패');
             }
@@ -157,7 +205,23 @@ const StockDetail = () => {
                         <span className="label">현재가</span>
                         <span className="current-price">{stockInfo.nowPrice?.toLocaleString()} P</span>
                     </div>
+                    <button 
+                        className="ai-advisor-btn" 
+                        onClick={handleGetAdvisor} 
+                        disabled={advisorLoading}
+                    >
+                        {advisorLoading ? '🤖 고민 중...' : '🤖 버핏 할아버지 조언'}
+                    </button>
                 </div>
+                
+                {advisorMessage && (
+                    <div className="advisor-message-box">
+                        <div className="advisor-avatar">👴🏻</div>
+                        <div className="advisor-speech-bubble">
+                            <p>{advisorMessage}</p>
+                        </div>
+                    </div>
+                )}
             </header>
 
             <div className="detail-content">
@@ -187,6 +251,26 @@ const StockDetail = () => {
                     </form>
                 </section>
             </div>
+
+            <section className="my-orders-section glass-panel">
+                <h3>나의 미체결 예약 주문</h3>
+                {myOrders.length === 0 ? (
+                    <p className="no-orders">미체결된 예약 주문이 없습니다.</p>
+                ) : (
+                    <div className="orders-list">
+                        {myOrders.map(order => (
+                            <div key={order.orderId} className={`order-item ${order.content === '매수' ? 'buy' : 'sell'}`}>
+                                <div className="order-info">
+                                    <span className={`order-type ${order.content === '매수' ? 'buy-label' : 'sell-label'}`}>{order.content}</span>
+                                    <span className="order-price">{order.price.toLocaleString()} P</span>
+                                    <span className="order-amount">{order.amount}주</span>
+                                </div>
+                                <button className="cancel-btn" onClick={() => cancelOrder(order.orderId)}>취소</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </div>
     );
 };
