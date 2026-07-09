@@ -2,30 +2,30 @@
 @import 'react-toastify/dist/ReactToastify.css';
 
 :root {
-  /* HSL Colors */
-  --bg-hue: 225;
-  --bg-sat: 15%;
-  --bg-light: 10%; /* Very dark slate */
+  /* HSL Colors - Light Theme */
+  --bg-hue: 210;
+  --bg-sat: 20%;
+  --bg-light: 98%; /* Very light grey/blue */
   
   --bg-main: hsl(var(--bg-hue), var(--bg-sat), var(--bg-light));
-  --bg-panel: hsla(var(--bg-hue), var(--bg-sat), 16%, 0.65);
-  --bg-panel-border: hsla(var(--bg-hue), var(--bg-sat), 30%, 0.4);
-  --bg-panel-hover: hsla(var(--bg-hue), var(--bg-sat), 22%, 0.8);
+  --bg-panel: hsla(var(--bg-hue), var(--bg-sat), 100%, 0.75);
+  --bg-panel-border: hsla(var(--bg-hue), var(--bg-sat), 90%, 0.6);
+  --bg-panel-hover: hsla(var(--bg-hue), var(--bg-sat), 100%, 0.95);
   
-  --text-main: hsl(0, 0%, 96%);
-  --text-muted: hsl(220, 15%, 65%);
+  --text-main: hsl(220, 20%, 15%);
+  --text-muted: hsl(220, 15%, 45%);
   
   /* Accents */
-  --accent-primary: hsl(265, 85%, 65%); /* Neon Purple */
-  --accent-secondary: hsl(200, 95%, 55%); /* Bright Blue */
-  --accent-red: hsl(355, 85%, 65%); /* Profit UP (Korea) */
-  --accent-blue: hsl(210, 100%, 60%); /* Profit DOWN (Korea) */
+  --accent-primary: hsl(265, 85%, 55%); /* Bright Purple */
+  --accent-secondary: hsl(200, 95%, 45%); /* Bright Blue */
+  --accent-red: hsl(355, 85%, 55%); /* Profit UP (Korea) */
+  --accent-blue: hsl(210, 100%, 50%); /* Profit DOWN (Korea) */
   
   --gradient-primary: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
   
   /* Glassmorphism */
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   --glass-blur: blur(16px);
   --border-radius-lg: 16px;
   --border-radius-md: 10px;
@@ -39,8 +39,8 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(170, 59, 255, 0.08), transparent 30%),
-    radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08), transparent 30%);
+    radial-gradient(circle at 10% 20%, rgba(170, 59, 255, 0.06), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.06), transparent 40%);
   background-attachment: fixed;
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
@@ -84,6 +84,7 @@ button {
   border: 1px solid var(--bg-panel-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--border-radius-lg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 /* Korea Stock Market Colors (Red=UP, Blue=DOWN) */
@@ -97,12 +98,29 @@ button {
   font-weight: 600;
 }
 
-/* Toastify Premium Overrides */
-.Toastify__toast-theme--dark {
+/* Toastify Premium Overrides for Light Theme */
+.Toastify__toast-theme--light {
   background: var(--bg-panel) !important;
   border: 1px solid var(--bg-panel-border) !important;
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
   border-radius: 12px;
   font-family: var(--font-family);
+  color: var(--text-main) !important;
+}
+
+/* Scrollbar styling for modern look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsla(var(--bg-hue), var(--bg-sat), 50%, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(var(--bg-hue), var(--bg-sat), 50%, 0.4);
 }

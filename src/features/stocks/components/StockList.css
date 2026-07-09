@@ -1,0 +1,142 @@
+.stock-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.market-overview {
+    display: flex;
+    gap: 24px;
+}
+
+.overview-card {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s ease;
+}
+
+.overview-card:hover {
+    transform: translateY(-4px);
+}
+
+.overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.overview-card h3 {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+.index-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+
+.index-change {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stock-table-wrapper {
+    padding: 24px;
+    overflow-x: auto;
+}
+
+.stock-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+}
+
+.stock-table th {
+    padding: 16px;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 2px solid var(--bg-panel-border);
+}
+
+.stock-table th:first-child,
+.stock-table td:first-child {
+    text-align: left;
+}
+
+.stock-table td {
+    padding: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+
+.stock-table tr:hover td {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.stock-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stock-icon-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg-panel-border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.stock-name-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stock-name {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.stock-code {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.flex-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.trade-btn {
+    background: var(--bg-panel-border);
+    color: var(--text-main);
+    padding: 8px 16px;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.trade-btn:hover {
+    background: var(--gradient-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(170, 59, 255, 0.2);
+}

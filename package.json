@@ -13,12 +13,14 @@
     "@stomp/stompjs": "^7.3.0",
     "apexcharts": "^5.15.2",
     "axios": "^1.18.1",
+    "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-apexcharts": "^2.1.1",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0",
     "react-toastify": "^11.1.0",
-    "sockjs-client": "^1.6.1"
+    "sockjs-client": "^1.6.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

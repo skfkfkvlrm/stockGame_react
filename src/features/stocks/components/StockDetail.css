@@ -1,0 +1,212 @@
+.stock-detail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.back-btn {
+    align-self: flex-start;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.back-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-main);
+}
+
+.detail-layout {
+    display: flex;
+    gap: 24px;
+}
+
+.chart-section {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stock-header {
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stock-title h1 {
+    font-size: 2rem;
+    margin-bottom: 4px;
+    color: var(--text-main);
+}
+
+.stock-code {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stock-price-info {
+    text-align: right;
+}
+
+.current-price {
+    font-size: 2.5rem;
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+
+.price-change {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.chart-box {
+    padding: 24px;
+}
+
+.trading-panel {
+    flex: 1;
+    min-width: 300px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.trade-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.05);
+    padding: 8px;
+    border-radius: var(--border-radius-md);
+}
+
+.trade-tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.trade-tab.active.buy {
+    background: var(--accent-red);
+    color: white;
+    box-shadow: 0 4px 10px rgba(255, 71, 87, 0.2);
+}
+
+.trade-tab.active.sell {
+    background: var(--accent-blue);
+    color: white;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+}
+
+.trade-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.available-points {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.quantity-control {
+    display: flex;
+    background: rgba(255,255,255,0.5);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--bg-panel-border);
+}
+
+.quantity-control button {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.02);
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quantity-control button:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--text-main);
+}
+
+.quantity-control input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.quantity-control input:focus {
+    outline: none;
+}
+
+.total-calc {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--bg-panel-border);
+}
+
+.total-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-secondary);
+}
+
+.submit-trade-btn {
+    margin-top: auto;
+    padding: 16px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: var(--border-radius-lg);
+    color: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.submit-trade-btn.buy {
+    background: var(--accent-red);
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.submit-trade-btn.sell {
+    background: var(--accent-blue);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.submit-trade-btn:hover {
+    transform: translateY(-2px);
+}
+
+.submit-trade-btn.buy:hover { box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4); }
+.submit-trade-btn.sell:hover { box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
