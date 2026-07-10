@@ -10,16 +10,21 @@ const useAuthStore = create((set) => ({
     checkAuthStatus: async () => {
         set({ isLoading: true });
         try {
-            const response = await api.get('/auth/status');
-            // 응답 포맷: { isAuthenticated: boolean, username: string, role: string }
-            if (response.data.isAuthenticated) {
-                // 추가 사용자 정보 조회 (옵션)
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                // 추가 사용자 정보 조회
                 const meResponse = await api.get('/members/me');
-                set({ user: meResponse.data.data, isAuthenticated: true, error: null });
+                if (meResponse.data && meResponse.data.success) {
+                    set({ user: meResponse.data.data, isAuthenticated: true, error: null });
+                } else {
+                    localStorage.removeItem('jwt_token');
+                    set({ user: null, isAuthenticated: false });
+                }
             } else {
                 set({ user: null, isAuthenticated: false });
             }
         } catch (error) {
+            localStorage.removeItem('jwt_token');
             set({ user: null, isAuthenticated: false, error: error.message });
         } finally {
             set({ isLoading: false });
@@ -30,8 +35,10 @@ const useAuthStore = create((set) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.post('/members/login', { studentId, password });
-            // ApiResponse<StudentResponse> 구조 가정
-            if (response.data && response.data.data) {
+            if (response.data && response.data.success) {
+                // message 필드에 token이 들어있음 (임시 구성)
+                const token = response.data.message; 
+                localStorage.setItem('jwt_token', token);
                 set({ user: response.data.data, isAuthenticated: true });
                 return { success: true };
             }
@@ -48,11 +55,11 @@ const useAuthStore = create((set) => ({
         set({ isLoading: true });
         try {
             await api.post('/members/logout');
-            set({ user: null, isAuthenticated: false, error: null });
         } catch (error) {
-            set({ error: error.message });
+            console.error(error);
         } finally {
-            set({ isLoading: false });
+            localStorage.removeItem('jwt_token');
+            set({ user: null, isAuthenticated: false, error: null, isLoading: false });
         }
     }
 }));
