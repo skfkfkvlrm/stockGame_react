@@ -10,6 +10,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
+        '/api/ollama': {
+          target: 'http://localhost:11434/api',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/ollama/, '')
+        },
         '/api': {
           target: target,
           changeOrigin: true,
@@ -20,6 +25,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         }
       }
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom'
     }
   }
 })
