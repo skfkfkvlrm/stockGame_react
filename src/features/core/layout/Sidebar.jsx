@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck } from 'lucide-react';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './Sidebar.css';
 
@@ -59,6 +59,9 @@ const Sidebar = () => {
                 </button>
                 <button className={`menu-item ${isActive('/coupons')}`} onClick={() => navigate('/coupons')}>
                     <Store className="icon" size={20} /> 쿠폰 상점
+                </button>
+                <button className={`menu-item ${isActive('/admin')}`} onClick={() => navigate('/admin')}>
+                    <ShieldCheck className="icon" size={20} /> 관리자 패널
                 </button>
             </nav>
             
