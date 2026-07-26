@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import api from '../../../api/axios';
 import useAuthStore from '../../auth/store/useAuthStore';
+import { useStompResilience, ConnectionStatus } from '../../core/hooks/useStompResilience';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -37,18 +36,14 @@ const StockDetail = () => {
             
             const info = infoRes.data.data;
             setStockInfo(info);
-            // Default price to current market price if not set
             if (price === 0) setPrice(info.nowPrice || info.pubPrice);
 
-            // Map history data to Candlestick format
             const mappedHistory = historyRes.data.data.map(item => ({
                 x: new Date(item.date).getTime(),
-                y: [item.price, item.price, item.price, item.price] // Mocking OHLC with closing price for now since DB only has one price per day
+                y: [item.price, item.price, item.price, item.price]
             }));
             setChartData([{ data: mappedHistory }]);
 
-            // Map orderbook
-            // Group and aggregate orders by price
             const aggregateOrders = (orders) => {
                 const map = {};
                 orders.forEach(o => {
@@ -62,16 +57,15 @@ const StockDetail = () => {
             };
 
             const sellGrouped = aggregateOrders(orderbookRes.data.data.sell || [])
-                                .sort((a, b) => b.price - a.price); // Descending for sell
+                                .sort((a, b) => b.price - a.price);
             const buyGrouped = aggregateOrders(orderbookRes.data.data.buy || [])
-                                .sort((a, b) => b.price - a.price); // Descending for buy
+                                .sort((a, b) => b.price - a.price);
 
             setOrderbook({
-                sell: sellGrouped.slice(-10), // Take closest 10
-                buy: buyGrouped.slice(0, 10)  // Take closest 10
+                sell: sellGrouped.slice(-10),
+                buy: buyGrouped.slice(0, 10)
             });
             
-            // Re-fetch user points
             await checkAuthStatus();
             
         } catch (err) {
@@ -82,34 +76,25 @@ const StockDetail = () => {
         }
     };
 
-    // STOMP WebSocket Connection
     useEffect(() => {
         fetchAllData();
+    }, [stockId]);
 
-        const stompClient = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8882/ws'),
-            reconnectDelay: 5000,
-            onConnect: () => {
-                console.log('Connected to WS');
-                stompClient.subscribe(`/topic/orders/${stockId}`, (msg) => {
+    // Resilience STOMP Hook
+    const { status: wsStatus, retryCount } = useStompResilience({
+        url: 'http://localhost:8882/ws',
+        subscriptions: [
+            {
+                topic: `/topic/orders/${stockId}`,
+                callback: (msg) => {
                     if (msg.body === 'ORDER_UPDATED') {
-                        // Refetch data on update
                         fetchAllData();
                     }
-                });
-            },
-            onStompError: (frame) => {
-                console.error('Broker error: ' + frame.headers['message']);
+                }
             }
-        });
-
-        stompClient.activate();
-
-        return () => {
-            stompClient.deactivate();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stockId]);
+        ],
+        maxReconnectAttempts: 5
+    });
 
     if (isLoading) return <div className="stock-detail-container"><div className="loading-spinner"></div></div>;
     if (error || !stockInfo) return <div className="stock-detail-container"><div className="error-msg">{error || '종목이 존재하지 않습니다.'}</div></div>;
@@ -193,6 +178,13 @@ const StockDetail = () => {
                         <div className="stock-title">
                             <h1>{stockInfo.stockName}</h1>
                             <span className="stock-code">{stockInfo.content}</span>
+                            <div className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}>
+                                {wsStatus === ConnectionStatus.CONNECTED && '🟢 실시간 시세 연결됨'}
+                                {wsStatus === ConnectionStatus.CONNECTING && '🟡 연결 중...'}
+                                {wsStatus === ConnectionStatus.RECONNECTING && `🟡 재연결 중... (${retryCount}/5)`}
+                                {wsStatus === ConnectionStatus.FAILED && '🔴 실시간 연결 실패 (새로고침 필요)'}
+                                {wsStatus === ConnectionStatus.DISCONNECTED && '⚪ 연결 종료'}
+                            </div>
                         </div>
                         <div className="stock-price-info">
                             <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
