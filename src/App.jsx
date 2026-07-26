@@ -11,6 +11,7 @@ import PointsHistory from './features/points/components/PointsHistory';
 import CouponStore from './features/coupons/components/CouponStore';
 import MyCoupons from './features/coupons/components/MyCoupons';
 import AdminDashboard from './features/admin/components/AdminDashboard';
+import RankingList from './features/ranking/components/RankingList';
 import useAuthStore from './features/auth/store/useAuthStore';
 import { useEffect } from 'react';
 import './App.css';
@@ -48,6 +49,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="stocks" element={<StockList />} />
             <Route path="stocks/:stockId" element={<StockDetail />} />
+            <Route path="ranking" element={<RankingList />} />
             <Route path="news" element={<NewsList />} />
             <Route path="points" element={<PointsHistory />} />
             <Route path="coupons" element={<CouponStore />} />

@@ -51,6 +51,9 @@ const Sidebar = () => {
                 <button className={`menu-item ${isActive('/stocks')}`} onClick={() => navigate('/stocks')}>
                     <TrendingUp className="icon" size={20} /> 주식 거래
                 </button>
+                <button className={`menu-item ${isActive('/ranking')}`} onClick={() => navigate('/ranking')}>
+                    <Trophy className="icon" size={20} /> 실시간 랭킹
+                </button>
                 <button className={`menu-item ${isActive('/news')}`} onClick={() => navigate('/news')}>
                     <Newspaper className="icon" size={20} /> 시장 뉴스
                 </button>
