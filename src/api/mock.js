@@ -3,31 +3,17 @@ import api from './axios.js';
 import axios from 'axios';
 
 export const setupMock = () => {
-    const mock = new MockAdapter(api, { delayResponse: 500 });
+    const mock = new MockAdapter(api, { delayResponse: 500, onNoMatch: 'passthrough' });
+    mock.onAny().passThrough();
 
-    // --- 1. Auth Endpoints ---
-    mock.onGet('/auth/status').reply(200, { authenticated: true });
-    mock.onGet('/members/me').reply(200, {
-        data: {
-            studentId: 'testuser',
-            name: '테스트 유저',
-            totalPoint: 1500000,
-            unreadAlarms: 2
-        }
-    });
-    mock.onPost('/members/login').reply(200, { message: "로그인 성공" });
-    mock.onPost('/members/logout').reply(200, { message: "로그아웃 성공" });
-    mock.onPost('/members/join').reply(200, { message: "회원가입 성공" });
+    // --- 1. Auth & Asset Endpoints (passThrough to real Spring Boot backend) ---
+    mock.onPost('/members/login').passThrough();
+    mock.onPost('/members/logout').passThrough();
+    mock.onPost('/members/join').passThrough();
+    mock.onGet('/members/me').passThrough();
+    mock.onGet('/asset/').passThrough();
 
-    // --- 2. Dashboard & Assets ---
-    mock.onGet('/asset/').reply(200, {
-        data: {
-            totalAsset: 2500000,
-            availablePoint: 1500000,
-            stockAsset: 1000000,
-            returnRate: 12.5
-        }
-    });
+    // --- 2. Dashboard & Assets (passThrough) ---
 
     // --- 3. Stocks ---
     const stockList = [

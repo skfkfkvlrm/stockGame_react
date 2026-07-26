@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import api from '../../../api/axios';
 import useAuthStore from '../../auth/store/useAuthStore';
+import { useStompResilience, ConnectionStatus } from '../../core/hooks/useStompResilience';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -30,30 +29,36 @@ const StockDetail = () => {
     const fetchAllData = async () => {
         try {
             const [infoRes, historyRes, orderbookRes] = await Promise.all([
-                api.get(`/stock/${stockId}`),
-                api.get(`/stock/${stockId}/history`),
-                api.get(`/stock/${stockId}/orderbook`)
+                api.get(`/stock/${stockId}`).catch(e => ({ data: { success: false, data: null } })),
+                api.get(`/stock/${stockId}/history`).catch(e => ({ data: { success: false, data: [] } })),
+                api.get(`/stock/${stockId}/orderbook`).catch(e => ({ data: { success: false, data: { sell: [], buy: [] } } }))
             ]);
             
-            const info = infoRes.data.data;
-            setStockInfo(info);
-            // Default price to current market price if not set
-            if (price === 0) setPrice(info.nowPrice || info.pubPrice);
+            const info = infoRes.data?.data;
+            if (!info) {
+                setError('종목 정보를 불러올 수 없습니다.');
+                setIsLoading(false);
+                return;
+            }
 
-            // Map history data to Candlestick format
-            const mappedHistory = historyRes.data.data.map(item => ({
-                x: new Date(item.date).getTime(),
-                y: [item.price, item.price, item.price, item.price] // Mocking OHLC with closing price for now since DB only has one price per day
+            setStockInfo(info);
+            const initialPrice = info.nowPrice ?? info.pubPrice ?? 0;
+            if (price === 0) setPrice(initialPrice);
+
+            const rawHistory = Array.isArray(historyRes.data?.data) ? historyRes.data.data : [];
+            const mappedHistory = rawHistory.map(item => ({
+                x: item.date ? new Date(item.date).getTime() : Date.now(),
+                y: [item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice]
             }));
             setChartData([{ data: mappedHistory }]);
 
-            // Map orderbook
-            // Group and aggregate orders by price
             const aggregateOrders = (orders) => {
+                if (!Array.isArray(orders)) return [];
                 const map = {};
                 orders.forEach(o => {
+                    if (!o || o.price === undefined) return;
                     if (!map[o.price]) map[o.price] = 0;
-                    map[o.price] += o.amount;
+                    map[o.price] += (o.amount || 0);
                 });
                 return Object.entries(map).map(([p, amt]) => ({
                     price: parseInt(p),
@@ -61,55 +66,44 @@ const StockDetail = () => {
                 }));
             };
 
-            const sellGrouped = aggregateOrders(orderbookRes.data.data.sell || [])
-                                .sort((a, b) => b.price - a.price); // Descending for sell
-            const buyGrouped = aggregateOrders(orderbookRes.data.data.buy || [])
-                                .sort((a, b) => b.price - a.price); // Descending for buy
+            const sellOrders = orderbookRes.data?.data?.sell || [];
+            const buyOrders = orderbookRes.data?.data?.buy || [];
+
+            const sellGrouped = aggregateOrders(sellOrders).sort((a, b) => b.price - a.price);
+            const buyGrouped = aggregateOrders(buyOrders).sort((a, b) => b.price - a.price);
 
             setOrderbook({
-                sell: sellGrouped.slice(-10), // Take closest 10
-                buy: buyGrouped.slice(0, 10)  // Take closest 10
+                sell: sellGrouped.slice(-10),
+                buy: buyGrouped.slice(0, 10)
             });
             
-            // Re-fetch user points
-            await checkAuthStatus();
-            
         } catch (err) {
-            console.error(err);
+            console.error('Fetch Stock Detail Error:', err);
             setError('데이터를 불러오는 데 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // STOMP WebSocket Connection
     useEffect(() => {
         fetchAllData();
+    }, [stockId]);
 
-        const stompClient = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8882/ws'),
-            reconnectDelay: 5000,
-            onConnect: () => {
-                console.log('Connected to WS');
-                stompClient.subscribe(`/topic/orders/${stockId}`, (msg) => {
+    // Resilience STOMP Hook
+    const { status: wsStatus, retryCount } = useStompResilience({
+        url: 'http://localhost:8882/ws',
+        subscriptions: [
+            {
+                topic: `/topic/orders/${stockId}`,
+                callback: (msg) => {
                     if (msg.body === 'ORDER_UPDATED') {
-                        // Refetch data on update
                         fetchAllData();
                     }
-                });
-            },
-            onStompError: (frame) => {
-                console.error('Broker error: ' + frame.headers['message']);
+                }
             }
-        });
-
-        stompClient.activate();
-
-        return () => {
-            stompClient.deactivate();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stockId]);
+        ],
+        maxReconnectAttempts: 5
+    });
 
     if (isLoading) return <div className="stock-detail-container"><div className="loading-spinner"></div></div>;
     if (error || !stockInfo) return <div className="stock-detail-container"><div className="error-msg">{error || '종목이 존재하지 않습니다.'}</div></div>;
@@ -193,6 +187,13 @@ const StockDetail = () => {
                         <div className="stock-title">
                             <h1>{stockInfo.stockName}</h1>
                             <span className="stock-code">{stockInfo.content}</span>
+                            <div className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}>
+                                {wsStatus === ConnectionStatus.CONNECTED && '🟢 실시간 시세 연결됨'}
+                                {wsStatus === ConnectionStatus.CONNECTING && '🟡 연결 중...'}
+                                {wsStatus === ConnectionStatus.RECONNECTING && `🟡 재연결 중... (${retryCount}/5)`}
+                                {wsStatus === ConnectionStatus.FAILED && '🔴 실시간 연결 실패 (새로고침 필요)'}
+                                {wsStatus === ConnectionStatus.DISCONNECTED && '⚪ 연결 종료'}
+                            </div>
                         </div>
                         <div className="stock-price-info">
                             <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>

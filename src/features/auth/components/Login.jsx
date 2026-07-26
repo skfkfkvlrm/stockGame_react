@@ -23,7 +23,7 @@ const Login = () => {
 
         const result = await login(studentId, password);
         if (result.success) {
-            navigate('/');
+            navigate('/', { replace: true });
         } else {
             setErrorMessage(result.message || '아이디 또는 비밀번호가 틀립니다.');
         }

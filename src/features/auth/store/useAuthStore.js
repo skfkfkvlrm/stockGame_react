@@ -36,9 +36,10 @@ const useAuthStore = create((set) => ({
         try {
             const response = await api.post('/members/login', { studentId, password });
             if (response.data && response.data.success) {
-                // message 필드에 token이 들어있음 (임시 구성)
-                const token = response.data.message; 
-                localStorage.setItem('jwt_token', token);
+                const token = response.data.data?.token || response.data.message; 
+                if (token) {
+                    localStorage.setItem('jwt_token', token);
+                }
                 set({ user: response.data.data, isAuthenticated: true });
                 return { success: true };
             }
