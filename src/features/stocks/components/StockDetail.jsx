@@ -29,26 +29,36 @@ const StockDetail = () => {
     const fetchAllData = async () => {
         try {
             const [infoRes, historyRes, orderbookRes] = await Promise.all([
-                api.get(`/stock/${stockId}`),
-                api.get(`/stock/${stockId}/history`),
-                api.get(`/stock/${stockId}/orderbook`)
+                api.get(`/stock/${stockId}`).catch(e => ({ data: { success: false, data: null } })),
+                api.get(`/stock/${stockId}/history`).catch(e => ({ data: { success: false, data: [] } })),
+                api.get(`/stock/${stockId}/orderbook`).catch(e => ({ data: { success: false, data: { sell: [], buy: [] } } }))
             ]);
             
-            const info = infoRes.data.data;
-            setStockInfo(info);
-            if (price === 0) setPrice(info.nowPrice || info.pubPrice);
+            const info = infoRes.data?.data;
+            if (!info) {
+                setError('종목 정보를 불러올 수 없습니다.');
+                setIsLoading(false);
+                return;
+            }
 
-            const mappedHistory = historyRes.data.data.map(item => ({
-                x: new Date(item.date).getTime(),
-                y: [item.price, item.price, item.price, item.price]
+            setStockInfo(info);
+            const initialPrice = info.nowPrice ?? info.pubPrice ?? 0;
+            if (price === 0) setPrice(initialPrice);
+
+            const rawHistory = Array.isArray(historyRes.data?.data) ? historyRes.data.data : [];
+            const mappedHistory = rawHistory.map(item => ({
+                x: item.date ? new Date(item.date).getTime() : Date.now(),
+                y: [item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice]
             }));
             setChartData([{ data: mappedHistory }]);
 
             const aggregateOrders = (orders) => {
+                if (!Array.isArray(orders)) return [];
                 const map = {};
                 orders.forEach(o => {
+                    if (!o || o.price === undefined) return;
                     if (!map[o.price]) map[o.price] = 0;
-                    map[o.price] += o.amount;
+                    map[o.price] += (o.amount || 0);
                 });
                 return Object.entries(map).map(([p, amt]) => ({
                     price: parseInt(p),
@@ -56,20 +66,19 @@ const StockDetail = () => {
                 }));
             };
 
-            const sellGrouped = aggregateOrders(orderbookRes.data.data.sell || [])
-                                .sort((a, b) => b.price - a.price);
-            const buyGrouped = aggregateOrders(orderbookRes.data.data.buy || [])
-                                .sort((a, b) => b.price - a.price);
+            const sellOrders = orderbookRes.data?.data?.sell || [];
+            const buyOrders = orderbookRes.data?.data?.buy || [];
+
+            const sellGrouped = aggregateOrders(sellOrders).sort((a, b) => b.price - a.price);
+            const buyGrouped = aggregateOrders(buyOrders).sort((a, b) => b.price - a.price);
 
             setOrderbook({
                 sell: sellGrouped.slice(-10),
                 buy: buyGrouped.slice(0, 10)
             });
             
-            await checkAuthStatus();
-            
         } catch (err) {
-            console.error(err);
+            console.error('Fetch Stock Detail Error:', err);
             setError('데이터를 불러오는 데 실패했습니다.');
         } finally {
             setIsLoading(false);

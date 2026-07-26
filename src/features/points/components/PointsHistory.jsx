@@ -51,10 +51,10 @@ const PointsHistory = () => {
                             </div>
                             <div className="history-amounts">
                                 <div className={`amount-change ${colorClass}`}>
-                                    {isEarn ? '+' : ''}{item.amount.toLocaleString()} P
+                                    {isEarn ? '+' : ''}{(item.amount ?? 0).toLocaleString()} P
                                 </div>
                                 <div className="amount-balance">
-                                    잔액: {item.balance.toLocaleString()} P
+                                    잔액: {(item.balance ?? 0).toLocaleString()} P
                                 </div>
                             </div>
                         </div>

@@ -41,11 +41,6 @@ api.interceptors.request.use(
 // Response Interceptor: 401 Unauthorized / 403 Forbidden 발생 시 세션 만료 처리 및 /login 자동 라우팅
 api.interceptors.response.use(
     (response) => {
-        if (response.data && response.data.success === false) {
-            if (response.data.message && response.data.message.includes('로그인')) {
-                handleSessionExpired();
-            }
-        }
         return response;
     },
     (error) => {

@@ -67,39 +67,48 @@ const StockList = () => {
                     </thead>
                     <tbody>
                         {stocks.map(stock => {
-                            const isUp = stock.change > 0;
-                            const isDown = stock.change < 0;
+                            const name = stock.stockName || stock.name || '종목';
+                            const code = stock.stockId ? String(stock.stockId).padStart(6, '0') : (stock.code || '000000');
+                            const price = stock.nowPrice ?? stock.price ?? 0;
+                            const prevPrice = stock.prevPrice ?? price;
+                            const change = price - prevPrice;
+                            const changeRate = prevPrice > 0 ? ((change / prevPrice) * 100) : 0;
+                            const volume = stock.pubAmount ?? stock.volume ?? 0;
+                            const stockId = stock.stockId || stock.id;
+
+                            const isUp = change > 0;
+                            const isDown = change < 0;
                             const colorClass = isUp ? 'profit-up' : isDown ? 'profit-down' : '';
                             const sign = isUp ? '+' : '';
 
                             return (
-                                <tr key={stock.id} onClick={() => navigate(`/stocks/${stock.id}`)}>
+                                <tr key={stockId} onClick={() => navigate(`/stocks/${stockId}`)}>
                                     <td>
                                         <div className="stock-info">
-                                            <div className="stock-icon-small">{stock.name.charAt(0)}</div>
+                                            <div className="stock-icon-small">{name.charAt(0)}</div>
                                             <div className="stock-name-wrapper">
-                                                <span className="stock-name">{stock.name}</span>
-                                                <span className="stock-code">{stock.code}</span>
+                                                <span className="stock-name">{name}</span>
+                                                <span className="stock-code">{code}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className={colorClass}>{stock.price.toLocaleString()}</td>
+                                    <td className={colorClass}>{price.toLocaleString()} P</td>
                                     <td className={colorClass}>
-                                        {sign}{stock.change.toLocaleString()}
+                                        {sign}{change.toLocaleString()}
                                     </td>
                                     <td className={colorClass}>
                                         <div className="flex-right">
                                             {isUp ? <TrendingUp size={14} /> : isDown ? <TrendingDown size={14} /> : ''}
-                                            {sign}{stock.changeRate.toFixed(2)}%
+                                            {sign}{changeRate.toFixed(2)}%
                                         </div>
                                     </td>
-                                    <td>{stock.volume.toLocaleString()}</td>
+                                    <td>{volume.toLocaleString()}</td>
                                     <td>
                                         <button 
                                             className="trade-btn"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate(`/stocks/${stock.id}`);
+                                                navigate(`/stocks/${stockId}`);
                                             }}
                                         >
                                             매매 <ArrowRight size={14} />
