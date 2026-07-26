@@ -8,6 +8,22 @@ const api = axios.create({
     },
 });
 
+let isRedirecting = false;
+
+function handleSessionExpired() {
+    if (isRedirecting) return;
+    isRedirecting = true;
+
+    localStorage.removeItem('jwt_token');
+
+    if (window.location.pathname !== '/login') {
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        window.location.href = '/login';
+    } else {
+        isRedirecting = false;
+    }
+}
+
 // Request Interceptor: localStorage에서 JWT 토큰을 가져와 Authorization 헤더에 추가
 api.interceptors.request.use(
     (config) => {
@@ -27,10 +43,7 @@ api.interceptors.response.use(
     (response) => {
         if (response.data && response.data.success === false) {
             if (response.data.message && response.data.message.includes('로그인')) {
-                localStorage.removeItem('jwt_token');
-                if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                }
+                handleSessionExpired();
             }
         }
         return response;
@@ -38,10 +51,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             console.error('Authentication required or session expired.');
-            localStorage.removeItem('jwt_token');
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
+            handleSessionExpired();
         } else if (!error.response) {
             console.error('Network or Setup Error: ', error.message);
         }
