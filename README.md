@@ -99,17 +99,6 @@ src/
 
 ---
 
-## 🌿 Git 브랜치 전략
-
-| 브랜치 | 설명 |
-|---|---|
-| `main` | 안정화 릴리즈 브랜치 |
-| `feature/admin-student-management` | 학생 관리 대시보드 UI 및 포인트/포트폴리오 모달 (→ [PR #4](https://github.com/skfkfkvlrm/stockGame_react/pull/4)) |
-| `feature/admin-stock-management` | 주식 종목 CRUD 모달 및 시장 토글 제어 (→ [PR #5](https://github.com/skfkfkvlrm/stockGame_react/pull/5)) |
-| `feature/market-sidebar-and-ui-resilience` | 사이드바 실시간 연동·음수 차단·UI 강화 (→ [PR #6](https://github.com/skfkfkvlrm/stockGame_react/pull/6)) |
-
----
-
 ## 📋 최근 변경 이력 (Changelog)
 
 | 날짜 | 내용 |
