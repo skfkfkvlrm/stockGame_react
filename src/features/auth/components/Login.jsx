@@ -33,8 +33,7 @@ const Login = () => {
         <div className="login-wrapper">
             <div className="login-container glass-panel">
                 <div className="login-header">
-                    <div className="brand-logo-large">📈 STKGAME</div>
-                    <h2>학생 모의투자 플랫폼</h2>
+                    <div className="brand-logo-large">STOCKGAME</div>
                     <p>실전 감각을 기르는 최고의 방법</p>
                 </div>
                 
@@ -67,7 +66,7 @@ const Login = () => {
                     </div>
                     
                     <button type="submit" className="login-btn" disabled={isLoading}>
-                        <LogIn size={20} /> {isLoading ? '로그인 중...' : '시작하기'}
+                        <LogIn size={20} /> {isLoading ? '로그인 중...' : '로그인'}
                     </button>
                     
                     <div className="login-links">

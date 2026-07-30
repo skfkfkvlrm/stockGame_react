@@ -12,9 +12,13 @@ const PointsHistory = () => {
         const fetchHistory = async () => {
             try {
                 const response = await api.get('/history');
-                setHistory(response.data.data);
+                if (response.data && Array.isArray(response.data.data)) {
+                    setHistory(response.data.data);
+                } else {
+                    setHistory([]);
+                }
             } catch (err) {
-                setError('포인트 내역을 불러오는 데 실패했습니다.');
+                setError('내역을 불러올 수 없습니다.');
             } finally {
                 setIsLoading(false);
             }
@@ -23,7 +27,6 @@ const PointsHistory = () => {
     }, []);
 
     if (isLoading) return <div className="points-history-container"><div className="loading-spinner">로딩 중...</div></div>;
-    if (error) return <div className="points-history-container"><div className="error-msg">{error}</div></div>;
 
     return (
         <div className="points-history-container">
@@ -33,33 +36,43 @@ const PointsHistory = () => {
             </header>
 
             <div className="history-list glass-panel">
-                {history.map(item => {
-                    const isEarn = item.type === 'EARN';
-                    const colorClass = isEarn ? 'profit-up' : 'profit-down';
-                    
-                    return (
-                        <div key={item.id} className="history-item">
-                            <div className={`history-icon ${isEarn ? 'earn' : 'use'}`}>
-                                {isEarn ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
-                            </div>
-                            <div className="history-details">
-                                <h3>{item.desc}</h3>
-                                <div className="history-meta">
-                                    <Clock size={14} />
-                                    <span>{item.date}</span>
+                {error ? (
+                    <div className="error-msg">{error}</div>
+                ) : history.length === 0 ? (
+                    <div className="empty-msg" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        포인트 내역이 없습니다.
+                    </div>
+                ) : (
+                    history.map((item, index) => {
+                        const pointChange = item.pointChange ?? 0;
+                        const isEarn = pointChange >= 0 || item.historyType === '지급' || item.historyType === '매도';
+                        const colorClass = isEarn ? 'profit-up' : 'profit-down';
+                        const formattedDate = item.historyDate ? new Date(item.historyDate).toLocaleString('ko-KR') : '-';
+                        
+                        return (
+                            <div key={index} className="history-item">
+                                <div className={`history-icon ${isEarn ? 'earn' : 'use'}`}>
+                                    {isEarn ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
+                                </div>
+                                <div className="history-details">
+                                    <h3>{item.historyContent || item.historyType || '포인트 변동'}</h3>
+                                    <div className="history-meta">
+                                        <Clock size={14} />
+                                        <span>{formattedDate}</span>
+                                    </div>
+                                </div>
+                                <div className="history-amounts">
+                                    <div className={`amount-change ${colorClass}`}>
+                                        {pointChange > 0 ? '+' : ''}{pointChange.toLocaleString()} P
+                                    </div>
+                                    <div className="amount-balance">
+                                        구분: {item.historyType || '기초 포인트'}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="history-amounts">
-                                <div className={`amount-change ${colorClass}`}>
-                                    {isEarn ? '+' : ''}{(item.amount ?? 0).toLocaleString()} P
-                                </div>
-                                <div className="amount-balance">
-                                    잔액: {(item.balance ?? 0).toLocaleString()} P
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                )}
             </div>
         </div>
     );

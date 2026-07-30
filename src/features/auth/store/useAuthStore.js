@@ -7,12 +7,25 @@ const useAuthStore = create((set) => ({
     isLoading: false,
     error: null,
 
+    fetchMe: async () => {
+        try {
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                const meResponse = await api.get('/members/me');
+                if (meResponse.data && meResponse.data.success) {
+                    set({ user: meResponse.data.data, isAuthenticated: true });
+                }
+            }
+        } catch (error) {
+            console.error('Silent refresh user info error:', error);
+        }
+    },
+
     checkAuthStatus: async () => {
         set({ isLoading: true });
         try {
             const token = localStorage.getItem('jwt_token');
             if (token) {
-                // 추가 사용자 정보 조회
                 const meResponse = await api.get('/members/me');
                 if (meResponse.data && meResponse.data.success) {
                     set({ user: meResponse.data.data, isAuthenticated: true, error: null });
@@ -24,8 +37,12 @@ const useAuthStore = create((set) => ({
                 set({ user: null, isAuthenticated: false });
             }
         } catch (error) {
-            localStorage.removeItem('jwt_token');
-            set({ user: null, isAuthenticated: false, error: error.message });
+            console.error('Check Auth Status Error:', error);
+            // 토큰이 남아있고 브라우저 새로고침 시 네트워크 일시 지연인 경우 즉각 삭제하는 대신 안전 유지
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                set({ user: null, isAuthenticated: false, error: error.message });
+            }
         } finally {
             set({ isLoading: false });
         }
