@@ -16,6 +16,8 @@ const StockDetail = () => {
     const [stockInfo, setStockInfo] = useState(null);
     const [chartData, setChartData] = useState([]);
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
+    const [myOrders, setMyOrders] = useState([]);
+    const [myStockAmount, setMyStockAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     
@@ -28,10 +30,12 @@ const StockDetail = () => {
     // Fetch initial data
     const fetchAllData = async () => {
         try {
-            const [infoRes, historyRes, orderbookRes] = await Promise.all([
+            const [infoRes, historyRes, orderbookRes, myOrdersRes, assetRes] = await Promise.all([
                 api.get(`/stock/${stockId}`).catch(e => ({ data: { success: false, data: null } })),
                 api.get(`/stock/${stockId}/history`).catch(e => ({ data: { success: false, data: [] } })),
-                api.get(`/stock/${stockId}/orderbook`).catch(e => ({ data: { success: false, data: { sell: [], buy: [] } } }))
+                api.get(`/stock/${stockId}/orderbook`).catch(e => ({ data: { success: false, data: { sell: [], buy: [] } } })),
+                api.get(`/stock/${stockId}/orders/my`).catch(e => ({ data: { success: false, data: [] } })),
+                api.get('/asset').catch(e => ({ data: { success: false, data: null } }))
             ]);
             
             const info = infoRes.data?.data;
@@ -44,6 +48,12 @@ const StockDetail = () => {
             setStockInfo(info);
             const initialPrice = info.nowPrice ?? info.pubPrice ?? 0;
             if (price === 0) setPrice(initialPrice);
+
+            // Set my stock holding amount
+            if (assetRes.data?.data?.myStocks) {
+                const myStockItem = assetRes.data.data.myStocks.find(s => s.stockName === info.stockName);
+                setMyStockAmount(myStockItem ? myStockItem.amount : 0);
+            }
 
             const rawHistory = Array.isArray(historyRes.data?.data) ? historyRes.data.data : [];
             const mappedHistory = rawHistory.map(item => ({
@@ -76,6 +86,12 @@ const StockDetail = () => {
                 sell: sellGrouped.slice(-10),
                 buy: buyGrouped.slice(0, 10)
             });
+
+            if (Array.isArray(myOrdersRes.data?.data)) {
+                setMyOrders(myOrdersRes.data.data);
+            } else {
+                setMyOrders([]);
+            }
             
         } catch (err) {
             console.error('Fetch Stock Detail Error:', err);
@@ -137,8 +153,13 @@ const StockDetail = () => {
         
         const totalAmount = prc * qty;
         
-        if (tradeType === 'BUY' && totalAmount > (user?.point || 0)) {
+        if (tradeType === 'BUY' && totalAmount > (user?.totalPoint ?? user?.point ?? 0)) {
             alert('주문 가능 포인트를 초과했습니다.');
+            return;
+        }
+        
+        if (tradeType === 'SELL' && qty > myStockAmount) {
+            alert(`보유 주식 수량(${myStockAmount}주)을 초과하여 매도할 수 없습니다.`);
             return;
         }
         
@@ -147,15 +168,30 @@ const StockDetail = () => {
             const endpoint = tradeType === 'BUY' ? '/orders/buy' : '/orders/sell';
             const response = await api.post(endpoint, {
                 stockId: parseInt(stockId),
+                amount: qty,
                 quantity: qty,
                 price: prc
             });
             alert(response.data?.data || '주문이 접수되었습니다.');
             setQuantity(1);
+            fetchAllData();
+            checkAuthStatus();
         } catch (err) {
             alert(err.response?.data?.message || '주문 처리에 실패했습니다.');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm('선택한 예약 주문을 정말 취소하시겠습니까?')) return;
+        try {
+            const response = await api.post(`/orders/cancel?orderId=${orderId}&stockId=${stockId}`);
+            alert(response.data?.data || '주문이 취소되었습니다.');
+            fetchAllData();
+            checkAuthStatus();
+        } catch (err) {
+            alert(err.response?.data?.message || '주문 취소 처리에 실패했습니다.');
         }
     };
 
@@ -173,6 +209,8 @@ const StockDetail = () => {
         ...orderbook.sell.map(o => o.amount),
         1
     );
+
+    const myOrderPrices = myOrders.map(o => o.price);
 
     return (
         <div className="stock-detail-container">
@@ -213,24 +251,36 @@ const StockDetail = () => {
                     <h3>호가</h3>
                     <div className="orderbook-container">
                         {/* Sell Orders (Descending) */}
-                        {orderbook.sell.map((order, idx) => (
-                            <div key={`sell-${idx}`} className="order-row sell" onClick={() => handleOrderbookClick(order.price)}>
-                                <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
-                                <span className="order-price">{order.price.toLocaleString()}</span>
-                                <span className="order-amount">{order.amount.toLocaleString()}</span>
-                            </div>
-                        ))}
+                        {orderbook.sell.map((order, idx) => {
+                            const isMyOrder = myOrderPrices.includes(order.price);
+                            return (
+                                <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                    <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
+                                    <span className="order-price">
+                                        {order.price.toLocaleString()}
+                                        {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#3b82f6', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                    </span>
+                                    <span className="order-amount">{order.amount.toLocaleString()}</span>
+                                </div>
+                            );
+                        })}
                         
                         <div className="orderbook-divider"></div>
 
                         {/* Buy Orders (Descending) */}
-                        {orderbook.buy.map((order, idx) => (
-                            <div key={`buy-${idx}`} className="order-row buy" onClick={() => handleOrderbookClick(order.price)}>
-                                <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
-                                <span className="order-price">{order.price.toLocaleString()}</span>
-                                <span className="order-amount">{order.amount.toLocaleString()}</span>
-                            </div>
-                        ))}
+                        {orderbook.buy.map((order, idx) => {
+                            const isMyOrder = myOrderPrices.includes(order.price);
+                            return (
+                                <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                    <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
+                                    <span className="order-price">
+                                        {order.price.toLocaleString()}
+                                        {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                    </span>
+                                    <span className="order-amount">{order.amount.toLocaleString()}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -253,25 +303,27 @@ const StockDetail = () => {
 
                     <div className="trade-form">
                         <div className="form-group">
-                            <label>주문 가능 포인트 / 주식 수</label>
+                            <label>주문 가능 포인트 / 보유 주식 수</label>
                             <div className="available-points">
                                 {tradeType === 'BUY' 
-                                    ? `${(user?.point || 0).toLocaleString()} P` 
-                                    : '보유 주식 (서버에서 가져와야함)'}
+                                    ? `${(user?.totalPoint ?? user?.point ?? 0).toLocaleString()} P` 
+                                    : `${myStockAmount.toLocaleString()} 주 (보유 중)`}
                             </div>
                         </div>
 
                         <div className="form-group">
                             <label>주문 단가 (P)</label>
                             <div className="price-control">
-                                <button type="button" onClick={() => setPrice(Math.max(1, (price || 0) - 1))}><Minus size={18}/></button>
+                                <button type="button" onClick={() => setPrice(Math.max(50, (price || 0) - 50))}><Minus size={18}/></button>
                                 <input 
                                     type="number" 
                                     value={price} 
                                     onChange={handlePriceChange}
+                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                    step="50"
                                     min="1"
                                 />
-                                <button type="button" onClick={() => setPrice((price || 0) + 1)}><Plus size={18}/></button>
+                                <button type="button" onClick={() => setPrice((price || 0) + 50)}><Plus size={18}/></button>
                             </div>
                         </div>
 
@@ -283,6 +335,7 @@ const StockDetail = () => {
                                     type="number" 
                                     value={quantity} 
                                     onChange={handleQuantityChange}
+                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
                                     min="1"
                                 />
                                 <button type="button" onClick={() => setQuantity((quantity || 0) + 1)}><Plus size={18}/></button>
@@ -305,6 +358,73 @@ const StockDetail = () => {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            {/* 4. My Pending Orders Panel */}
+            <div className="glass-panel my-orders-panel" style={{ marginTop: '24px', padding: '24px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📋 내 미체결 (예약) 주문 목록 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(체결 전까지 취소 가능)</span>
+                </h3>
+                {myOrders.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                        현재 체결 대기 중인 예약 주문이 없습니다.
+                    </div>
+                ) : (
+                    <div className="my-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {myOrders.map(ord => {
+                            const isBuy = ord.content === '매수';
+                            return (
+                                <div key={ord.orderId} className="my-order-item" style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '12px 16px',
+                                    background: 'var(--bg-main)',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--bg-panel-border)'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <span className={`order-type-badge ${isBuy ? 'buy' : 'sell'}`} style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '6px',
+                                            fontWeight: '700',
+                                            fontSize: '0.85rem',
+                                            background: isBuy ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                                            color: isBuy ? 'var(--accent-red)' : 'var(--accent-blue)'
+                                        }}>
+                                            {ord.content}
+                                        </span>
+                                        <span style={{ fontWeight: '700', fontSize: '1rem' }}>
+                                            {(ord.price || 0).toLocaleString()} P
+                                        </span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                            {ord.amount} 주
+                                        </span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            {ord.createdDate ? new Date(ord.createdDate).toLocaleTimeString('ko-KR') : ''}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleCancelOrder(ord.orderId)}
+                                        style={{
+                                            padding: '6px 14px',
+                                            background: '#ef4444',
+                                            color: 'white',
+                                            borderRadius: '6px',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem',
+                                            cursor: 'pointer',
+                                            border: 'none',
+                                            transition: 'opacity 0.15s ease'
+                                        }}
+                                    >
+                                        주문 취소
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

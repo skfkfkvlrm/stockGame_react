@@ -33,13 +33,13 @@
 .ranking-header h1 {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--text-main, #1e293b);
     margin: 0;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: var(--text-muted, #64748b);
     margin-top: 0.25rem;
 }
 
@@ -61,8 +61,9 @@
     border-radius: 18px;
     position: relative;
     transition: all 0.25 ease;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid var(--bg-panel-border, rgba(0,0,0,0.08));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .podium-card:hover {
@@ -71,9 +72,9 @@
 
 .podium-card.first-place {
     transform: translateY(-10px);
-    border: 2px solid rgba(245, 158, 11, 0.6);
-    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(30, 41, 59, 0.8) 100%);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.2);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, #ffffff 100%);
 }
 
 .crown-icon {
@@ -96,14 +97,14 @@
     margin-bottom: 0.75rem;
 }
 
-.gold-icon { color: #fbbf24; }
-.silver-icon { color: #94a3b8; }
-.bronze-icon { color: #d97706; }
+.gold-icon { color: #d97706; }
+.silver-icon { color: #475569; }
+.bronze-icon { color: #b45309; }
 
 .rank-title {
     font-size: 1.1rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: #1e293b;
 }
 
 .podium-avatar {
@@ -124,14 +125,15 @@
 .podium-name {
     font-size: 1.15rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: #1e293b;
     margin: 0;
 }
 
 .podium-info {
-    font-size: 0.825rem;
-    color: #94a3b8;
+    font-size: 0.85rem;
+    color: #64748b;
     margin-top: 0.25rem;
+    font-weight: 500;
 }
 
 .podium-point {
@@ -139,23 +141,24 @@
     padding: 0.4rem 1.2rem;
     border-radius: 20px;
     background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #0284c7;
+    border: 1px solid rgba(56, 189, 248, 0.4);
     font-weight: 700;
     font-size: 1rem;
 }
 
 .podium-point .unit {
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Ranking Table */
 .ranking-table-section {
     border-radius: 16px;
     padding: 1.5rem;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid var(--bg-panel-border, rgba(0,0,0,0.08));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .table-filter-bar {
@@ -169,26 +172,27 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 0.5rem 1rem;
+    background: #f8fafc;
+    padding: 0.6rem 1rem;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid #cbd5e1;
     width: 280px;
-    color: #94a3b8;
+    color: #64748b;
 }
 
 .search-input-box input {
     background: transparent;
     border: none;
     outline: none;
-    color: #f8fafc;
+    color: #1e293b;
     width: 100%;
     font-size: 0.9rem;
 }
 
 .count-label {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: #64748b;
+    font-weight: 600;
 }
 
 .table-responsive {
@@ -202,28 +206,29 @@
 }
 
 .leaderboard-table th {
-    background: rgba(15, 23, 42, 0.8);
-    color: #94a3b8;
+    background: #1e293b;
+    color: #f8fafc;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid #334155;
 }
 
 .leaderboard-table td {
     padding: 1rem 1.25rem;
-    color: #e2e8f0;
+    color: #1e293b;
     font-size: 0.9rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-weight: 500;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .leaderboard-table tr.my-row {
-    background: rgba(56, 189, 248, 0.08);
-    border-left: 3px solid #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border-left: 4px solid #0284c7;
 }
 
 .leaderboard-table tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: #f1f5f9;
 }
 
 .user-name-box {
@@ -236,8 +241,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: rgba(99, 102, 241, 0.3);
-    color: #818cf8;
+    background: rgba(99, 102, 241, 0.2);
+    color: #4f46e5;
     font-weight: 700;
     font-size: 0.75rem;
     display: flex;
@@ -247,12 +252,12 @@
 
 .user-name-text {
     font-weight: 700;
-    color: #f8fafc;
+    color: #1e293b;
 }
 
 .me-badge {
-    background: #38bdf8;
-    color: #0f172a;
+    background: #0284c7;
+    color: #ffffff;
     font-size: 0.7rem;
     font-weight: 800;
     padding: 0.15rem 0.4rem;
@@ -264,18 +269,18 @@
     font-size: 0.9rem;
 }
 
-.gold-tag { color: #fbbf24; }
-.silver-tag { color: #cbd5e1; }
-.bronze-tag { color: #f59e0b; }
+.gold-tag { color: #d97706; }
+.silver-tag { color: #475569; }
+.bronze-tag { color: #b45309; }
 
 .rank-number-tag {
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
 }
 
 .point-text {
     font-weight: 700;
-    color: #38bdf8;
+    color: #0284c7;
 }
 
 .empty-cell {

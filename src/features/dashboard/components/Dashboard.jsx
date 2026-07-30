@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 import api from '../../../api/axios';
+import useAuthStore from '../../auth/store/useAuthStore';
 import './Dashboard.css';
 
 // STATIC CONFIGURATIONS
@@ -26,6 +27,7 @@ const calculateProfit = (avg, current, amount) => {
 };
 
 const Dashboard = () => {
+    const user = useAuthStore((state) => state.user);
     const [assetData, setAssetData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -33,24 +35,39 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
-                const response = await api.get('/asset/');
-                setAssetData(response.data.data);
+                const response = await api.get('/asset');
+                if (response.data && response.data.data) {
+                    setAssetData(response.data.data);
+                } else {
+                    setAssetData({
+                        totalAsset: user?.totalPoint || 0,
+                        totalPoint: user?.totalPoint || 0,
+                        totalProfit: 0,
+                        myStocks: []
+                    });
+                }
             } catch (err) {
-                setError(err.response?.data?.message || '자산 정보를 불러오는 데 실패했습니다.');
+                console.error('Fetch Asset Error:', err);
+                setAssetData({
+                    totalAsset: user?.totalPoint || 0,
+                    totalPoint: user?.totalPoint || 0,
+                    totalProfit: 0,
+                    myStocks: []
+                });
             } finally {
                 setIsLoading(false);
             }
         };
         fetchDashboard();
-    }, []);
+    }, [user]);
 
     if (isLoading) return <div className="dashboard-container"><div className="loading-spinner"></div></div>;
     if (error) return <div className="dashboard-container"><div className="error-msg">{error}</div></div>;
 
-    const totalAsset = assetData?.totalAsset || 0;
-    const availablePoints = assetData?.availablePoints || 0;
-    const totalProfit = assetData?.totalProfit || 0;
-    const portfolio = assetData?.portfolio || [];
+    const totalAsset = assetData?.totalAsset ?? 0;
+    const availablePoints = assetData?.totalPoint ?? assetData?.availablePoints ?? 0;
+    const totalProfit = assetData?.totalProfit ?? 0;
+    const portfolio = assetData?.myStocks || assetData?.portfolio || [];
     
     // For now, keep the chart static or empty if there's no history in assetData
     const chartSeries = [{ name: '총 자산', data: [totalAsset] }];
@@ -121,24 +138,30 @@ const Dashboard = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                portfolio.map(stock => {
-                                    const { diff, rate } = calculateProfit(stock.avgPrice, stock.currentPrice, stock.amount);
-                                    const profitClass = diff > 0 ? 'profit-up' : diff < 0 ? 'profit-down' : '';
+                                portfolio.map((stock, idx) => {
+                                    const name = stock.stockName || stock.name || '주식';
+                                    const avgPrice = stock.averagePrice ?? stock.avgPrice ?? 0;
+                                    const currentPrice = stock.currentPrice ?? 0;
+                                    const amount = stock.amount ?? 0;
+                                    const profit = stock.profit ?? ((currentPrice - avgPrice) * amount);
+                                    const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+                                    const profitClass = profit > 0 ? 'profit-up' : profit < 0 ? 'profit-down' : '';
+
                                     return (
-                                        <tr key={stock.id || stock.stockId}>
+                                        <tr key={stock.stockId || idx}>
                                             <td className="stock-name">
                                                 <div className="stock-info">
-                                                    <div className="stock-icon">{stock.name.charAt(0)}</div>
-                                                    {stock.name}
+                                                    <div className="stock-icon">{name.charAt(0)}</div>
+                                                    {name}
                                                 </div>
                                             </td>
-                                            <td>{stock.amount}주</td>
-                                            <td>{stock.avgPrice.toLocaleString()}</td>
-                                            <td>{stock.currentPrice.toLocaleString()}</td>
+                                            <td>{amount}주</td>
+                                            <td>{avgPrice.toLocaleString()} P</td>
+                                            <td>{currentPrice.toLocaleString()} P</td>
                                             <td className={profitClass}>
                                                 <div className="flex-right">
-                                                    {diff > 0 ? <ArrowUpRight size={16} /> : diff < 0 ? <ArrowDownRight size={16} /> : ''}
-                                                    {diff > 0 ? '+' : ''}{diff.toLocaleString()}
+                                                    {profit > 0 ? <ArrowUpRight size={16} /> : profit < 0 ? <ArrowDownRight size={16} /> : ''}
+                                                    {profit > 0 ? '+' : ''}{profit.toLocaleString()} P
                                                 </div>
                                             </td>
                                             <td className={profitClass}>

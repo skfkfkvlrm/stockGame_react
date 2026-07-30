@@ -42,31 +42,40 @@ const MyCoupons = () => {
                         보유 중인 쿠폰이 없습니다.
                     </div>
                 ) : (
-                    myCoupons.map(item => {
-                        const coupon = item.coupon || item;
+                    myCoupons.map((item, idx) => {
+                        const couponName = item.name || item.coupon?.name || '쿠폰';
+                        const rawState = item.state || item.status || '사용전';
+                        const isUnused = rawState === '사용전' || rawState === 'UNUSED' || rawState === '미사용';
+                        const isWaiting = rawState === '대기' || rawState === 'WAITING';
+                        const isUsed = rawState === '사용' || rawState === 'USED';
+
+                        const keyId = item.couponPurchaseId || item.id || item.purchaseId || item.couponId || idx;
+                        const dateStr = item.createdDate ? new Date(item.createdDate).toLocaleDateString() : new Date().toLocaleDateString();
+
                         return (
-                        <div key={item.id} className={`coupon-card glass-panel ${item.status === 'USED' ? 'used' : ''}`}>
-                            <div className="coupon-icon" style={{ backgroundColor: coupon.color || '#8b5cf6' }}>
-                                {coupon.icon || <Ticket />}
+                        <div key={keyId} className={`coupon-card glass-panel ${isUsed ? 'used' : ''}`}>
+                            <div className="coupon-icon" style={{ backgroundColor: '#8b5cf6' }}>
+                                <Ticket />
                             </div>
                             <div className="coupon-info">
-                                <h3>{coupon.name}</h3>
-                                <p className="purchase-date">구매일: {new Date(item.purchaseDate || Date.now()).toLocaleDateString()}</p>
+                                <h3>{couponName}</h3>
+                                <p className="purchase-date">구매일: {dateStr}</p>
                             </div>
                             <div className="coupon-status">
-                                {item.status === 'UNUSED' && <span className="badge badge-unused">사용 가능</span>}
-                                {item.status === 'WAITING' && <span className="badge badge-waiting"><Clock size={12}/> 대기중</span>}
-                                {item.status === 'USED' && <span className="badge badge-used"><CheckCircle size={12}/> 사용 완료</span>}
+                                {isUnused && <span className="badge badge-unused">사용 가능</span>}
+                                {isWaiting && <span className="badge badge-waiting"><Clock size={12}/> 대기중</span>}
+                                {isUsed && <span className="badge badge-used"><CheckCircle size={12}/> 사용 완료</span>}
                             </div>
                             <button 
                                 className="use-btn" 
-                                disabled={item.status !== 'UNUSED'}
+                                disabled={!isUnused}
                                 onClick={() => handleUse(item)}
                             >
-                                {item.status === 'UNUSED' ? '사용하기' : (item.status === 'WAITING' ? '승인 대기' : '사용 완료')}
+                                {isUnused ? '사용하기' : (isWaiting ? '승인 대기' : '사용 완료')}
                             </button>
                         </div>
-                    )})
+                    );
+                })
                 )}
             </div>
         </div>
