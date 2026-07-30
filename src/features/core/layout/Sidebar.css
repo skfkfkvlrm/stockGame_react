@@ -99,12 +99,24 @@
     border-radius: 50%;
 }
 
+.market-status.open {
+    background-color: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #059669;
+}
+
 .market-status.open .status-dot {
-    background-color: var(--accent-red);
+    background-color: #10b981;
+}
+
+.market-status.closed {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #dc2626;
 }
 
 .market-status.closed .status-dot {
-    background-color: var(--text-muted);
+    background-color: #ef4444;
 }
 
 .sidebar-menu {
