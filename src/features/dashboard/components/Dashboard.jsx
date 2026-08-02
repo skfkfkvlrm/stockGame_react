@@ -29,15 +29,20 @@ const calculateProfit = (avg, current, amount) => {
 const Dashboard = () => {
     const user = useAuthStore((state) => state.user);
     const [assetData, setAssetData] = useState(null);
+    const [historyData, setHistoryData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchDashboard = async () => {
             try {
-                const response = await api.get('/asset');
-                if (response.data && response.data.data) {
-                    setAssetData(response.data.data);
+                const [assetRes, historyRes] = await Promise.all([
+                    api.get('/asset').catch(() => ({ data: { data: null } })),
+                    api.get('/history').catch(() => ({ data: { data: [] } }))
+                ]);
+
+                if (assetRes.data && assetRes.data.data) {
+                    setAssetData(assetRes.data.data);
                 } else {
                     setAssetData({
                         totalAsset: user?.totalPoint || 0,
@@ -45,6 +50,10 @@ const Dashboard = () => {
                         totalProfit: 0,
                         myStocks: []
                     });
+                }
+
+                if (historyRes.data && Array.isArray(historyRes.data.data)) {
+                    setHistoryData(historyRes.data.data);
                 }
             } catch (err) {
                 console.error('Fetch Asset Error:', err);
@@ -68,9 +77,57 @@ const Dashboard = () => {
     const availablePoints = assetData?.totalPoint ?? assetData?.availablePoints ?? 0;
     const totalProfit = assetData?.totalProfit ?? 0;
     const portfolio = assetData?.myStocks || assetData?.portfolio || [];
-    
-    // For now, keep the chart static or empty if there's no history in assetData
-    const chartSeries = [{ name: '총 자산', data: [totalAsset] }];
+
+    // 동적 차트 옵션 및 데이터 산출 (히스토리 내역 누적 시계열 파싱)
+    const computeChartData = () => {
+        if (!historyData || historyData.length === 0) {
+            return {
+                categories: ['현재'],
+                seriesData: [totalAsset]
+            };
+        }
+
+        // 과거순 정렬 (오래된 날짜가 앞)
+        const sortedHistory = [...historyData].sort((a, b) => {
+            const dateA = new Date(a.historyDate || 0).getTime();
+            const dateB = new Date(b.historyDate || 0).getTime();
+            return dateA - dateB;
+        });
+
+        let cumulative = 0;
+        const categories = [];
+        const seriesData = [];
+
+        sortedHistory.forEach((item) => {
+            const change = item.pointChange || 0;
+            cumulative += change;
+            const dateStr = item.historyDate
+                ? new Date(item.historyDate).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit' })
+                : '이력';
+            categories.push(dateStr);
+            seriesData.push(cumulative);
+        });
+
+        // 가장 최근 지점은 현재 totalAsset으로 보정
+        if (seriesData.length > 0) {
+            categories.push('현재 (총 자산)');
+            seriesData.push(totalAsset);
+        }
+
+        return { categories, seriesData };
+    };
+
+    const { categories, seriesData } = computeChartData();
+
+    const dynamicChartOptions = {
+        ...chartOptions,
+        xaxis: {
+            ...chartOptions.xaxis,
+            categories: categories
+        }
+    };
+
+    const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
 
     return (
         <div className="dashboard-container">
@@ -110,7 +167,7 @@ const Dashboard = () => {
                     <h2>자산 변동 추이</h2>
                 </div>
                 <div className="chart-container">
-                    <Chart options={chartOptions} series={chartSeries} type="area" height={300} />
+                    <Chart options={dynamicChartOptions} series={chartSeries} type="area" height={300} />
                 </div>
             </div>
 

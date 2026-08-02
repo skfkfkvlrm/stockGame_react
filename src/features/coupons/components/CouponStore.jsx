@@ -37,7 +37,10 @@ const getCouponDetail = (name = '') => {
     };
 };
 
+import { useNavigate } from 'react-router-dom';
+
 const CouponStore = () => {
+    const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const fetchMe = useAuthStore((state) => state.fetchMe);
     const [coupons, setCoupons] = useState([]);
@@ -83,9 +86,19 @@ const CouponStore = () => {
 
     return (
         <div className="store-container">
-            <header className="page-header">
-                <h1 className="page-title">쿠폰 상점</h1>
-                <p className="page-subtitle">투자 수익으로 획득한 포인트로 특별한 혜택을 구매하세요.</p>
+            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                    <h1 className="page-title">쿠폰 상점</h1>
+                    <p className="page-subtitle">투자 수익으로 획득한 포인트로 특별한 혜택을 구매하세요.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="sub-tab-btn active" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary, #6366f1)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
+                        🛒 쿠폰 상점
+                    </button>
+                    <button className="sub-tab-btn" style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'rgba(255,255,255,0.8)', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => navigate('/my-coupons')}>
+                        🎫 내 쿠폰함
+                    </button>
+                </div>
             </header>
 
             <div className="points-status glass-panel">
@@ -106,13 +119,23 @@ const CouponStore = () => {
                             <p className="coupon-desc">{coupon.desc || detail.desc}</p>
                             <div className="coupon-footer">
                                 <div className="coupon-price">{coupon.price.toLocaleString()} P</div>
-                                <button 
-                                    className="buy-btn" 
-                                    onClick={() => handleBuy(coupon)}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? '처리중...' : '구매하기'}
-                                </button>
+                                {coupon.status === 'PAUSED' ? (
+                                    <button className="buy-btn" style={{ background: '#94a3b8', cursor: 'not-allowed' }} disabled>
+                                        판매 중지
+                                    </button>
+                                ) : coupon.status === 'SOLD_OUT' ? (
+                                    <button className="buy-btn" style={{ background: '#ef4444', cursor: 'not-allowed' }} disabled>
+                                        품절/마감
+                                    </button>
+                                ) : (
+                                    <button 
+                                        className="buy-btn" 
+                                        onClick={() => handleBuy(coupon)}
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? '처리중...' : '구매하기'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     );

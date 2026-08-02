@@ -46,8 +46,8 @@
 
 .stock-title {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .ws-status-badge {

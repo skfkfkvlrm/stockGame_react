@@ -68,7 +68,9 @@ const NewsList = () => {
     if (isLoading) return <div className="news-list-container"><div className="loading-spinner"></div></div>;
     if (error) return <div className="news-list-container"><div className="error-msg">{error}</div></div>;
 
-    const parsedList = newsData.map((item, idx) => parseNewsItem(item, idx)).filter(Boolean);
+    const parsedList = newsData
+        .map((item, idx) => parseNewsItem(item, idx))
+        .filter(Boolean);
 
     return (
         <div className="news-list-container">
@@ -104,61 +106,76 @@ const NewsList = () => {
             </div>
 
             {/* News Detail Modal */}
-            {selectedNews && (
-                <div className="modal-overlay" onClick={() => setSelectedNews(null)} style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{
-                        background: '#ffffff',
-                        borderRadius: '16px',
-                        padding: '32px',
-                        maxWidth: '560px',
-                        width: '90%',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)'
+            {selectedNews && (() => {
+                const title = selectedNews.title || '';
+                const keywords = ["삼성전자", "SK하이닉스", "NAVER", "카카오", "현대차", "LG에너지솔루션", "한화에어로스페이스", "셀트리온"];
+                const matchedKey = keywords.find(k => title.includes(k)) || '주요 종목';
+
+                return (
+                    <div className="modal-overlay" onClick={() => setSelectedNews(null)} style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
-                                {selectedNews.tag}
-                            </span>
-                            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                                <Clock size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {selectedNews.date}
-                            </span>
-                        </div>
-                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', lineHeight: '1.4' }}>
-                            {selectedNews.title}
-                        </h2>
-                        <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
-                            <p style={{ marginBottom: '12px' }}>{selectedNews.title} 관련 상세 속보입니다.</p>
-                            <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>본 뉴스는 실시간 증시 시세 및 종목 정보 데이터를 바탕으로 뉴스 크롤러에 의해 수집되었습니다.</p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <button 
-                                onClick={() => setSelectedNews(null)}
-                                style={{
-                                    padding: '10px 20px',
-                                    background: '#8b5cf6',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontWeight: '600',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                닫기
-                            </button>
+                        <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{
+                            background: '#ffffff',
+                            borderRadius: '16px',
+                            padding: '32px',
+                            maxWidth: '560px',
+                            width: '90%',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
+                                    {selectedNews.tag}
+                                </span>
+                                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                                    <Clock size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {selectedNews.date}
+                                </span>
+                            </div>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', lineHeight: '1.4' }}>
+                                {selectedNews.title}
+                            </h2>
+                            <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
+                                <p style={{ marginBottom: '12px', fontWeight: '500', color: '#334155' }}>
+                                    📌 <b>시장 속보 요약</b><br />
+                                    '{selectedNews.title}' 관련 실시간 시장 데이터 분석 결과입니다. 현재 <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{matchedKey}</span>을(를) 중심으로 투자자들의 거래 관심도와 매수/매도 수급이 집중되고 있습니다.
+                                </p>
+                                <p style={{ marginBottom: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
+                                    📊 <b>주가 및 투자 영향 분석</b><br />
+                                    해당 호재/악재 이슈는 {matchedKey}의 단기 주가 변동성 및 관련 업종 섹터 전반에 영향을 미칠 수 있습니다. 실시간 호가창 및 체결 내역을 주시하여 투자 전략을 점검하시기 바랍니다.
+                                </p>
+                                <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '16px' }}>
+                                    ※ 본 뉴스는 실시간 증시 시세 및 모의투자 시장 분석 시스템에 의해 자동으로 정제되어 출력된 뉴스 피드입니다.
+                                </p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <button 
+                                    onClick={() => setSelectedNews(null)}
+                                    style={{
+                                        padding: '10px 20px',
+                                        background: '#8b5cf6',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    닫기
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };

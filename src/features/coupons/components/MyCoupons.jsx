@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Ticket, Clock, CheckCircle } from 'lucide-react';
 import api from '../../../api/axios';
 import './MyCoupons.css';
 
 const MyCoupons = () => {
+    const navigate = useNavigate();
     const [myCoupons, setMyCoupons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -22,8 +24,33 @@ const MyCoupons = () => {
         fetchMyCoupons();
     }, []);
 
-    const handleUse = (coupon) => {
-        alert(`${coupon.coupon?.name || '쿠폰'}을(를) 사용 요청했습니다. (선생님 승인 대기)`);
+    const [isUsing, setIsUsing] = useState(false);
+
+    const handleUse = async (item) => {
+        const purchaseId = item.couponPurchaseId;
+        const name = item.name || item.coupon?.name || '쿠폰';
+
+        if (!purchaseId) {
+            alert('쿠폰 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+            return;
+        }
+
+        if (!window.confirm(`'${name}' 쿠폰을 지금 사용하시겠습니까?\n사용 후 취소는 불가능합니다.`)) {
+            return;
+        }
+
+        setIsUsing(true);
+        try {
+            await api.patch(`/coupons/${purchaseId}/use`);
+            alert(`'${name}' 쿠폰 사용이 완료되었습니다!`);
+            // 목록 새로고침
+            const response = await api.get('/coupons/my');
+            setMyCoupons(response.data.data || []);
+        } catch (err) {
+            alert(err.response?.data?.message || '쿠폰 사용 처리 중 오류가 발생했습니다.');
+        } finally {
+            setIsUsing(false);
+        }
     };
 
     if (isLoading) return <div className="my-coupons-container"><div className="loading-spinner"></div></div>;
@@ -31,9 +58,19 @@ const MyCoupons = () => {
 
     return (
         <div className="store-container">
-            <header className="page-header">
-                <h1 className="page-title">내 쿠폰함</h1>
-                <p className="page-subtitle">보유 중인 쿠폰을 확인하고 사용하세요.</p>
+            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                    <h1 className="page-title">내 쿠폰함</h1>
+                    <p className="page-subtitle">보유 중인 쿠폰을 확인하고 사용하세요.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="sub-tab-btn" style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'rgba(255,255,255,0.8)', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => navigate('/coupons')}>
+                        🛒 쿠폰 상점
+                    </button>
+                    <button className="sub-tab-btn active" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary, #6366f1)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
+                        🎫 내 쿠폰함
+                    </button>
+                </div>
             </header>
 
             <div className="coupon-grid">
@@ -68,10 +105,10 @@ const MyCoupons = () => {
                             </div>
                             <button 
                                 className="use-btn" 
-                                disabled={!isUnused}
+                                disabled={!isUnused || isUsing}
                                 onClick={() => handleUse(item)}
                             >
-                                {isUnused ? '사용하기' : (isWaiting ? '승인 대기' : '사용 완료')}
+                                {isUnused ? (isUsing ? '처리 중...' : '사용하기') : (isWaiting ? '승인 대기' : '사용 완료')}
                             </button>
                         </div>
                     );

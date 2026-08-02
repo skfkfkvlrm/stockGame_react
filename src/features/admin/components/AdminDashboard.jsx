@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import api from '../../../api/axios';
 import useMarketStore from '../store/useMarketStore';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState('students'); // 'students' | 'stocks' | 'coupons'
+    const location = useLocation();
+    const [activeTab, setActiveTab] = useState(location.state?.tab || 'students'); // 'students' | 'stocks' | 'coupons'
     const [students, setStudents] = useState([]);
     const [stocks, setStocks] = useState([]);
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (location.state?.tab) {
+            setActiveTab(location.state.tab);
+        }
+    }, [location.state]);
 
     const marketOpen = useMarketStore((state) => state.marketOpen);
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
@@ -76,6 +84,74 @@ const AdminDashboard = () => {
     const [stockModal, setStockModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', stock: st }
     const [stockForm, setStockForm] = useState({ name: '', content: '', publicationPrice: '', publicationBalance: '' });
 
+    const [couponModal, setCouponModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', coupon: c }
+    const [couponForm, setCouponForm] = useState({ name: '', price: '', status: 'ON_SALE' });
+
+    const handleOpenCouponModal = (coupon = null) => {
+        if (coupon) {
+            setCouponModal({ mode: 'edit', coupon });
+            setCouponForm({
+                name: coupon.name || '',
+                price: coupon.price || '',
+                status: coupon.status || 'ON_SALE'
+            });
+        } else {
+            setCouponModal({ mode: 'create' });
+            setCouponForm({ name: '', price: '', status: 'ON_SALE' });
+        }
+    };
+
+    const handleSaveCoupon = async (e) => {
+        e.preventDefault();
+        if (!couponForm.name || !couponForm.price) {
+            alert('모든 필드를 입력해 주세요.');
+            return;
+        }
+
+        if (Number(couponForm.price) <= 0) {
+            alert('쿠폰 판매 가격은 1P 이상이어야 합니다.');
+            return;
+        }
+
+        try {
+            if (couponModal.mode === 'create') {
+                await api.post('/admin/coupons', {
+                    name: couponForm.name,
+                    price: Number(couponForm.price),
+                    status: couponForm.status
+                });
+                alert('신규 쿠폰 상품이 성공적으로 등록되었습니다!');
+            } else {
+                const targetId = couponModal.coupon.couponId || couponModal.coupon.id;
+                await api.put(`/admin/coupons/${targetId}`, {
+                    name: couponForm.name,
+                    price: Number(couponForm.price),
+                    status: couponForm.status
+                });
+                alert('쿠폰 상품 정보가 성공적으로 수정되었습니다!');
+            }
+            setCouponModal(null);
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || '쿠폰 정보 저장 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleDeleteCoupon = async (coupon) => {
+        const targetId = coupon.couponId || coupon.id;
+        if (!window.confirm(`정말로 '${coupon.name}' 쿠폰 상품을 삭제하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            await api.delete(`/admin/coupons/${targetId}`);
+            alert(`'${coupon.name}' 쿠폰 상품이 삭제되었습니다.`);
+            fetchData();
+        } catch (err) {
+            alert('쿠폰 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
     const handleOpenStockModal = (stock = null) => {
         if (stock) {
             setStockModal({ mode: 'edit', stock });
@@ -83,11 +159,12 @@ const AdminDashboard = () => {
                 name: stock.name || '',
                 content: stock.content || '',
                 publicationPrice: stock.publicationPrice || '',
-                publicationBalance: stock.publicationBalance || ''
+                publicationBalance: stock.publicationBalance || '',
+                status: stock.status || 'LISTED'
             });
         } else {
             setStockModal({ mode: 'create' });
-            setStockForm({ name: '', content: '', publicationPrice: '', publicationBalance: '' });
+            setStockForm({ name: '', content: '', publicationPrice: '', publicationBalance: '', status: 'LISTED' });
         }
     };
 
@@ -104,15 +181,18 @@ const AdminDashboard = () => {
                     name: stockForm.name,
                     content: stockForm.content,
                     publicationPrice: Number(stockForm.publicationPrice),
-                    publicationBalance: Number(stockForm.publicationBalance)
+                    publicationBalance: Number(stockForm.publicationBalance),
+                    status: stockForm.status
                 });
                 alert('신규 주식 종목이 성공적으로 상장되었습니다!');
             } else {
-                await api.put(`/admin/stocks/${stockModal.stock.stockId}`, {
+                const targetId = stockModal.stock.stockId || stockModal.stock.id;
+                await api.put(`/admin/stocks/${targetId}`, {
                     name: stockForm.name,
                     content: stockForm.content,
                     publicationPrice: Number(stockForm.publicationPrice),
-                    publicationBalance: Number(stockForm.publicationBalance)
+                    publicationBalance: Number(stockForm.publicationBalance),
+                    status: stockForm.status
                 });
                 alert('주식 종목 정보가 성공적으로 수정되었습니다!');
             }
@@ -365,9 +445,19 @@ const AdminDashboard = () => {
                                                 <td className="font-bold">{st.publicationPrice ? st.publicationPrice.toLocaleString() : 0} 원</td>
                                                 <td className="font-bold text-highlight">{st.publicationBalance ? st.publicationBalance.toLocaleString() : 0} 주</td>
                                                 <td>
-                                                    <span className="badge badge-success">
-                                                        <CheckCircle2 size={14} /> 발행 중
-                                                    </span>
+                                                    {st.status === 'SUSPENDED' ? (
+                                                        <span className="badge badge-warning" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#f59e0b', color: '#ffffff' }}>
+                                                            🟡 거래 정지
+                                                        </span>
+                                                    ) : st.status === 'DELISTED' ? (
+                                                        <span className="badge badge-danger" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#ef4444', color: '#ffffff' }}>
+                                                            🔴 상장 폐지
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge badge-success" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#10b981', color: '#ffffff' }}>
+                                                            🟢 정상 거래 중
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -402,6 +492,20 @@ const AdminDashboard = () => {
             {/* Tab 3: Coupons Management */}
             {activeTab === 'coupons' && (
                 <div className="tab-content">
+                    <div className="table-header-bar glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>🎫 등록된 쿠폰 상품 목록</h3>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>학생 상점에서 구매 가능한 쿠폰 상품을 관리합니다.</p>
+                        </div>
+                        <button 
+                            className="refresh-btn" 
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none' }}
+                            onClick={() => handleOpenCouponModal()}
+                        >
+                            <Plus size={16} /> 신규 쿠폰 등록
+                        </button>
+                    </div>
+
                     <div className="table-container glass-panel">
                         {loading ? (
                             <div className="loading-box"><div className="loading-spinner"></div></div>
@@ -413,6 +517,7 @@ const AdminDashboard = () => {
                                         <th>쿠폰 상품명</th>
                                         <th>판매 가격</th>
                                         <th>발행 상태</th>
+                                        <th>관리 액션</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -423,15 +528,41 @@ const AdminDashboard = () => {
                                                 <td className="font-bold">{c.name}</td>
                                                 <td className="font-bold text-accent">{c.price ? c.price.toLocaleString() : 0} P</td>
                                                 <td>
-                                                    <span className="badge badge-info" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                                                        🟢 정상 판매 중
-                                                    </span>
+                                                    {c.status === 'PAUSED' ? (
+                                                        <span className="badge badge-warning" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#f59e0b', color: '#ffffff' }}>
+                                                            🟡 판매 일시중지
+                                                        </span>
+                                                    ) : c.status === 'SOLD_OUT' ? (
+                                                        <span className="badge badge-danger" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#ef4444', color: '#ffffff' }}>
+                                                            🔴 품절 / 마감
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge badge-info" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#10b981', color: '#ffffff' }}>
+                                                            🟢 정상 판매 중
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button 
+                                                            style={{ padding: '6px 12px', background: '#64748b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                                            onClick={() => handleOpenCouponModal(c)}
+                                                        >
+                                                            ✏️ 수정
+                                                        </button>
+                                                        <button 
+                                                            style={{ padding: '6px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                                            onClick={() => handleDeleteCoupon(c)}
+                                                        >
+                                                            🗑️ 삭제
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="4" className="empty-row">등록된 쿠폰 상품이 없습니다.</td>
+                                            <td colSpan="5" className="empty-row">등록된 쿠폰 상품이 없습니다.</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -640,7 +771,7 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '24px' }}>
+                            <div style={{ marginBottom: '14px' }}>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>현재/최초 발행 잔량 (주)</label>
                                 <input 
                                     type="number" 
@@ -652,6 +783,19 @@ const AdminDashboard = () => {
                                     style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
                                     required
                                 />
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>발행 / 거래 상태</label>
+                                <select 
+                                    value={stockForm.status}
+                                    onChange={(e) => setStockForm({ ...stockForm, status: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', background: '#ffffff' }}
+                                >
+                                    <option value="LISTED">🟢 정상 거래 중</option>
+                                    <option value="SUSPENDED">🟡 거래 정지</option>
+                                    <option value="DELISTED">🔴 상장 폐지</option>
+                                </select>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -667,6 +811,79 @@ const AdminDashboard = () => {
                                     style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer' }}
                                 >
                                     {stockModal.mode === 'create' ? '상장하기' : '수정하기'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 4. Coupon Create / Edit Modal */}
+            {couponModal && (
+                <div className="modal-overlay" onClick={() => setCouponModal(null)} style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{
+                        background: '#ffffff', borderRadius: '16px', padding: '32px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)'
+                    }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>
+                            {couponModal.mode === 'create' ? '🎫 신규 쿠폰 상품 등록' : '✏️ 쿠폰 상품 정보 수정'}
+                        </h2>
+
+                        <form onSubmit={handleSaveCoupon}>
+                            <div style={{ marginBottom: '14px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>쿠폰 상품명</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="예: 청소당번 면제, 자리 뺏기" 
+                                    value={couponForm.name}
+                                    onChange={(e) => setCouponForm({ ...couponForm, name: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '14px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>판매 가격 (P)</label>
+                                <input 
+                                    type="number" 
+                                    min="1"
+                                    placeholder="예: 3000" 
+                                    value={couponForm.price}
+                                    onChange={(e) => setCouponForm({ ...couponForm, price: e.target.value < 0 ? '' : e.target.value })}
+                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>발행 / 판매 상태</label>
+                                <select 
+                                    value={couponForm.status}
+                                    onChange={(e) => setCouponForm({ ...couponForm, status: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', background: '#ffffff' }}
+                                >
+                                    <option value="ON_SALE">🟢 정상 판매 중</option>
+                                    <option value="PAUSED">🟡 판매 일시중지</option>
+                                    <option value="SOLD_OUT">🔴 품절 / 마감</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setCouponModal(null)}
+                                    style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    취소
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    {couponModal.mode === 'create' ? '등록 완료' : '수정 완료'}
                                 </button>
                             </div>
                         </form>

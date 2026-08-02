@@ -223,15 +223,26 @@ const StockDetail = () => {
                 <div className="chart-section">
                     <div className="glass-panel stock-header">
                         <div className="stock-title">
-                            <h1>{stockInfo.stockName}</h1>
-                            <span className="stock-code">{stockInfo.content}</span>
-                            <div className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}>
-                                {wsStatus === ConnectionStatus.CONNECTED && '🟢 실시간 시세 연결됨'}
-                                {wsStatus === ConnectionStatus.CONNECTING && '🟡 연결 중...'}
-                                {wsStatus === ConnectionStatus.RECONNECTING && `🟡 재연결 중... (${retryCount}/5)`}
-                                {wsStatus === ConnectionStatus.FAILED && '🔴 실시간 연결 실패 (새로고침 필요)'}
-                                {wsStatus === ConnectionStatus.DISCONNECTED && '⚪ 연결 종료'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <h1>{stockInfo.stockName}</h1>
+                                <div className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}>
+                                    {wsStatus === ConnectionStatus.CONNECTED && '🟢 실시간 시세 연결됨'}
+                                    {wsStatus === ConnectionStatus.CONNECTING && '🟡 연결 중...'}
+                                    {wsStatus === ConnectionStatus.RECONNECTING && `🟡 재연결 중... (${retryCount}/5)`}
+                                    {wsStatus === ConnectionStatus.FAILED && '🔴 실시간 연결 실패 (새로고침 필요)'}
+                                    {wsStatus === ConnectionStatus.DISCONNECTED && '⚪ 연결 종료'}
+                                </div>
                             </div>
+                            {stockInfo.content && (
+                                <p className="stock-description" style={{
+                                    margin: '4px 0 0 0',
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.95rem',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {stockInfo.content}
+                                </p>
+                            )}
                         </div>
                         <div className="stock-price-info">
                             <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
@@ -349,12 +360,32 @@ const StockDetail = () => {
                             </div>
                         </div>
 
+                        {stockInfo.status && stockInfo.status !== 'LISTED' && (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                fontWeight: 'bold',
+                                fontSize: '0.9rem',
+                                textAlign: 'center',
+                                background: stockInfo.status === 'SUSPENDED' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                color: stockInfo.status === 'SUSPENDED' ? '#d97706' : '#dc2626',
+                                border: stockInfo.status === 'SUSPENDED' ? '1px solid #f59e0b' : '1px solid #ef4444'
+                            }}>
+                                {stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.'}
+                            </div>
+                        )}
+
                         <button 
                             className={`submit-trade-btn ${tradeType.toLowerCase()}`}
                             onClick={handleTrade}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || (stockInfo.status && stockInfo.status !== 'LISTED')}
+                            style={{
+                                opacity: (stockInfo.status && stockInfo.status !== 'LISTED') ? 0.5 : 1,
+                                cursor: (stockInfo.status && stockInfo.status !== 'LISTED') ? 'not-allowed' : 'pointer'
+                            }}
                         >
-                            {isSubmitting ? '처리 중...' : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')}
+                            {isSubmitting ? '처리 중...' : (stockInfo.status && stockInfo.status !== 'LISTED') ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')}
                         </button>
                     </div>
                 </div>

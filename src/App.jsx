@@ -11,6 +11,7 @@ import PointsHistory from './features/points/components/PointsHistory';
 import CouponStore from './features/coupons/components/CouponStore';
 import MyCoupons from './features/coupons/components/MyCoupons';
 import AdminDashboard from './features/admin/components/AdminDashboard';
+import RequireAdmin from './features/auth/components/RequireAdmin';
 import RankingList from './features/ranking/components/RankingList';
 import useAuthStore from './features/auth/store/useAuthStore';
 import { useEffect } from 'react';
@@ -54,7 +55,7 @@ function App() {
             <Route path="points" element={<PointsHistory />} />
             <Route path="coupons" element={<CouponStore />} />
             <Route path="my-coupons" element={<MyCoupons />} />
-            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -7,14 +7,21 @@ import './StockList.css';
 const StockList = () => {
     const navigate = useNavigate();
     const [stocks, setStocks] = useState([]);
+    const [marketIndices, setMarketIndices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchStocks = async () => {
             try {
-                const response = await api.get('/stock');
-                setStocks(response.data.data);
+                const [stocksRes, indicesRes] = await Promise.all([
+                    api.get('/stock'),
+                    api.get('/stock/market-index').catch(() => ({ data: { data: [] } }))
+                ]);
+                setStocks(stocksRes.data.data);
+                if (indicesRes.data && Array.isArray(indicesRes.data.data)) {
+                    setMarketIndices(indicesRes.data.data);
+                }
             } catch (err) {
                 setError('주식 목록을 불러오는 데 실패했습니다.');
             } finally {
@@ -27,6 +34,12 @@ const StockList = () => {
     if (isLoading) return <div className="stock-list-container"><div className="loading-spinner">로딩 중...</div></div>;
     if (error) return <div className="stock-list-container"><div className="error-msg">{error}</div></div>;
 
+    const defaultIndices = [
+        { name: 'KOSPI', value: 2750.24, change: 12.45, changeRate: 0.45 },
+        { name: 'KOSDAQ', value: 845.12, change: -3.20, changeRate: -0.38 }
+    ];
+    const displayIndices = marketIndices.length > 0 ? marketIndices : defaultIndices;
+
     return (
         <div className="stock-list-container">
             <header className="page-header">
@@ -35,22 +48,26 @@ const StockList = () => {
             </header>
 
             <div className="market-overview">
-                <div className="glass-panel overview-card">
-                    <div className="overview-header">
-                        <h3>KOSPI</h3>
-                        <TrendingUp size={20} className="profit-up" />
-                    </div>
-                    <div className="index-value profit-up">2,750.24</div>
-                    <div className="index-change profit-up">+12.45 (+0.45%)</div>
-                </div>
-                <div className="glass-panel overview-card">
-                    <div className="overview-header">
-                        <h3>KOSDAQ</h3>
-                        <TrendingDown size={20} className="profit-down" />
-                    </div>
-                    <div className="index-value profit-down">845.12</div>
-                    <div className="index-change profit-down">-3.20 (-0.38%)</div>
-                </div>
+                {displayIndices.map((idxItem, i) => {
+                    const isUp = idxItem.change >= 0;
+                    const colorClass = isUp ? 'profit-up' : 'profit-down';
+                    const sign = isUp ? '+' : '';
+
+                    return (
+                        <div key={idxItem.name || i} className="glass-panel overview-card">
+                            <div className="overview-header">
+                                <h3>{idxItem.name}</h3>
+                                {isUp ? <TrendingUp size={20} className={colorClass} /> : <TrendingDown size={20} className={colorClass} />}
+                            </div>
+                            <div className={`index-value ${colorClass}`}>
+                                {idxItem.value ? idxItem.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                            </div>
+                            <div className={`index-change ${colorClass}`}>
+                                {sign}{idxItem.change ? idxItem.change.toFixed(2) : '0.00'} ({sign}{idxItem.changeRate ? idxItem.changeRate.toFixed(2) : '0.00'}%)
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             <div className="stock-table-wrapper glass-panel">
@@ -88,7 +105,7 @@ const StockList = () => {
                                             <div className="stock-icon-small">{name.charAt(0)}</div>
                                             <div className="stock-name-wrapper">
                                                 <span className="stock-name">{name}</span>
-                                                <span className="stock-code">{code}</span>
+                                                <span className="stock-code">{stock.content || `코드 ${code}`}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -96,7 +113,7 @@ const StockList = () => {
                                     <td className={colorClass}>
                                         {sign}{change.toLocaleString()}
                                     </td>
-                                    <td className={colorClass}>
+                                    <td>
                                         <div className="flex-right">
                                             {isUp ? <TrendingUp size={14} /> : isDown ? <TrendingDown size={14} /> : ''}
                                             {sign}{changeRate.toFixed(2)}%
@@ -104,15 +121,25 @@ const StockList = () => {
                                     </td>
                                     <td>{volume.toLocaleString()}</td>
                                     <td>
-                                        <button 
-                                            className="trade-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/stocks/${stockId}`);
-                                            }}
-                                        >
-                                            매매 <ArrowRight size={14} />
-                                        </button>
+                                        {stock.status === 'SUSPENDED' ? (
+                                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', background: '#f59e0b', color: '#ffffff' }}>
+                                                🟡 거래 정지
+                                            </span>
+                                        ) : stock.status === 'DELISTED' ? (
+                                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', background: '#ef4444', color: '#ffffff' }}>
+                                                🔴 상장 폐지
+                                            </span>
+                                        ) : (
+                                            <button 
+                                                className="trade-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/stocks/${stockId}`);
+                                                }}
+                                            >
+                                                주식 거래
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             );
