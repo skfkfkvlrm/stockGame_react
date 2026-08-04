@@ -20,6 +20,16 @@ const StockDetail = () => {
     const [myStockAmount, setMyStockAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Toast notification
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const toastTimerRef = useRef(null);
+
+    const showToast = (message, type = 'success') => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        setToast({ show: true, message, type });
+        toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, show: false })), 3500);
+    };
     
     // Trading state
     const [tradeType, setTradeType] = useState('BUY'); // BUY or SELL
@@ -107,7 +117,7 @@ const StockDetail = () => {
 
     // Resilience STOMP Hook
     const { status: wsStatus, retryCount } = useStompResilience({
-        url: 'http://localhost:8882/ws',
+        url: 'http://localhost:8082/ws',
         subscriptions: [
             {
                 topic: `/topic/orders/${stockId}`,
@@ -147,51 +157,54 @@ const StockDetail = () => {
         const qty = quantity || 0;
         const prc = price || 0;
         if (qty <= 0 || prc <= 0) {
-            alert('올바른 가격과 수량을 입력해주세요.');
+            showToast('올바른 가격과 수량을 입력해주세요.', 'error');
             return;
         }
         
         const totalAmount = prc * qty;
         
         if (tradeType === 'BUY' && totalAmount > (user?.totalPoint ?? user?.point ?? 0)) {
-            alert('주문 가능 포인트를 초과했습니다.');
+            showToast('주문 가능 포인트를 초과했습니다.', 'error');
             return;
         }
         
         if (tradeType === 'SELL' && qty > myStockAmount) {
-            alert(`보유 주식 수량(${myStockAmount}주)을 초과하여 매도할 수 없습니다.`);
+            showToast(`보유 주식 수량(${myStockAmount}주)을 초과하여 매도할 수 없습니다.`, 'error');
             return;
         }
         
         setIsSubmitting(true);
         try {
             const endpoint = tradeType === 'BUY' ? '/orders/buy' : '/orders/sell';
-            const response = await api.post(endpoint, {
+            await api.post(endpoint, {
                 stockId: parseInt(stockId),
                 amount: qty,
                 quantity: qty,
                 price: prc
             });
-            alert(response.data?.data || '주문이 접수되었습니다.');
+            setIsSubmitting(false);
+            const successMsg = tradeType === 'BUY' ? '매수 주문이 접수되었습니다.' : '매도 주문이 접수되었습니다.';
+            showToast(successMsg, 'success');
             setQuantity(1);
             fetchAllData();
             checkAuthStatus();
         } catch (err) {
-            alert(err.response?.data?.message || '주문 처리에 실패했습니다.');
-        } finally {
             setIsSubmitting(false);
+            const errMsg = err.response?.data?.message || '주문 처리에 실패했습니다.';
+            showToast(errMsg, 'error');
         }
     };
 
     const handleCancelOrder = async (orderId) => {
         if (!window.confirm('선택한 예약 주문을 정말 취소하시겠습니까?')) return;
         try {
-            const response = await api.post(`/orders/cancel?orderId=${orderId}&stockId=${stockId}`);
-            alert(response.data?.data || '주문이 취소되었습니다.');
+            await api.post(`/orders/cancel?orderId=${orderId}&stockId=${stockId}`);
+            showToast('주문이 취소되었습니다.', 'success');
             fetchAllData();
             checkAuthStatus();
         } catch (err) {
-            alert(err.response?.data?.message || '주문 취소 처리에 실패했습니다.');
+            const errMsg = err.response?.data?.message || '주문 취소 처리에 실패했습니다.';
+            showToast(errMsg, 'error');
         }
     };
 
@@ -214,6 +227,14 @@ const StockDetail = () => {
 
     return (
         <div className="stock-detail-container">
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className={`trade-toast trade-toast--${toast.type}`}>
+                    <span>{toast.message}</span>
+                    <button className="trade-toast__close" onClick={() => setToast(t => ({ ...t, show: false }))}>✕</button>
+                </div>
+            )}
+
             <button className="back-btn" onClick={() => navigate(-1)}>
                 <ArrowLeft size={18} /> 뒤로 가기
             </button>
@@ -299,12 +320,14 @@ const StockDetail = () => {
                 <div className="glass-panel trading-panel">
                     <div className="trade-tabs">
                         <button 
+                            type="button"
                             className={`trade-tab ${tradeType === 'BUY' ? 'active buy' : ''}`}
                             onClick={() => setTradeType('BUY')}
                         >
                             매수
                         </button>
                         <button 
+                            type="button"
                             className={`trade-tab ${tradeType === 'SELL' ? 'active sell' : ''}`}
                             onClick={() => setTradeType('SELL')}
                         >
@@ -377,6 +400,7 @@ const StockDetail = () => {
                         )}
 
                         <button 
+                            type="button"
                             className={`submit-trade-btn ${tradeType.toLowerCase()}`}
                             onClick={handleTrade}
                             disabled={isSubmitting || (stockInfo.status && stockInfo.status !== 'LISTED')}

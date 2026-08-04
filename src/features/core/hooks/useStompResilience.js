@@ -11,7 +11,7 @@ export const ConnectionStatus = {
 };
 
 export const useStompResilience = ({
-    url = 'http://localhost:8882/ws',
+    url = 'http://localhost:8082/ws',
     subscriptions = [],
     maxReconnectAttempts = 5,
     initialDelay = 1000,
