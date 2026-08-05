@@ -159,7 +159,7 @@ const AdminDashboard = () => {
                 name: stock.stockName || stock.name || '',
                 content: stock.content || '',
                 publicationPrice: stock.pubPrice || stock.publicationPrice || '',
-                publicationBalance: stock.pubAmount || stock.publicationBalance || '',
+                publicationBalance: (stock.pubAmount !== undefined && stock.pubAmount !== null) ? stock.pubAmount : (stock.publicationBalance !== undefined && stock.publicationBalance !== null ? stock.publicationBalance : ''),
                 status: stock.status || 'LISTED'
             });
         } else {
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
 
     const handleSaveStock = async (e) => {
         e.preventDefault();
-        if (!stockForm.name || !stockForm.publicationPrice || !stockForm.publicationBalance) {
+        if (!stockForm.name || stockForm.publicationPrice === '' || stockForm.publicationBalance === '') {
             alert('모든 필드를 입력해 주세요.');
             return;
         }
