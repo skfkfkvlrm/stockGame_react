@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
@@ -223,7 +223,8 @@ const StockDetail = () => {
         1
     );
 
-    const myOrderPrices = myOrders.map(o => o.price);
+    const mySellPrices = myOrders.filter(o => o.content === 'SELL' || o.content === '매도').map(o => o.price);
+    const myBuyPrices = myOrders.filter(o => o.content === 'BUY' || o.content === '매수').map(o => o.price);
 
     return (
         <div className="stock-detail-container">
@@ -284,7 +285,7 @@ const StockDetail = () => {
                     <div className="orderbook-container">
                         {/* Sell Orders (Descending) */}
                         {orderbook.sell.map((order, idx) => {
-                            const isMyOrder = myOrderPrices.includes(order.price);
+                            const isMyOrder = mySellPrices.includes(order.price);
                             return (
                                 <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
                                     <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
@@ -301,7 +302,7 @@ const StockDetail = () => {
 
                         {/* Buy Orders (Descending) */}
                         {orderbook.buy.map((order, idx) => {
-                            const isMyOrder = myOrderPrices.includes(order.price);
+                            const isMyOrder = myBuyPrices.includes(order.price);
                             return (
                                 <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
                                     <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
@@ -486,3 +487,6 @@ const StockDetail = () => {
 };
 
 export default StockDetail;
+
+
+
