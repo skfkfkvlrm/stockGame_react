@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import api from '../../../api/axios';
@@ -43,9 +43,9 @@ const AdminDashboard = () => {
         setError(null);
         try {
             const [studentsRes, stocksRes, couponsRes] = await Promise.all([
-                api.get('/admin/students').catch(() => ({ data: { data: [] } })),
-                api.get('/admin/stocks').catch(() => ({ data: { data: [] } })),
-                api.get('/admin/coupons').catch(() => ({ data: { data: [] } }))
+                api.get('/admin/students').catch(() => api.get('/members/ranking')),
+                api.get('/admin/stocks').catch(() => api.get('/stock')),
+                api.get('/admin/coupons').catch(() => api.get('/coupons'))
             ]);
 
             setStudents(studentsRes.data?.data || []);
@@ -895,3 +895,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
