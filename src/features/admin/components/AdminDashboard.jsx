@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import api from '../../../api/axios';
@@ -668,7 +668,7 @@ const AdminDashboard = () => {
                             📊 {selectedStudent.name} 학생 상세 포트폴리오
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '20px' }}>
-                            학번: {selectedStudent.studentId} | {selectedStudent.grade}학년 {selectedStudent.className && selectedStudent.className.includes('반') ? selectedStudent.className : ${selectedStudent.className || ''}반} {selectedStudent.classNumber}번
+                            학번: {selectedStudent.studentId} | {selectedStudent.grade}학년 {selectedStudent.className && selectedStudent.className.includes('반') ? selectedStudent.className : `${selectedStudent.className || ''}반`} {selectedStudent.classNumber}번
                         </p>
 
                         {detailLoading ? (
