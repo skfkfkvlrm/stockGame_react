@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import api from '../../../api/axios';
@@ -156,10 +156,10 @@ const AdminDashboard = () => {
         if (stock) {
             setStockModal({ mode: 'edit', stock });
             setStockForm({
-                name: stock.name || '',
+                name: stock.stockName || stock.name || '',
                 content: stock.content || '',
-                publicationPrice: stock.publicationPrice || '',
-                publicationBalance: stock.publicationBalance || '',
+                publicationPrice: stock.pubPrice || stock.publicationPrice || '',
+                publicationBalance: stock.pubAmount || stock.publicationBalance || '',
                 status: stock.status || 'LISTED'
             });
         } else {
@@ -440,10 +440,10 @@ const AdminDashboard = () => {
                                         stocks.map((st) => (
                                             <tr key={st.stockId}>
                                                 <td>#{st.stockId}</td>
-                                                <td className="font-bold">{st.name}</td>
+                                                 <td className="font-bold">{st.stockName || st.name}</td>
                                                 <td>{st.content}</td>
-                                                <td className="font-bold">{st.publicationPrice ? st.publicationPrice.toLocaleString() : 0} 원</td>
-                                                <td className="font-bold text-highlight">{st.publicationBalance ? st.publicationBalance.toLocaleString() : 0} 주</td>
+                                                 <td className="font-bold">{(st.pubPrice ?? st.publicationPrice ?? 0).toLocaleString()} 원</td>
+                                                 <td className="font-bold text-highlight">{(st.pubAmount ?? st.publicationBalance ?? 0).toLocaleString()} 주</td>
                                                 <td>
                                                     {st.status === 'SUSPENDED' ? (
                                                         <span className="badge badge-warning" style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', background: '#f59e0b', color: '#ffffff' }}>
