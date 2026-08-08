@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Users, TrendingUp, Store, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import api from '../../../api/axios';
@@ -115,7 +115,7 @@ const AdminDashboard = () => {
 
         try {
             if (couponModal.mode === 'create') {
-                await api.post('/admin/coupons', {
+                await api.post('/coupons/admin/coupons', {
                     name: couponForm.name,
                     price: Number(couponForm.price),
                     status: couponForm.status
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
                 alert('신규 쿠폰 상품이 성공적으로 등록되었습니다!');
             } else {
                 const targetId = couponModal.coupon.couponId || couponModal.coupon.id;
-                await api.put(`/admin/coupons/${targetId}`, {
+                await api.put("/coupons/admin/coupons/" + targetId, {
                     name: couponForm.name,
                     price: Number(couponForm.price),
                     status: couponForm.status
@@ -144,7 +144,7 @@ const AdminDashboard = () => {
         }
 
         try {
-            await api.delete(`/admin/coupons/${targetId}`);
+            await api.delete("/coupons/admin/coupons/" + targetId);
             alert(`'${coupon.name}' 쿠폰 상품이 삭제되었습니다.`);
             fetchData();
         } catch (err) {
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
 
         try {
             if (stockModal.mode === 'create') {
-                await api.post('/admin/stocks', {
+                await api.post('/stock/admin/stocks', {
                     name: stockForm.name,
                     content: stockForm.content,
                     publicationPrice: Number(stockForm.publicationPrice),
@@ -187,7 +187,7 @@ const AdminDashboard = () => {
                 alert('신규 주식 종목이 성공적으로 상장되었습니다!');
             } else {
                 const targetId = stockModal.stock.stockId || stockModal.stock.id;
-                await api.put(`/admin/stocks/${targetId}`, {
+                await api.put("/stock/admin/stocks/" + targetId, {
                     name: stockForm.name,
                     content: stockForm.content,
                     publicationPrice: Number(stockForm.publicationPrice),
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
         }
 
         try {
-            await api.delete(`/admin/stocks/${stock.stockId}`);
+            await api.delete("/stock/admin/stocks/" + (stock.stockId || stock.id));
             alert(`'${stock.name}' 종목이 상장폐지(삭제)되었습니다.`);
             fetchData();
         } catch (err) {
@@ -235,7 +235,7 @@ const AdminDashboard = () => {
         setIsSubmitting(true);
 
         try {
-            await api.post(`/admin/students/${pointModalStudent.studentId}/point`, {
+            await api.post("/members/admin/students/" + pointModalStudent.studentId + "/point", {
                 amount: finalAmount,
                 reason: pointReason
             });
@@ -253,8 +253,8 @@ const AdminDashboard = () => {
         setSelectedStudent(student);
         setDetailLoading(true);
         try {
-            const res = await api.get(`/admin/students/${student.studentId}/detail`);
-            setStudentDetailData(res.data?.data?.dashboard || null);
+            const res = await api.get(`/asset/admin/students/${student.studentId}/detail`);
+            setStudentDetailData(res.data?.data || null);
         } catch (err) {
             console.error('Failed to fetch student detail:', err);
         } finally {
