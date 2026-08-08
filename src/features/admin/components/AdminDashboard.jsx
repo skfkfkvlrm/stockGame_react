@@ -121,6 +121,26 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleDeleteStudent = async (student) => {
+        const studentName = student.name || '학생';
+        const targetId = student.studentId || student.id;
+        if (!window.confirm(`정말로 '${studentName}' (${targetId}) 학생 계정을 삭제하시겠습니까?\n삭제된 계정 정보는 복구할 수 없습니다.`)) {
+            return;
+        }
+
+        try {
+            const res = await api.delete(`/members/admin/students/${targetId}`);
+            if (res.data && res.data.success) {
+                alert(`'${studentName}' 학생 계정이 삭제되었습니다.`);
+                fetchData();
+            } else {
+                alert(res.data?.message || '학생 계정 삭제 실패');
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || '학생 계정 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
     const [couponModal, setCouponModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', coupon: c }
     const [couponForm, setCouponForm] = useState({ name: '', price: '', status: 'ON_SALE' });
 
@@ -436,6 +456,12 @@ const AdminDashboard = () => {
                                                             onClick={() => handleOpenDetailModal(s)}
                                                         >
                                                             상세보기
+                                                        </button>
+                                                        <button 
+                                                            style={{ padding: '6px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                                            onClick={() => handleDeleteStudent(s)}
+                                                        >
+                                                            삭제
                                                         </button>
                                                     </div>
                                                 </td>
