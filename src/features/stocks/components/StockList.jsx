@@ -67,8 +67,8 @@ const StockList = () => {
         result.sort((a, b) => {
             const priceA = a.nowPrice ?? a.price ?? 0;
             const priceB = b.nowPrice ?? b.price ?? 0;
-            const volA = a.pubAmount ?? a.volume ?? 0;
-            const volB = b.pubAmount ?? b.volume ?? 0;
+            const volA = a.tradeVolume ?? a.volume ?? 0;
+            const volB = b.tradeVolume ?? b.volume ?? 0;
 
             if (sortOption === 'ASC') {
                 return priceA - priceB;
@@ -157,7 +157,7 @@ const StockList = () => {
                             className={`sort-btn ${sortOption === 'VOLUME' ? 'active' : ''}`}
                             onClick={() => setSortOption('VOLUME')}
                         >
-                            <BarChart2 size={16} /> 거래량 (발행량)순
+                            <BarChart2 size={16} /> 거래량 (유저간 체결)순
                         </button>
                     </div>
                 </div>
@@ -172,14 +172,15 @@ const StockList = () => {
                             <th>현재가</th>
                             <th>전일대비</th>
                             <th>등락률</th>
-                            <th>거래량 (발행량)</th>
+                            <th>발행 잔량</th>
+                            <th>거래량 (체결)</th>
                             <th>액션</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredAndSortedStocks.length === 0 ? (
                             <tr>
-                                <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                                <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                                     해당 조건에 일치하는 주식 종목이 없습니다.
                                 </td>
                             </tr>
@@ -191,7 +192,8 @@ const StockList = () => {
                                 const prevPrice = stock.prevPrice ?? price;
                                 const change = price - prevPrice;
                                 const changeRate = prevPrice > 0 ? ((change / prevPrice) * 100) : 0;
-                                const volume = stock.pubAmount ?? stock.volume ?? 0;
+                                const pubAmount = stock.pubAmount ?? 0;
+                                const tradeVolume = stock.tradeVolume ?? stock.volume ?? 0;
                                 const stockId = stock.stockId || stock.id;
                                 const sector = stock.sector || '기타';
 
@@ -224,7 +226,10 @@ const StockList = () => {
                                                 {sign}{changeRate.toFixed(2)}%
                                             </div>
                                         </td>
-                                        <td>{volume.toLocaleString()}</td>
+                                        <td>{pubAmount.toLocaleString()}주</td>
+                                        <td style={{ fontWeight: '700', color: tradeVolume > 0 ? '#3b82f6' : 'var(--text-muted)' }}>
+                                            {tradeVolume.toLocaleString()}주
+                                        </td>
                                         <td>
                                             {stock.status === 'SUSPENDED' ? (
                                                 <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', background: '#f59e0b', color: '#ffffff' }}>
