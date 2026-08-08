@@ -28,8 +28,35 @@ const StockList = () => {
     const [marketIndices, setMarketIndices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [selectedSector, setSelectedSector] = useState('전체');
+    const ALL_SECTORS = ['간식/매점', '학교생활/쿠폰', '게임/여가', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'];
+    const [selectedSectors, setSelectedSectors] = useState(['전체']);
     const [sortOption, setSortOption] = useState('NONE'); // 'ASC', 'DESC', 'VOLUME', 'NONE'
+
+    const handleSectorClick = (sector) => {
+        if (sector === '전체') {
+            setSelectedSectors(['전체']);
+            return;
+        }
+
+        let newSelected;
+        if (selectedSectors.includes('전체')) {
+            // '전체'가 선택되어 있던 경우 특정 분야 클릭 시 해당 분야만 새로 선택
+            newSelected = [sector];
+        } else if (selectedSectors.includes(sector)) {
+            // 이미 선택되어 있던 분야 클릭 시 해제
+            newSelected = selectedSectors.filter(s => s !== sector);
+        } else {
+            // 선택되지 않았던 분야 추가 선택
+            newSelected = [...selectedSectors, sector];
+        }
+
+        // 선택된 개수가 0개이거나 7개 전 분야가 선택되었으면 자동으로 '전체'로 수렴
+        if (newSelected.length === 0 || ALL_SECTORS.every(sec => newSelected.includes(sec))) {
+            setSelectedSectors(['전체']);
+        } else {
+            setSelectedSectors(newSelected);
+        }
+    };
 
     useEffect(() => {
         const fetchStocks = async () => {
@@ -58,9 +85,9 @@ const StockList = () => {
             return { ...stock, sector };
         });
 
-        // 1. 분야 필터링
-        if (selectedSector !== '전체') {
-            result = result.filter(s => s.sector === selectedSector);
+        // 1. 분야 중복 필터링 ('전체'가 포함되지 않은 경우 선택된 분야 배열 포함 여부 확인)
+        if (!selectedSectors.includes('전체')) {
+            result = result.filter(s => selectedSectors.includes(s.sector));
         }
 
         // 2. 정렬 조건 적용 (오름차순, 내림차순, 거래량)
@@ -81,7 +108,7 @@ const StockList = () => {
         });
 
         return result;
-    }, [stocks, selectedSector, sortOption]);
+    }, [stocks, selectedSectors, sortOption]);
 
     if (isLoading) return <div className="stock-list-container"><div className="loading-spinner">로딩 중...</div></div>;
     if (error) return <div className="stock-list-container"><div className="error-msg">{error}</div></div>;
@@ -129,8 +156,8 @@ const StockList = () => {
                         {['전체', '간식/매점', '학교생활/쿠폰', '게임/여가', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'].map((sector) => (
                             <button
                                 key={sector}
-                                className={`sector-btn ${selectedSector === sector ? 'active' : ''}`}
-                                onClick={() => setSelectedSector(sector)}
+                                className={`sector-btn ${selectedSectors.includes(sector) ? 'active' : ''}`}
+                                onClick={() => handleSectorClick(sector)}
                             >
                                 {sector}
                             </button>
