@@ -72,8 +72,9 @@ const CouponStore = () => {
         setIsSubmitting(true);
         try {
             const response = await api.post(`/coupons/${couponId}/buy`);
-            alert(response.data?.data || `${coupon.name} 쿠폰을 구매했습니다!`);
-            fetchMe();
+            alert(response.data?.data || `${coupon.name} 쿠폰을 성공적으로 구매했습니다!`);
+            await fetchMe();
+            navigate('/my-coupons');
         } catch (err) {
             alert(err.response?.data?.message || '쿠폰 구매에 실패했습니다.');
         } finally {
