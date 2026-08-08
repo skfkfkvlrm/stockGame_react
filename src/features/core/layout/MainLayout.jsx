@@ -8,7 +8,7 @@ const MainLayout = () => {
     return (
         <div className="app-container">
             <Sidebar />
-            <main className="content glass-panel" style={{ flex: 1, margin: '20px', padding: '30px', overflowY: 'auto' }}>
+            <main className="content glass-panel" style={{ flex: 1, height: 'calc(100vh - 40px)', margin: '20px', padding: '30px', overflowY: 'auto' }}>
                 <Outlet /> {/* 라우팅된 하위 컴포넌트들이 여기에 렌더링 됨 */}
             </main>
             <ToastContainer position="top-right" autoClose={3000} theme="light" hideProgressBar={false} />
