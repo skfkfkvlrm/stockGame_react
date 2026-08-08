@@ -167,11 +167,11 @@
 }
 
 .sector-btn {
-    padding: 8px 16px;
+    padding: 8px 18px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--bg-panel-border);
-    color: var(--text-muted);
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -179,15 +179,17 @@
 }
 
 .sector-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--text-main);
+    background: #e5e7eb;
+    color: #111827;
+    border-color: #9ca3af;
 }
 
 .sector-btn.active {
-    background: var(--gradient-primary);
-    color: #ffffff;
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(170, 59, 255, 0.3);
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    border-color: #4338ca !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
 }
 
 .sort-buttons {
@@ -202,9 +204,9 @@
     gap: 6px;
     padding: 8px 16px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--bg-panel-border);
-    color: var(--text-muted);
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -212,15 +214,17 @@
 }
 
 .sort-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--text-main);
+    background: #e5e7eb;
+    color: #111827;
+    border-color: #9ca3af;
 }
 
 .sort-btn.active {
-    background: #4f46e5;
-    color: #ffffff;
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    border-color: #4338ca !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
 }
 
 .sector-badge {
