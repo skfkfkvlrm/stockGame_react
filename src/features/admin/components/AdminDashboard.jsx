@@ -81,8 +81,45 @@ const AdminDashboard = () => {
     const [studentDetailData, setStudentDetailData] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
+    const [studentModal, setStudentModal] = useState(null); // null | { mode: 'create' }
+    const [studentForm, setStudentForm] = useState({ studentId: '', password: '', name: '', grade: 5, className: '1', classNumber: 1 });
+
     const [stockModal, setStockModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', stock: st }
     const [stockForm, setStockForm] = useState({ name: '', content: '', publicationPrice: '', publicationBalance: '' });
+
+    const handleOpenStudentModal = () => {
+        setStudentModal({ mode: 'create' });
+        setStudentForm({ studentId: '', password: '', name: '', grade: 5, className: '1', classNumber: 1 });
+    };
+
+    const handleSaveStudent = async (e) => {
+        e.preventDefault();
+        if (!studentForm.studentId || !studentForm.password || !studentForm.name || !studentForm.className) {
+            alert('모든 필수 항목(아이디, 비밀번호, 이름, 반)을 입력해 주세요.');
+            return;
+        }
+
+        try {
+            const res = await api.post('/members/join', {
+                studentId: studentForm.studentId,
+                password: studentForm.password,
+                name: studentForm.name,
+                grade: Number(studentForm.grade),
+                className: String(studentForm.className),
+                classNumber: Number(studentForm.classNumber)
+            });
+
+            if (res.data && res.data.success) {
+                alert(`신규 학생 '${studentForm.name}' 계정이 성공적으로 추가되었습니다! (기본 포인트: 100,000 P)`);
+                setStudentModal(null);
+                fetchData();
+            } else {
+                alert(res.data?.message || '학생 계정 생성 실패');
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || '학생 추가 중 오류가 발생했습니다.');
+        }
+    };
 
     const [couponModal, setCouponModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', coupon: c }
     const [couponForm, setCouponForm] = useState({ name: '', price: '', status: 'ON_SALE' });
@@ -336,7 +373,28 @@ const AdminDashboard = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <span className="table-count">검색 결과: {filteredStudents.length} 명</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span className="table-count">검색 결과: {filteredStudents.length} 명</span>
+                            <button
+                                onClick={handleOpenStudentModal}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: '#10b981',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.9rem',
+                                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+                                }}
+                            >
+                                <Plus size={16} /> 신규 학생 등록
+                            </button>
+                        </div>
                     </div>
 
                     <div className="table-container glass-panel">
@@ -884,6 +942,108 @@ const AdminDashboard = () => {
                                     style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
                                 >
                                     {couponModal.mode === 'create' ? '등록 완료' : '수정 완료'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: New Student Registration */}
+            {studentModal && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div className="modal-content glass-panel" style={{ background: '#ffffff', borderRadius: '16px', width: '90%', maxWidth: '440px', padding: '28px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
+                            🎓 신규 학생 계정 등록
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '20px' }}>
+                            학생 추가 시 기본 시드머니로 <b>100,000 P</b>가 즉시 지급됩니다.
+                        </p>
+                        
+                        <form onSubmit={handleSaveStudent}>
+                            <div style={{ marginBottom: '14px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>학생 아이디 (로그인 ID) *</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="예: student01" 
+                                    value={studentForm.studentId}
+                                    onChange={(e) => setStudentForm({ ...studentForm, studentId: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '14px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>비밀번호 *</label>
+                                <input 
+                                    type="password" 
+                                    placeholder="비밀번호 입력" 
+                                    value={studentForm.password}
+                                    onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '14px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>학생 이름 *</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="예: 홍길동" 
+                                    value={studentForm.name}
+                                    onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>학년</label>
+                                    <input 
+                                        type="number"
+                                        min="1" max="6"
+                                        value={studentForm.grade}
+                                        onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>반 *</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="1"
+                                        value={studentForm.className}
+                                        onChange={(e) => setStudentForm({ ...studentForm, className: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>번호</label>
+                                    <input 
+                                        type="number"
+                                        min="1" max="100"
+                                        value={studentForm.classNumber}
+                                        onChange={(e) => setStudentForm({ ...studentForm, classNumber: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setStudentModal(null)}
+                                    style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    취소
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    등록 완료
                                 </button>
                             </div>
                         </form>
