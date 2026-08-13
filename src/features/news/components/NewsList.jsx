@@ -31,12 +31,29 @@ const NewsList = () => {
         return () => clearInterval(intervalId);
     }, []);
 
+    const formatNewsDate = (dateObj) => {
+        if (!dateObj || isNaN(dateObj.getTime())) return '';
+        const now = new Date();
+        const diffInMinutes = Math.floor((now - dateObj) / (1000 * 60));
+
+        if (diffInMinutes >= 0 && diffInMinutes <= 30) {
+            return diffInMinutes === 0 ? '방금 전' : `${diffInMinutes}분 전`;
+        }
+
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+        return `${month}/${day} ${hours}:${minutes}`;
+    };
+
     const parseNewsItem = (item, index) => {
         if (!item) return null;
         if (typeof item === 'string') {
             let tag = '실시간 뉴스';
             let title = item;
-            let date = '오늘';
+            let date = '';
 
             const tagMatch = item.match(/\[(.*?)\]/g);
             if (tagMatch && tagMatch.length > 0) {
@@ -54,18 +71,22 @@ const NewsList = () => {
             return {
                 id: index,
                 tag: tag || '증시시황',
-                date: date !== '오늘' ? date : '',
-                title: title || item,
-                summary: '실시간 시장 동향 및 주가 시세 변동 뉴스입니다.'
+                date: date,
+                title: title || item
             };
         } else if (typeof item === 'object') {
-            const timeStr = item.createdDate ? new Date(item.createdDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : (item.date && item.date !== '오늘' ? item.date : '');
+            let formattedDate = '';
+            if (item.createdDate) {
+                formattedDate = formatNewsDate(new Date(item.createdDate));
+            } else if (item.date && item.date !== '오늘') {
+                formattedDate = item.date;
+            }
+
             return {
                 id: item.newsId || item.id || index,
                 tag: item.tag || '실시간 뉴스',
-                date: timeStr,
-                title: item.title || item.content || '주요 시장 뉴스',
-                summary: item.summary || item.content || '실시간 시장 동향 정보입니다.'
+                date: formattedDate,
+                title: item.title || item.content || '주요 시장 뉴스'
             };
         }
         return null;
