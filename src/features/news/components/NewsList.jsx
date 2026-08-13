@@ -34,7 +34,7 @@ const NewsList = () => {
     const formatNewsDate = (dateObj) => {
         if (!dateObj || isNaN(dateObj.getTime())) return '';
         const now = new Date();
-        const diffInMinutes = Math.floor((now - dateObj) / (1000 * 60));
+        const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60));
 
         if (diffInMinutes >= 0 && diffInMinutes <= 30) {
             return diffInMinutes === 0 ? '방금 전' : `${diffInMinutes}분 전`;
@@ -48,17 +48,30 @@ const NewsList = () => {
         return `${month}/${day} ${hours}:${minutes}`;
     };
 
+    const parseTimeStringToDate = (timeStr) => {
+        if (!timeStr) return null;
+        const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+        if (match) {
+            const now = new Date();
+            const hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+            const seconds = match[3] ? parseInt(match[3], 10) : 0;
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
+        }
+        return null;
+    };
+
     const parseNewsItem = (item, index) => {
         if (!item) return null;
         if (typeof item === 'string') {
             let tag = '실시간 뉴스';
             let title = item;
-            let date = '';
+            let timeString = '';
 
             const tagMatch = item.match(/\[(.*?)\]/g);
             if (tagMatch && tagMatch.length > 0) {
-                if (tagMatch[0].match(/\d{2}:\d{2}/)) {
-                    date = tagMatch[0].replace(/[\[\]]/g, '');
+                if (tagMatch[0].match(/\d{1,2}:\d{2}/)) {
+                    timeString = tagMatch[0].replace(/[\[\]]/g, '');
                     if (tagMatch.length > 1) {
                         tag = tagMatch[1].replace(/[\[\]]/g, '');
                     }
@@ -68,10 +81,13 @@ const NewsList = () => {
                 title = item.replace(/\[.*?\]/g, '').trim();
             }
 
+            const parsedDate = parseTimeStringToDate(timeString);
+            const formattedDate = parsedDate ? formatNewsDate(parsedDate) : timeString;
+
             return {
                 id: index,
                 tag: tag || '증시시황',
-                date: date,
+                date: formattedDate,
                 title: title || item
             };
         } else if (typeof item === 'object') {
@@ -79,7 +95,8 @@ const NewsList = () => {
             if (item.createdDate) {
                 formattedDate = formatNewsDate(new Date(item.createdDate));
             } else if (item.date && item.date !== '오늘') {
-                formattedDate = item.date;
+                const parsedDate = parseTimeStringToDate(item.date);
+                formattedDate = parsedDate ? formatNewsDate(parsedDate) : item.date;
             }
 
             return {
