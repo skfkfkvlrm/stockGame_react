@@ -24,6 +24,11 @@ const NewsList = () => {
         };
 
         fetchNews();
+
+        // 5초 간격으로 실시간 뉴스 자동 폴링 (새로운 뉴스가 생성되면 새로고침 없이 자동 갱신)
+        const intervalId = setInterval(fetchNews, 5000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     const parseNewsItem = (item, index) => {
