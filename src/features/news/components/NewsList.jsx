@@ -94,7 +94,6 @@ const NewsList = () => {
                                 </div>
                             </div>
                             <h3 className="news-title">{news.title}</h3>
-                            <p className="news-summary">{news.summary}</p>
                             <div className="news-footer">
                                 <button className="read-more-btn" onClick={() => setSelectedNews(news)}>
                                     자세히 보기 <ChevronRight size={16} />

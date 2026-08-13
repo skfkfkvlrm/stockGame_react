@@ -39,7 +39,6 @@ describe('NewsList Component', () => {
         
         await waitFor(() => {
             expect(screen.getByText('테스트 뉴스 제목')).toBeInTheDocument();
-            expect(screen.getByText('테스트 요약')).toBeInTheDocument();
         });
     });
 });
