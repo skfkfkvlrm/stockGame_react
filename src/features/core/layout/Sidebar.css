@@ -1,12 +1,25 @@
 .right-sidebar {
     width: 250px;
     height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
     margin: 20px 0 20px 20px;
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     border-radius: var(--border-radius-lg);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-panel-border) transparent;
+}
+
+.right-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.right-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--bg-panel-border);
+    border-radius: 4px;
 }
 
 .sidebar-header {
