@@ -49,15 +49,16 @@ const NewsList = () => {
             return {
                 id: index,
                 tag: tag || '증시시황',
-                date: date,
+                date: date !== '오늘' ? date : '',
                 title: title || item,
                 summary: '실시간 시장 동향 및 주가 시세 변동 뉴스입니다.'
             };
         } else if (typeof item === 'object') {
+            const timeStr = item.createdDate ? new Date(item.createdDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : (item.date && item.date !== '오늘' ? item.date : '');
             return {
                 id: item.newsId || item.id || index,
                 tag: item.tag || '실시간 뉴스',
-                date: item.createdDate ? new Date(item.createdDate).toLocaleTimeString('ko-KR') : (item.date || '오늘'),
+                date: timeStr,
                 title: item.title || item.content || '주요 시장 뉴스',
                 summary: item.summary || item.content || '실시간 시장 동향 정보입니다.'
             };
@@ -70,7 +71,7 @@ const NewsList = () => {
 
     const parsedList = newsData
         .map((item, idx) => parseNewsItem(item, idx))
-        .filter(Boolean);
+        .filter(item => item && item.date && item.date !== '오늘');
 
     return (
         <div className="news-list-container">
