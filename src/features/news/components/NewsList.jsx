@@ -95,8 +95,8 @@ const NewsList = () => {
                 title = item.replace(/\[.*?\]/g, '').trim();
             }
 
-            const parsedDate = parseTimeStringToDate(timeString) || new Date();
-            const formattedDate = parsedDate ? formatNewsDate(parsedDate) : timeString;
+            const parsedDate = parseTimeStringToDate(timeString);
+            const formattedDate = parsedDate ? formatNewsDate(parsedDate) : (timeString || '과거 뉴스');
 
             return {
                 id: index,
@@ -107,14 +107,16 @@ const NewsList = () => {
             };
         } else if (typeof item === 'object') {
             let formattedDate = '';
-            let rawDate = new Date();
+            let rawDate = null;
             if (item.createdDate) {
                 rawDate = new Date(item.createdDate);
                 formattedDate = formatNewsDate(rawDate);
             } else if (item.date && item.date !== '오늘') {
                 const parsedDate = parseTimeStringToDate(item.date);
-                rawDate = parsedDate || new Date();
+                rawDate = parsedDate;
                 formattedDate = parsedDate ? formatNewsDate(parsedDate) : item.date;
+            } else {
+                formattedDate = '과거 뉴스';
             }
 
             return {
