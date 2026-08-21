@@ -167,3 +167,10 @@
     font-weight: bold;
     font-size: 0.85rem;
 }
+
+.news-custom-date-inputs .date-hint {
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-right: 4px;
+}

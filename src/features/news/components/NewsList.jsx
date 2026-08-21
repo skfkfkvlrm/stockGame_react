@@ -8,9 +8,9 @@ const NewsList = () => {
     const [selectedNews, setSelectedNews] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '1D' | '1W' | '1M' | 'CUSTOM'
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '10M' | '30M' | '1H' | '1D' | '1W' | '1M' | 'CUSTOM'
+    const [startDateTime, setStartDateTime] = useState('');
+    const [endDateTime, setEndDateTime] = useState('');
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -124,13 +124,22 @@ const NewsList = () => {
         .map((item, idx) => parseNewsItem(item, idx))
         .filter(item => item && item.date && item.date !== '오늘');
 
-    // 기간 필터링 로직
+    // 기간 및 분/시간 단위 필터링 로직
     const filteredList = parsedList.filter((news) => {
         if (!news.rawDate || isNaN(news.rawDate.getTime())) return true;
         const now = new Date();
         const newsTime = news.rawDate.getTime();
 
-        if (timeRange === '1D') {
+        if (timeRange === '10M') {
+            const tenMinAgo = now.getTime() - (10 * 60 * 1000);
+            return newsTime >= tenMinAgo;
+        } else if (timeRange === '30M') {
+            const thirtyMinAgo = now.getTime() - (30 * 60 * 1000);
+            return newsTime >= thirtyMinAgo;
+        } else if (timeRange === '1H') {
+            const oneHourAgo = now.getTime() - (60 * 60 * 1000);
+            return newsTime >= oneHourAgo;
+        } else if (timeRange === '1D') {
             const oneDayAgo = now.getTime() - (24 * 60 * 60 * 1000);
             return newsTime >= oneDayAgo;
         } else if (timeRange === '1W') {
@@ -140,14 +149,12 @@ const NewsList = () => {
             const oneMonthAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
             return newsTime >= oneMonthAgo;
         } else if (timeRange === 'CUSTOM') {
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
+            if (startDateTime) {
+                const start = new Date(startDateTime);
                 if (newsTime < start.getTime()) return false;
             }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
+            if (endDateTime) {
+                const end = new Date(endDateTime);
                 if (newsTime > end.getTime()) return false;
             }
             return true;
@@ -169,7 +176,10 @@ const NewsList = () => {
                         <div className="news-filter-tabs">
                             {[
                                 { key: 'ALL', label: '전체' },
-                                { key: '1D', label: '오늘/24시간' },
+                                { key: '10M', label: '10분 전' },
+                                { key: '30M', label: '30분 전' },
+                                { key: '1H', label: '1시간 전' },
+                                { key: '1D', label: '24시간' },
                                 { key: '1W', label: '1주일' },
                                 { key: '1M', label: '1개월' },
                                 { key: 'CUSTOM', label: '직접 설정' },
@@ -187,17 +197,18 @@ const NewsList = () => {
 
                         {timeRange === 'CUSTOM' && (
                             <div className="news-custom-date-inputs">
+                                <span className="date-hint">상세 일시:</span>
                                 <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
+                                    type="datetime-local"
+                                    value={startDateTime}
+                                    onChange={(e) => setStartDateTime(e.target.value)}
                                     className="date-input"
                                 />
                                 <span className="date-separator">~</span>
                                 <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
+                                    type="datetime-local"
+                                    value={endDateTime}
+                                    onChange={(e) => setEndDateTime(e.target.value)}
                                     className="date-input"
                                 />
                             </div>
