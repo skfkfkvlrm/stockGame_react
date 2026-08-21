@@ -11,8 +11,8 @@ const NewsList = () => {
     const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '10M' | '30M' | '1H' | '1D' | '1W' | '1M' | 'CUSTOM'
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
+    // 슬라이더 게이지: 현재 시점 기준 몇 분 전부터 볼 것인지 (0분 ~ 1440분(24시간))
+    const [sliderMinutes, setSliderMinutes] = useState(60); // 기본 60분(1시간) 전
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -151,39 +151,35 @@ const NewsList = () => {
             const oneMonthAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
             return newsTime >= oneMonthAgo;
         } else if (timeRange === 'CUSTOM') {
-            // 날짜 & 시간 조합
-            let startBoundary = null;
-            let endBoundary = null;
-
+            // 1. 날짜 범위 필터
             if (startDate) {
-                const timePart = startTime || '00:00:00';
-                startBoundary = new Date(`${startDate}T${timePart.length === 5 ? timePart + ':00' : timePart}`).getTime();
+                const start = new Date(startDate);
+                start.setHours(0, 0, 0, 0);
+                if (newsTime < start.getTime()) return false;
             }
             if (endDate) {
-                const timePart = endTime || '23:59:59';
-                endBoundary = new Date(`${endDate}T${timePart.length === 5 ? timePart + ':59' : timePart}`).getTime();
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                if (newsTime > end.getTime()) return false;
             }
 
-            if (startBoundary && newsTime < startBoundary) return false;
-            if (endBoundary && newsTime > endBoundary) return false;
+            // 2. 게이지 슬라이더 시간 필터 (현재 시점 기준 sliderMinutes 전부터 현재까지)
+            if (sliderMinutes > 0) {
+                const threshold = now.getTime() - (sliderMinutes * 60 * 1000);
+                if (newsTime < threshold) return false;
+            }
 
             return true;
         }
         return true; // 'ALL'
     });
 
-    const handleApplyRelativeTime = (minutes) => {
-        const now = new Date();
-        const past = new Date(now.getTime() - (minutes * 60 * 1000));
-        
-        const pad = (n) => String(n).padStart(2, '0');
-        const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        const formatHM = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-        setStartDate(formatYMD(past));
-        setStartTime(formatHM(past));
-        setEndDate(formatYMD(now));
-        setEndTime(formatHM(now));
+    const formatSliderMinutes = (mins) => {
+        if (mins < 60) return `최근 ${mins}분`;
+        const hrs = Math.floor(mins / 60);
+        const remainMins = mins % 60;
+        if (remainMins === 0) return `최근 ${hrs}시간`;
+        return `최근 ${hrs}시간 ${remainMins}분`;
     };
 
     return (
@@ -221,7 +217,7 @@ const NewsList = () => {
 
                         {timeRange === 'CUSTOM' && (
                             <div className="news-custom-stacked-bars">
-                                {/* 날짜 선택 바 (상단) */}
+                                {/* 상단: 날짜 선택 바 */}
                                 <div className="custom-bar-row">
                                     <span className="bar-label">📅 날짜 선택:</span>
                                     <input
@@ -237,39 +233,45 @@ const NewsList = () => {
                                         onChange={(e) => setEndDate(e.target.value)}
                                         className="bar-input"
                                     />
+                                    {(startDate || endDate) && (
+                                        <button 
+                                            type="button" 
+                                            className="btn-text-reset" 
+                                            onClick={() => { setStartDate(''); setEndDate(''); }}
+                                        >
+                                            날짜 초기화
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* 시간 선택 바 (하단) */}
-                                <div className="custom-bar-row">
-                                    <span className="bar-label">⏰ 시간 설정:</span>
-                                    <input
-                                        type="time"
-                                        value={startTime}
-                                        onChange={(e) => setStartTime(e.target.value)}
-                                        className="bar-input"
-                                    />
-                                    <span className="bar-separator">~</span>
-                                    <input
-                                        type="time"
-                                        value={endTime}
-                                        onChange={(e) => setEndTime(e.target.value)}
-                                        className="bar-input"
-                                    />
+                                {/* 하단: 드래그 게이지 슬라이더 바 */}
+                                <div className="custom-bar-row gauge-row">
+                                    <div className="gauge-header">
+                                        <span className="bar-label">⚡ 시간 게이지:</span>
+                                        <span className="gauge-badge">{formatSliderMinutes(sliderMinutes)} 전까지</span>
+                                    </div>
 
-                                    {/* 빠른 분/시간 채우기 버튼 */}
-                                    <div className="time-quick-pills">
-                                        <button type="button" onClick={() => handleApplyRelativeTime(10)}>최근 10분</button>
-                                        <button type="button" onClick={() => handleApplyRelativeTime(30)}>최근 30분</button>
-                                        <button type="button" onClick={() => handleApplyRelativeTime(60)}>최근 1시간</button>
-                                        {(startDate || startTime || endDate || endTime) && (
-                                            <button 
-                                                type="button" 
-                                                className="btn-reset-time" 
-                                                onClick={() => { setStartDate(''); setEndDate(''); setStartTime(''); setEndTime(''); }}
-                                            >
-                                                초기화
-                                            </button>
-                                        )}
+                                    <div className="gauge-slider-wrapper">
+                                        <input
+                                            type="range"
+                                            min="5"
+                                            max="720"
+                                            step="5"
+                                            value={sliderMinutes}
+                                            onChange={(e) => setSliderMinutes(Number(e.target.value))}
+                                            className="gauge-slider-input"
+                                            style={{
+                                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(sliderMinutes / 720) * 100}%, #e2e8f0 ${(sliderMinutes / 720) * 100}%, #e2e8f0 100%)`
+                                            }}
+                                        />
+                                        <div className="gauge-marks">
+                                            <span onClick={() => setSliderMinutes(10)} className={sliderMinutes === 10 ? 'active' : ''}>10분</span>
+                                            <span onClick={() => setSliderMinutes(30)} className={sliderMinutes === 30 ? 'active' : ''}>30분</span>
+                                            <span onClick={() => setSliderMinutes(60)} className={sliderMinutes === 60 ? 'active' : ''}>1시간</span>
+                                            <span onClick={() => setSliderMinutes(180)} className={sliderMinutes === 180 ? 'active' : ''}>3시간</span>
+                                            <span onClick={() => setSliderMinutes(360)} className={sliderMinutes === 360 ? 'active' : ''}>6시간</span>
+                                            <span onClick={() => setSliderMinutes(720)} className={sliderMinutes === 720 ? 'active' : ''}>12시간</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

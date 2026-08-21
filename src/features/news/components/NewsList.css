@@ -188,38 +188,106 @@
     font-size: 0.85rem;
 }
 
-.time-quick-pills {
-    display: flex;
-    gap: 4px;
-    margin-left: 6px;
-}
-
-.time-quick-pills button {
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
+.custom-bar-row .btn-text-reset {
+    background: none;
+    border: none;
+    color: #94a3b8;
     font-size: 0.75rem;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    text-decoration: underline;
+    margin-left: 4px;
 }
 
-.time-quick-pills button:hover {
-    background: #8b5cf6;
-    color: #ffffff;
-    border-color: #8b5cf6;
-}
-
-.time-quick-pills .btn-reset-time {
-    background: #fee2e2;
+.custom-bar-row .btn-text-reset:hover {
     color: #ef4444;
-    border-color: #fecaca;
 }
 
-.time-quick-pills .btn-reset-time:hover {
-    background: #ef4444;
-    color: #ffffff;
-    border-color: #ef4444;
+/* Gauge Slider Specific Styles */
+.gauge-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gauge-badge {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.gauge-slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 2px;
+}
+
+.gauge-slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.gauge-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #8b5cf6;
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+    cursor: grab;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.gauge-slider-input::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.6);
+}
+
+.gauge-slider-input::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.25);
+}
+
+.gauge-marks {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+}
+
+.gauge-marks span {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.gauge-marks span:hover {
+    color: #8b5cf6;
+    font-weight: 700;
+    transform: translateY(-1px);
+}
+
+.gauge-marks span.active {
+    color: #8b5cf6;
+    font-weight: 800;
 }
