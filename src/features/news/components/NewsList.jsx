@@ -8,7 +8,9 @@ const NewsList = () => {
     const [selectedNews, setSelectedNews] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '10M' | '30M' | '1H' | '1D' | '1W' | '1M' | 'CUSTOM'
+    const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '1D' | '1W' | '1M' | 'CUSTOM'
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const GAUGE_STEPS = [
         { label: '10분', minutes: 10 },
         { label: '30분', minutes: 30 },
