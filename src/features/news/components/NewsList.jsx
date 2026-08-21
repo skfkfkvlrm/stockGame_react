@@ -132,16 +132,7 @@ const NewsList = () => {
         const now = new Date();
         const newsTime = news.rawDate.getTime();
 
-        if (timeRange === '10M') {
-            const tenMinAgo = now.getTime() - (10 * 60 * 1000);
-            return newsTime >= tenMinAgo;
-        } else if (timeRange === '30M') {
-            const thirtyMinAgo = now.getTime() - (30 * 60 * 1000);
-            return newsTime >= thirtyMinAgo;
-        } else if (timeRange === '1H') {
-            const oneHourAgo = now.getTime() - (60 * 60 * 1000);
-            return newsTime >= oneHourAgo;
-        } else if (timeRange === '1D') {
+        if (timeRange === '1D') {
             const oneDayAgo = now.getTime() - (24 * 60 * 60 * 1000);
             return newsTime >= oneDayAgo;
         } else if (timeRange === '1W') {
@@ -196,9 +187,6 @@ const NewsList = () => {
                         <div className="news-filter-tabs">
                             {[
                                 { key: 'ALL', label: '전체' },
-                                { key: '10M', label: '10분 전' },
-                                { key: '30M', label: '30분 전' },
-                                { key: '1H', label: '1시간 전' },
                                 { key: '1D', label: '24시간' },
                                 { key: '1W', label: '1주일' },
                                 { key: '1M', label: '1개월' },
