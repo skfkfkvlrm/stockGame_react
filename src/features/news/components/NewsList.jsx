@@ -9,8 +9,10 @@ const NewsList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '10M' | '30M' | '1H' | '1D' | '1W' | '1M' | 'CUSTOM'
-    const [startDateTime, setStartDateTime] = useState('');
-    const [endDateTime, setEndDateTime] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [startTime, setStartTime] = useState('');
+    const [endTime, setEndTime] = useState('');
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -149,18 +151,40 @@ const NewsList = () => {
             const oneMonthAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
             return newsTime >= oneMonthAgo;
         } else if (timeRange === 'CUSTOM') {
-            if (startDateTime) {
-                const start = new Date(startDateTime);
-                if (newsTime < start.getTime()) return false;
+            // 날짜 & 시간 조합
+            let startBoundary = null;
+            let endBoundary = null;
+
+            if (startDate) {
+                const timePart = startTime || '00:00:00';
+                startBoundary = new Date(`${startDate}T${timePart.length === 5 ? timePart + ':00' : timePart}`).getTime();
             }
-            if (endDateTime) {
-                const end = new Date(endDateTime);
-                if (newsTime > end.getTime()) return false;
+            if (endDate) {
+                const timePart = endTime || '23:59:59';
+                endBoundary = new Date(`${endDate}T${timePart.length === 5 ? timePart + ':59' : timePart}`).getTime();
             }
+
+            if (startBoundary && newsTime < startBoundary) return false;
+            if (endBoundary && newsTime > endBoundary) return false;
+
             return true;
         }
         return true; // 'ALL'
     });
+
+    const handleApplyRelativeTime = (minutes) => {
+        const now = new Date();
+        const past = new Date(now.getTime() - (minutes * 60 * 1000));
+        
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const formatHM = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+        setStartDate(formatYMD(past));
+        setStartTime(formatHM(past));
+        setEndDate(formatYMD(now));
+        setEndTime(formatHM(now));
+    };
 
     return (
         <div className="news-list-container">
@@ -196,21 +220,58 @@ const NewsList = () => {
                         </div>
 
                         {timeRange === 'CUSTOM' && (
-                            <div className="news-custom-date-inputs">
-                                <span className="date-hint">상세 일시:</span>
-                                <input
-                                    type="datetime-local"
-                                    value={startDateTime}
-                                    onChange={(e) => setStartDateTime(e.target.value)}
-                                    className="date-input"
-                                />
-                                <span className="date-separator">~</span>
-                                <input
-                                    type="datetime-local"
-                                    value={endDateTime}
-                                    onChange={(e) => setEndDateTime(e.target.value)}
-                                    className="date-input"
-                                />
+                            <div className="news-custom-stacked-bars">
+                                {/* 날짜 선택 바 (상단) */}
+                                <div className="custom-bar-row">
+                                    <span className="bar-label">📅 날짜 선택:</span>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="bar-input"
+                                    />
+                                    <span className="bar-separator">~</span>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="bar-input"
+                                    />
+                                </div>
+
+                                {/* 시간 선택 바 (하단) */}
+                                <div className="custom-bar-row">
+                                    <span className="bar-label">⏰ 시간 설정:</span>
+                                    <input
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                        className="bar-input"
+                                    />
+                                    <span className="bar-separator">~</span>
+                                    <input
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                        className="bar-input"
+                                    />
+
+                                    {/* 빠른 분/시간 채우기 버튼 */}
+                                    <div className="time-quick-pills">
+                                        <button type="button" onClick={() => handleApplyRelativeTime(10)}>최근 10분</button>
+                                        <button type="button" onClick={() => handleApplyRelativeTime(30)}>최근 30분</button>
+                                        <button type="button" onClick={() => handleApplyRelativeTime(60)}>최근 1시간</button>
+                                        {(startDate || startTime || endDate || endTime) && (
+                                            <button 
+                                                type="button" 
+                                                className="btn-reset-time" 
+                                                onClick={() => { setStartDate(''); setEndDate(''); setStartTime(''); setEndTime(''); }}
+                                            >
+                                                초기화
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

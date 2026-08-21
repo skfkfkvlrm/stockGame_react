@@ -138,39 +138,88 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.news-custom-date-inputs {
+/* Custom Stacked Bars (Date Bar & Time Bar) */
+.news-custom-stacked-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.custom-bar-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #ffffff;
-    padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.news-custom-date-inputs .date-input {
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    padding: 4px 8px;
+.custom-bar-row .bar-label {
     font-size: 0.8rem;
-    color: #334155;
+    font-weight: 700;
+    color: #475569;
+    min-width: 75px;
+}
+
+.custom-bar-row .bar-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.82rem;
+    color: #1e293b;
+    background: #f8fafc;
     outline: none;
+    transition: all 0.2s ease;
 }
 
-.news-custom-date-inputs .date-input:focus {
+.custom-bar-row .bar-input:focus {
     border-color: #8b5cf6;
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
 }
 
-.news-custom-date-inputs .date-separator {
+.custom-bar-row .bar-separator {
     color: #94a3b8;
     font-weight: bold;
     font-size: 0.85rem;
 }
 
-.news-custom-date-inputs .date-hint {
+.time-quick-pills {
+    display: flex;
+    gap: 4px;
+    margin-left: 6px;
+}
+
+.time-quick-pills button {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     color: #64748b;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.8rem;
-    margin-right: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.time-quick-pills button:hover {
+    background: #8b5cf6;
+    color: #ffffff;
+    border-color: #8b5cf6;
+}
+
+.time-quick-pills .btn-reset-time {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+
+.time-quick-pills .btn-reset-time:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
 }
