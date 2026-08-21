@@ -9,10 +9,17 @@ const NewsList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '10M' | '30M' | '1H' | '1D' | '1W' | '1M' | 'CUSTOM'
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    // 슬라이더 게이지: 현재 시점 기준 몇 분 전부터 볼 것인지 (0분 ~ 1440분(24시간))
-    const [sliderMinutes, setSliderMinutes] = useState(60); // 기본 60분(1시간) 전
+    const GAUGE_STEPS = [
+        { label: '10분', minutes: 10 },
+        { label: '30분', minutes: 30 },
+        { label: '1시간', minutes: 60 },
+        { label: '3시간', minutes: 180 },
+        { label: '6시간', minutes: 360 },
+        { label: '12시간', minutes: 720 },
+        { label: '24시간', minutes: 1440 },
+    ];
+    // 슬라이더 스텝 인덱스 (0: 10분, 1: 30분, 2: 1시간, 3: 3시간, 4: 6시간, 5: 12시간, 6: 24시간)
+    const [sliderStepIndex, setSliderStepIndex] = useState(2); // 기본값: 1시간
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -126,6 +133,9 @@ const NewsList = () => {
         .map((item, idx) => parseNewsItem(item, idx))
         .filter(item => item && item.date && item.date !== '오늘');
 
+    const currentGaugeMinutes = GAUGE_STEPS[sliderStepIndex]?.minutes || 60;
+    const currentGaugeLabel = GAUGE_STEPS[sliderStepIndex]?.label || '1시간';
+
     // 기간 및 분/시간 단위 필터링 로직
     const filteredList = parsedList.filter((news) => {
         if (!news.rawDate || isNaN(news.rawDate.getTime())) return true;
@@ -154,9 +164,9 @@ const NewsList = () => {
                 if (newsTime > end.getTime()) return false;
             }
 
-            // 2. 게이지 슬라이더 시간 필터 (현재 시점 기준 sliderMinutes 전부터 현재까지)
-            if (sliderMinutes > 0) {
-                const threshold = now.getTime() - (sliderMinutes * 60 * 1000);
+            // 2. 게이지 슬라이더 시간 필터 (현재 시점 기준 currentGaugeMinutes 전부터 현재까지)
+            if (currentGaugeMinutes > 0) {
+                const threshold = now.getTime() - (currentGaugeMinutes * 60 * 1000);
                 if (newsTime < threshold) return false;
             }
 
@@ -164,14 +174,6 @@ const NewsList = () => {
         }
         return true; // 'ALL'
     });
-
-    const formatSliderMinutes = (mins) => {
-        if (mins < 60) return `최근 ${mins}분`;
-        const hrs = Math.floor(mins / 60);
-        const remainMins = mins % 60;
-        if (remainMins === 0) return `최근 ${hrs}시간`;
-        return `최근 ${hrs}시간 ${remainMins}분`;
-    };
 
     return (
         <div className="news-list-container">
@@ -232,33 +234,36 @@ const NewsList = () => {
                                     )}
                                 </div>
 
-                                {/* 하단: 드래그 게이지 슬라이더 바 */}
+                                {/* 하단: 드래그 게이지 슬라이더 바 (스텝 100% 정밀 연동) */}
                                 <div className="custom-bar-row gauge-row">
                                     <div className="gauge-header">
                                         <span className="bar-label">⚡ 시간 게이지:</span>
-                                        <span className="gauge-badge">{formatSliderMinutes(sliderMinutes)} 전까지</span>
+                                        <span className="gauge-badge">최근 {currentGaugeLabel} 전까지</span>
                                     </div>
 
                                     <div className="gauge-slider-wrapper">
                                         <input
                                             type="range"
-                                            min="5"
-                                            max="720"
-                                            step="5"
-                                            value={sliderMinutes}
-                                            onChange={(e) => setSliderMinutes(Number(e.target.value))}
+                                            min="0"
+                                            max={GAUGE_STEPS.length - 1}
+                                            step="1"
+                                            value={sliderStepIndex}
+                                            onChange={(e) => setSliderStepIndex(Number(e.target.value))}
                                             className="gauge-slider-input"
                                             style={{
-                                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(sliderMinutes / 720) * 100}%, #e2e8f0 ${(sliderMinutes / 720) * 100}%, #e2e8f0 100%)`
+                                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(sliderStepIndex / (GAUGE_STEPS.length - 1)) * 100}%, #e2e8f0 ${(sliderStepIndex / (GAUGE_STEPS.length - 1)) * 100}%, #e2e8f0 100%)`
                                             }}
                                         />
                                         <div className="gauge-marks">
-                                            <span onClick={() => setSliderMinutes(10)} className={sliderMinutes === 10 ? 'active' : ''}>10분</span>
-                                            <span onClick={() => setSliderMinutes(30)} className={sliderMinutes === 30 ? 'active' : ''}>30분</span>
-                                            <span onClick={() => setSliderMinutes(60)} className={sliderMinutes === 60 ? 'active' : ''}>1시간</span>
-                                            <span onClick={() => setSliderMinutes(180)} className={sliderMinutes === 180 ? 'active' : ''}>3시간</span>
-                                            <span onClick={() => setSliderMinutes(360)} className={sliderMinutes === 360 ? 'active' : ''}>6시간</span>
-                                            <span onClick={() => setSliderMinutes(720)} className={sliderMinutes === 720 ? 'active' : ''}>12시간</span>
+                                            {GAUGE_STEPS.map((step, idx) => (
+                                                <span 
+                                                    key={step.label}
+                                                    onClick={() => setSliderStepIndex(idx)} 
+                                                    className={sliderStepIndex === idx ? 'active' : ''}
+                                                >
+                                                    {step.label}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
