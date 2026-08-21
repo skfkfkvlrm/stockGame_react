@@ -8,6 +8,9 @@ const NewsList = () => {
     const [selectedNews, setSelectedNews] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '1D' | '1W' | '1M' | 'CUSTOM'
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -81,21 +84,25 @@ const NewsList = () => {
                 title = item.replace(/\[.*?\]/g, '').trim();
             }
 
-            const parsedDate = parseTimeStringToDate(timeString);
+            const parsedDate = parseTimeStringToDate(timeString) || new Date();
             const formattedDate = parsedDate ? formatNewsDate(parsedDate) : timeString;
 
             return {
                 id: index,
                 tag: tag || '증시시황',
                 date: formattedDate,
+                rawDate: parsedDate,
                 title: title || item
             };
         } else if (typeof item === 'object') {
             let formattedDate = '';
+            let rawDate = new Date();
             if (item.createdDate) {
-                formattedDate = formatNewsDate(new Date(item.createdDate));
+                rawDate = new Date(item.createdDate);
+                formattedDate = formatNewsDate(rawDate);
             } else if (item.date && item.date !== '오늘') {
                 const parsedDate = parseTimeStringToDate(item.date);
+                rawDate = parsedDate || new Date();
                 formattedDate = parsedDate ? formatNewsDate(parsedDate) : item.date;
             }
 
@@ -103,6 +110,7 @@ const NewsList = () => {
                 id: item.newsId || item.id || index,
                 tag: item.tag || '실시간 뉴스',
                 date: formattedDate,
+                rawDate: rawDate,
                 title: item.title || item.content || '주요 시장 뉴스'
             };
         }
@@ -116,20 +124,95 @@ const NewsList = () => {
         .map((item, idx) => parseNewsItem(item, idx))
         .filter(item => item && item.date && item.date !== '오늘');
 
+    // 기간 필터링 로직
+    const filteredList = parsedList.filter((news) => {
+        if (!news.rawDate || isNaN(news.rawDate.getTime())) return true;
+        const now = new Date();
+        const newsTime = news.rawDate.getTime();
+
+        if (timeRange === '1D') {
+            const oneDayAgo = now.getTime() - (24 * 60 * 60 * 1000);
+            return newsTime >= oneDayAgo;
+        } else if (timeRange === '1W') {
+            const oneWeekAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+            return newsTime >= oneWeekAgo;
+        } else if (timeRange === '1M') {
+            const oneMonthAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+            return newsTime >= oneMonthAgo;
+        } else if (timeRange === 'CUSTOM') {
+            if (startDate) {
+                const start = new Date(startDate);
+                start.setHours(0, 0, 0, 0);
+                if (newsTime < start.getTime()) return false;
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                if (newsTime > end.getTime()) return false;
+            }
+            return true;
+        }
+        return true; // 'ALL'
+    });
+
     return (
         <div className="news-list-container">
             <header className="page-header">
-                <h1 className="page-title">시장 뉴스</h1>
-                <p className="page-subtitle">시장에 영향을 미치는 주요 뉴스를 실시간으로 확인하세요.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                    <div>
+                        <h1 className="page-title">시장 뉴스</h1>
+                        <p className="page-subtitle">시장에 영향을 미치는 주요 뉴스를 실시간으로 확인하세요.</p>
+                    </div>
+
+                    {/* 기간 필터 컨트롤 */}
+                    <div className="news-filter-controls">
+                        <div className="news-filter-tabs">
+                            {[
+                                { key: 'ALL', label: '전체' },
+                                { key: '1D', label: '오늘/24시간' },
+                                { key: '1W', label: '1주일' },
+                                { key: '1M', label: '1개월' },
+                                { key: 'CUSTOM', label: '직접 설정' },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    className={`news-filter-btn ${timeRange === tab.key ? 'active' : ''}`}
+                                    onClick={() => setTimeRange(tab.key)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {timeRange === 'CUSTOM' && (
+                            <div className="news-custom-date-inputs">
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="date-input"
+                                />
+                                <span className="date-separator">~</span>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="date-input"
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </header>
 
             <div className="news-grid">
-                {parsedList.length === 0 ? (
+                {filteredList.length === 0 ? (
                     <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-                        현재 등록된 실시간 뉴스가 없습니다.
+                        선택하신 기간에 등록된 뉴스가 없습니다.
                     </div>
                 ) : (
-                    parsedList.map(news => (
+                    filteredList.map(news => (
                         <div key={news.id} className="news-card glass-panel">
                             <div className="news-card-header">
                                 <span className="news-tag market">{news.tag}</span>

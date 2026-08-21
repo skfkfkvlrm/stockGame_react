@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
@@ -338,11 +338,16 @@ const StockDetail = () => {
 
                     <div className="trade-form">
                         <div className="form-group">
-                            <label>주문 가능 포인트 / 보유 주식 수</label>
+                            <label>{tradeType === 'BUY' ? '주문 가능 포인트' : '주문 가능 수량'}</label>
                             <div className="available-points">
-                                {tradeType === 'BUY' 
-                                    ? `${(user?.totalPoint ?? user?.point ?? 0).toLocaleString()} P` 
-                                    : `${myStockAmount.toLocaleString()} 주 (보유 중)`}
+                                <span className="points-value">
+                                    {tradeType === 'BUY' 
+                                        ? (user?.totalPoint ?? user?.point ?? 0).toLocaleString() 
+                                        : myStockAmount.toLocaleString()}
+                                </span>
+                                <span className="points-unit">
+                                    {tradeType === 'BUY' ? 'P' : '주'}
+                                </span>
                             </div>
                         </div>
 

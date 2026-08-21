@@ -164,7 +164,8 @@
     top: 0;
     bottom: 0;
     z-index: 0;
-    opacity: 0.1; /* Very subtle bar */
+    opacity: 0.1;
+    /* Very subtle bar */
 }
 
 .order-row.sell .bg-bar {
@@ -262,12 +263,29 @@
 }
 
 .available-points {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    height: 32px;
+    line-height: 32px;
+}
+
+.available-points .points-value {
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--text-main);
+    line-height: 1;
 }
 
-.quantity-control, .price-control {
+.available-points .points-unit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.quantity-control,
+.price-control {
     display: flex;
     background: var(--bg-panel);
     border-radius: var(--border-radius-md);
@@ -275,7 +293,8 @@
     border: 1px solid var(--bg-panel-border);
 }
 
-.quantity-control button, .price-control button {
+.quantity-control button,
+.price-control button {
     padding: 12px 16px;
     background: var(--bg-main);
     color: var(--text-muted);
@@ -286,12 +305,14 @@
     transition: background-color 0.1s ease;
 }
 
-.quantity-control button:hover, .price-control button:hover {
+.quantity-control button:hover,
+.price-control button:hover {
     background: var(--bg-panel-hover);
     color: var(--text-main);
 }
 
-.quantity-control input, .price-control input {
+.quantity-control input,
+.price-control input {
     flex: 1;
     background: transparent;
     border: none;
@@ -301,7 +322,8 @@
     font-weight: 600;
 }
 
-.quantity-control input:focus, .price-control input:focus {
+.quantity-control input:focus,
+.price-control input:focus {
     outline: none;
     background: var(--bg-panel-hover);
 }
@@ -341,7 +363,8 @@
 }
 
 .submit-trade-btn:active {
-    transform: scale(0.98); /* Snappy click feedback instead of shadows */
+    transform: scale(0.98);
+    /* Snappy click feedback instead of shadows */
 }
 
 @media (max-width: 1200px) {
@@ -372,13 +395,13 @@
 .trade-toast--success {
     background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .trade-toast--error {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: #fff;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .trade-toast span {
@@ -387,7 +410,7 @@
 }
 
 .trade-toast__close {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     border: none;
     color: #fff;
     font-size: 0.9rem;
@@ -403,10 +426,17 @@
 }
 
 .trade-toast__close:hover {
-    background: rgba(255,255,255,0.4);
+    background: rgba(255, 255, 255, 0.4);
 }
 
 @keyframes toastSlideIn {
-    from { opacity: 0; transform: translateX(40px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }

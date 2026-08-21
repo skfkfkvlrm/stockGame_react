@@ -80,11 +80,6 @@ const Sidebar = () => {
                 <button className={`menu-item ${isActive('/my-coupons')}`} onClick={() => navigate('/my-coupons')}>
                     <Ticket className="icon" size={20} /> 내 쿠폰함
                 </button>
-                {isAdmin && (
-                    <button className={`menu-item ${isActive('/admin')}`} onClick={() => navigate('/admin')}>
-                        <ShieldCheck className="icon" size={20} /> 관리자 패널
-                    </button>
-                )}
             </nav>
             
             <div className="sidebar-footer">

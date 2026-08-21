@@ -55,7 +55,6 @@ function App() {
             <Route path="points" element={<PointsHistory />} />
             <Route path="coupons" element={<CouponStore />} />
             <Route path="my-coupons" element={<MyCoupons />} />
-            <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

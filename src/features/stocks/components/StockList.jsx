@@ -26,6 +26,7 @@ const StockList = () => {
     const navigate = useNavigate();
     const [stocks, setStocks] = useState([]);
     const [marketIndices, setMarketIndices] = useState([]);
+    const [selectedIndexModal, setSelectedIndexModal] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const ALL_SECTORS = ['간식/매점', '학교생활/쿠폰', '게임/여가', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'];
@@ -114,8 +115,36 @@ const StockList = () => {
     if (error) return <div className="stock-list-container"><div className="error-msg">{error}</div></div>;
 
     const defaultIndices = [
-        { name: 'KOSPI', value: 2750.24, change: 12.45, changeRate: 0.45 },
-        { name: 'KOSDAQ', value: 845.12, change: -3.20, changeRate: -0.38 }
+        { 
+            name: 'KOSPI', 
+            value: 2750.24, 
+            change: 12.45, 
+            changeRate: 0.45, 
+            prevClose: 2737.79,
+            openPrice: 2740.10,
+            highPrice: 2765.30,
+            lowPrice: 2735.20,
+            high52w: 2890.50,
+            low52w: 2273.97,
+            volume: 458290000,
+            tradingValue: 9820300000000,
+            chartHistory: [2720.5, 2735.2, 2741.0, 2738.4, 2745.8, 2737.79, 2750.24]
+        },
+        { 
+            name: 'KOSDAQ', 
+            value: 845.12, 
+            change: -3.20, 
+            changeRate: -0.38, 
+            prevClose: 848.32,
+            openPrice: 847.20,
+            highPrice: 851.50,
+            lowPrice: 842.10,
+            high52w: 920.10,
+            low52w: 735.40,
+            volume: 892400000,
+            tradingValue: 7450200000000,
+            chartHistory: [855.2, 852.0, 849.5, 847.2, 849.8, 848.32, 845.12]
+        }
     ];
     const displayIndices = marketIndices.length > 0 ? marketIndices : defaultIndices;
 
@@ -126,23 +155,72 @@ const StockList = () => {
                 <p className="page-subtitle">실시간 종목 시세를 확인하고 매매를 진행하세요.</p>
             </header>
 
-            <div className="market-overview">
+            {/* 코스피 / 코스닥 2분할 종합 시장 지수 대시보드 */}
+            <div className="market-overview-split">
                 {displayIndices.map((idxItem, i) => {
-                    const isUp = idxItem.change >= 0;
+                    const isUp = (idxItem.change ?? 0) >= 0;
                     const colorClass = isUp ? 'profit-up' : 'profit-down';
                     const sign = isUp ? '+' : '';
+                    const curVal = idxItem.value ?? 0;
+                    const high = idxItem.highPrice ?? (curVal * 1.01);
+                    const low = idxItem.lowPrice ?? (curVal * 0.99);
+                    const progress = high > low ? Math.min(100, Math.max(0, ((curVal - low) / (high - low)) * 100)) : 50;
 
                     return (
-                        <div key={idxItem.name || i} className="glass-panel overview-card">
-                            <div className="overview-header">
-                                <h3>{idxItem.name}</h3>
-                                {isUp ? <TrendingUp size={20} className={colorClass} /> : <TrendingDown size={20} className={colorClass} />}
+                        <div key={idxItem.name || i} className="glass-panel index-detail-card">
+                            <div className="index-card-header">
+                                <div className="index-title-group">
+                                    <span className="index-flag">{idxItem.name === 'KOSPI' ? '🏛️' : '🚀'}</span>
+                                    <div>
+                                        <h3>{idxItem.name} 종합 지수</h3>
+                                        <span className="index-sub-label">{idxItem.name === 'KOSPI' ? '유가증권시장' : '코스닥시장'}</span>
+                                    </div>
+                                </div>
+                                <div className={`index-badge ${colorClass}`}>
+                                    {isUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                    <span>{sign}{(idxItem.changeRate ?? 0).toFixed(2)}%</span>
+                                </div>
                             </div>
-                            <div className={`index-value ${colorClass}`}>
-                                {idxItem.value ? idxItem.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+
+                            <div className="index-main-price-row">
+                                <span className={`index-big-value ${colorClass}`}>
+                                    {curVal.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <span className={`index-diff-value ${colorClass}`}>
+                                    {sign}{(idxItem.change ?? 0).toFixed(2)}
+                                </span>
                             </div>
-                            <div className={`index-change ${colorClass}`}>
-                                {sign}{idxItem.change ? idxItem.change.toFixed(2) : '0.00'} ({sign}{idxItem.changeRate ? idxItem.changeRate.toFixed(2) : '0.00'}%)
+
+                            {/* 당일 고가/저가 레인지 바 */}
+                            <div className="index-range-container">
+                                <div className="range-labels">
+                                    <span>저 {low.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+                                    <span>고 {high.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+                                </div>
+                                <div className="range-bar-track">
+                                    <div className="range-bar-fill" style={{ width: `${progress}%` }}></div>
+                                </div>
+                            </div>
+
+                            <div className="index-ohlc-sub-table">
+                                <div className="sub-table-row">
+                                    <span className="sub-lbl">시가</span>
+                                    <span className="sub-val">{(idxItem.openPrice ?? (curVal * 0.998)).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</span>
+                                    <span className="sub-lbl">전일종가</span>
+                                    <span className="sub-val">{(idxItem.prevClose ?? curVal).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</span>
+                                </div>
+                                <div className="sub-table-row">
+                                    <span className="sub-lbl">52주고가</span>
+                                    <span className="sub-val">{(idxItem.high52w ?? (curVal * 1.15)).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</span>
+                                    <span className="sub-lbl">52주저가</span>
+                                    <span className="sub-val">{(idxItem.low52w ?? (curVal * 0.85)).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</span>
+                                </div>
+                                <div className="sub-table-row">
+                                    <span className="sub-lbl">거래량</span>
+                                    <span className="sub-val">{idxItem.volume ? `${(idxItem.volume / 10000).toFixed(0)}만주` : '4,580만주'}</span>
+                                    <span className="sub-lbl">거래대금</span>
+                                    <span className="sub-val">{idxItem.tradingValue ? `${(idxItem.tradingValue / 1000000000000).toFixed(1)}조` : '8.5조'}</span>
+                                </div>
                             </div>
                         </div>
                     );

@@ -8,7 +8,7 @@ const useMarketStore = create((set) => ({
     fetchMarketStatus: async () => {
         try {
             set({ isLoading: true });
-            const res = await api.get('/admin/market/status');
+            const res = await api.get('/stock/admin/market/status');
             const isOpen = res.data?.data?.marketOpen ?? true;
             set({ marketOpen: isOpen, isLoading: false });
             return isOpen;
@@ -22,7 +22,7 @@ const useMarketStore = create((set) => ({
     toggleMarketStatus: async () => {
         try {
             set({ isLoading: true });
-            const res = await api.post('/admin/market/toggle');
+            const res = await api.post('/stock/admin/market/toggle');
             const isOpen = res.data?.data?.marketOpen;
             set({ marketOpen: isOpen, isLoading: false });
             return isOpen;

@@ -98,3 +98,72 @@
 .read-more-btn:hover {
     color: var(--accent-primary);
 }
+
+/* News Filter Controls (Dashboard Style) */
+.news-filter-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.news-filter-tabs {
+    display: flex;
+    background: rgba(241, 245, 249, 0.8);
+    padding: 4px;
+    border-radius: 10px;
+    gap: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.news-filter-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.news-filter-btn:hover {
+    color: #1e293b;
+}
+
+.news-filter-btn.active {
+    background: #ffffff;
+    color: #8b5cf6;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.news-custom-date-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.news-custom-date-inputs .date-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    color: #334155;
+    outline: none;
+}
+
+.news-custom-date-inputs .date-input:focus {
+    border-color: #8b5cf6;
+}
+
+.news-custom-date-inputs .date-separator {
+    color: #94a3b8;
+    font-weight: bold;
+    font-size: 0.85rem;
+}

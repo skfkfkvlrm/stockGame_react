@@ -227,7 +227,7 @@ const AdminDashboard = () => {
 
     const handleSaveStock = async (e) => {
         e.preventDefault();
-        if (!stockForm.name || stockForm.publicationPrice === '' || stockForm.publicationBalance === '') {
+        if (!stockForm.name || (stockModal.mode === 'create' && stockForm.publicationPrice === '') || stockForm.publicationBalance === '') {
             alert('모든 필드를 입력해 주세요.');
             return;
         }
@@ -841,19 +841,21 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>최초 발행 가격 (원)</label>
-                                <input 
-                                    type="number" 
-                                    min="1"
-                                    placeholder="예: 15000" 
-                                    value={stockForm.publicationPrice}
-                                    onChange={(e) => setStockForm({ ...stockForm, publicationPrice: e.target.value < 0 ? '' : e.target.value })}
-                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
-                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
-                                    required
-                                />
-                            </div>
+                            {stockModal.mode === 'create' && (
+                                <div style={{ marginBottom: '14px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>최초 발행 가격 (원)</label>
+                                    <input 
+                                        type="number" 
+                                        min="1"
+                                        placeholder="예: 15000" 
+                                        value={stockForm.publicationPrice}
+                                        onChange={(e) => setStockForm({ ...stockForm, publicationPrice: e.target.value < 0 ? '' : e.target.value })}
+                                        onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                                        required
+                                    />
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '14px' }}>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>현재/최초 발행 잔량 (주)</label>
