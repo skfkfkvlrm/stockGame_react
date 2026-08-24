@@ -82,6 +82,14 @@ const Dashboard = () => {
     const totalProfit = assetData?.totalProfit ?? 0;
     const portfolio = assetData?.myStocks || assetData?.portfolio || [];
 
+    // 초기 회원가입/기초 지급 포인트를 제외한 실제 자산 변동 내역 필터링
+    const isInitialGrant = (item) => {
+        const content = item.historyContent || item.reason || item.description || '';
+        return content.includes('회원가입') || content.includes('기초') || content.includes('초기') || content.includes('가입 지원');
+    };
+
+    const actualHistoryData = (historyData || []).filter(item => !isInitialGrant(item));
+
     // 전일 대비(DoD) 및 전월 대비(MoM) 증감 연산
     const computeComparisonMetrics = () => {
         const now = new Date();
@@ -93,7 +101,7 @@ const Dashboard = () => {
         let weekChange = 0;
         let monthChange = 0;
 
-        (historyData || []).forEach((item) => {
+        actualHistoryData.forEach((item) => {
             const itemTime = new Date(item.historyDate || 0).getTime();
             const change = item.pointChange || 0;
             if (itemTime >= startOfToday) {
@@ -374,7 +382,7 @@ const Dashboard = () => {
                             </div>
 
                             <div className="modal-history-list-section">
-                                <h3>최근 자산 변동 기록</h3>
+                                <h3>최근 자산 변동 기록 (가입 기본 지급 제외)</h3>
                                 <div className="history-table-wrapper">
                                     <table className="modal-history-table">
                                         <thead>
@@ -385,19 +393,19 @@ const Dashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {(!historyData || historyData.length === 0) ? (
+                                            {(!actualHistoryData || actualHistoryData.length === 0) ? (
                                                 <tr>
                                                     <td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
                                                         기록된 변동 내역이 없습니다.
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                [...historyData].reverse().slice(0, 10).map((h, i) => (
+                                                [...actualHistoryData].reverse().slice(0, 10).map((h, i) => (
                                                     <tr key={i}>
                                                         <td>{h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR') : '-'}</td>
-                                                        <td>{h.reason || h.description || '변동'}</td>
+                                                        <td>{h.historyContent || h.reason || h.description || h.historyType || '변동'}</td>
                                                         <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'}>
-                                                            {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
+                                                             {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
                                                         </td>
                                                     </tr>
                                                 ))
