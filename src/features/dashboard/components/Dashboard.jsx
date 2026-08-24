@@ -34,6 +34,7 @@ const Dashboard = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showCompareModal, setShowCompareModal] = useState(false);
+    const [showProfitModal, setShowProfitModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -209,7 +210,6 @@ const Dashboard = () => {
     const { categories, seriesData } = computeChartData();
     const dynamicChartOptions = { ...chartOptions, xaxis: { ...chartOptions.xaxis, categories: categories } };
     const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
-    const [showProfitModal, setShowProfitModal] = useState(false);
 
     const computeProfitBreakdown = () => {
         const unrealizedList = (portfolio || []).map(stk => {
