@@ -97,13 +97,13 @@ const CouponStore = () => {
                         🛒 쿠폰 상점
                     </button>
                     <button className="sub-tab-btn" style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'rgba(255,255,255,0.8)', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => navigate('/my-coupons')}>
-                        🎫 내 쿠폰함
+                        🎫 보유 쿠폰함
                     </button>
                 </div>
             </header>
 
             <div className="points-status glass-panel">
-                <div className="points-label">내 주문 가능 포인트</div>
+                <div className="points-label">보유 현금 포인트 (Cash)</div>
                 <div className="points-value">{user?.totalPoint?.toLocaleString() || 0} <span className="currency">P</span></div>
             </div>
 

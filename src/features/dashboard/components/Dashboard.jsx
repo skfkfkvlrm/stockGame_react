@@ -203,21 +203,31 @@ const Dashboard = () => {
             categories.push('현재');
             seriesData.push(totalAsset);
         }
-
         return { categories, seriesData };
     };
 
     const { categories, seriesData } = computeChartData();
+    const dynamicChartOptions = { ...chartOptions, xaxis: { ...chartOptions.xaxis, categories: categories } };
+    const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
+    const [showProfitModal, setShowProfitModal] = useState(false);
 
-    const dynamicChartOptions = {
-        ...chartOptions,
-        xaxis: {
-            ...chartOptions.xaxis,
-            categories: categories
-        }
+    const computeProfitBreakdown = () => {
+        const unrealizedList = (portfolio || []).map(stk => {
+            const name = stk.stockName || stk.name || '주식';
+            const amount = stk.amount || 0;
+            const avgPrice = stk.averagePrice ?? stk.avgPrice ?? 0;
+            const currentPrice = stk.currentPrice ?? stk.nowPrice ?? avgPrice;
+            const profit = stk.profit ?? ((currentPrice - avgPrice) * amount);
+            const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+            return { name, amount, avgPrice, currentPrice, profit, rate, type: 'UNREALIZED' };
+        });
+        const sortedByProfit = [...unrealizedList].sort((a, b) => b.profit - a.profit);
+        const bestStock = sortedByProfit.length > 0 && sortedByProfit[0].profit > 0 ? sortedByProfit[0] : null;
+        const worstStock = sortedByProfit.length > 0 && sortedByProfit[sortedByProfit.length - 1].profit < 0 ? sortedByProfit[sortedByProfit.length - 1] : null;
+        return { unrealizedList, bestStock, worstStock };
     };
 
-    const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
+    const profitBreakdown = computeProfitBreakdown();
 
     return (
         <div className="dashboard-container">
@@ -230,14 +240,24 @@ const Dashboard = () => {
                 <div className="glass-panel stat-card">
                     <div className="stat-header">
                         <div className="stat-icon-wrapper purple"><Wallet size={20} /></div>
-                        <h3>총 자산 (포인트 + 주식)</h3>
+                        <h3>총 순자산 (Total Assets)</h3>
                     </div>
                     <div className="stat-value">{totalAsset.toLocaleString()} <span className="currency">P</span></div>
                 </div>
-                <div className="stat-card stat-card-profit">
-                    <div className="stat-header">
-                        <div className="stat-icon-wrapper red"><TrendingUp size={20} /></div>
-                        <h3>평가 손익</h3>
+                <div 
+                    className="stat-card stat-card-profit"
+                    style={{ cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                    onClick={() => setShowProfitModal(true)}
+                    title="클릭하여 종목별 손익 원인 분석 보기"
+                >
+                    <div className="stat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="stat-icon-wrapper red"><TrendingUp size={20} /></div>
+                            <h3>투자 평가 손익 (Profit)</h3>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '12px', fontWeight: '700', color: '#475569' }}>
+                            분석 🔍
+                        </span>
                     </div>
                     <div className={`stat-value ${totalProfit > 0 ? 'profit-up' : totalProfit < 0 ? 'profit-down' : ''}`}>
                         {totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()} <span className="currency">P</span>
@@ -246,20 +266,17 @@ const Dashboard = () => {
                 <div className="glass-panel stat-card">
                     <div className="stat-header">
                         <div className="stat-icon-wrapper blue"><Activity size={20} /></div>
-                        <h3>주문 가능 포인트</h3>
+                        <h3>보유 현금 포인트 (Cash)</h3>
                     </div>
                     <div className="stat-value">{availablePoints.toLocaleString()} <span className="currency">P</span></div>
                 </div>
             </div>
 
-            {/* 그리드 분할: 좌측 전일/전월 대비 분석 + 우측 자산 변동 추이 차트 */}
             <div className="analytics-split-grid">
-                {/* 좌측: 전일 / 전월 대비 수치 카드 */}
                 <div className="asset-compare-panel glass-panel">
                     <div className="section-header">
                         <h2>📊 자산 증감 분석</h2>
                     </div>
-
                     <div className="compare-cards-group">
                         <div className="compare-card">
                             <div className="compare-card-label">
@@ -270,11 +287,8 @@ const Dashboard = () => {
                                 <span className="val-main">{metrics.todayChange > 0 ? '+' : ''}{metrics.todayChange.toLocaleString()} P</span>
                                 <span className="val-rate">({metrics.dodRate > 0 ? '+' : ''}{metrics.dodRate.toFixed(2)}%)</span>
                             </div>
-                            <div className="compare-sub-text">
-                                전일 기준 자산: {metrics.yesterdayAsset.toLocaleString()} P
-                            </div>
+                            <div className="compare-sub-text">전일 기준 자산: {metrics.yesterdayAsset.toLocaleString()} P</div>
                         </div>
-
                         <div className="compare-card">
                             <div className="compare-card-label">
                                 <span>전월 대비</span>
@@ -284,60 +298,27 @@ const Dashboard = () => {
                                 <span className="val-main">{metrics.monthChange > 0 ? '+' : ''}{metrics.monthChange.toLocaleString()} P</span>
                                 <span className="val-rate">({metrics.momRate > 0 ? '+' : ''}{metrics.momRate.toFixed(2)}%)</span>
                             </div>
-                            <div className="compare-sub-text">
-                                30일 전 기준 자산: {metrics.monthAgoAsset.toLocaleString()} P
-                            </div>
+                            <div className="compare-sub-text">30일 전 기준 자산: {metrics.monthAgoAsset.toLocaleString()} P</div>
                         </div>
                     </div>
-
-                    <button 
-                        type="button" 
-                        className="btn-open-compare-modal"
-                        onClick={() => setShowCompareModal(true)}
-                    >
-                        🔍 상세 비교 분석 리포트 보기
+                    <button type="button" className="btn-open-compare-modal" onClick={() => setShowCompareModal(true)}>
+                        🔍 자산 변동 정밀 비교 리포트 보기
                     </button>
                 </div>
-
-                {/* 우측: 자산 변동 추이 차트 */}
                 <div className="chart-section glass-panel">
                     <div className="section-header chart-header-with-filters">
                         <h2>📈 자산 변동 추이</h2>
                         <div className="chart-filter-controls">
                             <div className="chart-filter-tabs">
-                                {[
-                                    { key: 'ALL', label: '전체' },
-                                    { key: '1W', label: '1주일' },
-                                    { key: '1M', label: '1개월' },
-                                    { key: '3M', label: '3개월' },
-                                    { key: 'CUSTOM', label: '직접 설정' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.key}
-                                        type="button"
-                                        className={`chart-filter-btn ${timeRange === tab.key ? 'active' : ''}`}
-                                        onClick={() => setTimeRange(tab.key)}
-                                    >
-                                        {tab.label}
-                                    </button>
+                                {[{ key: 'ALL', label: '전체' }, { key: '1W', label: '1주일' }, { key: '1M', label: '1개월' }, { key: '3M', label: '3개월' }, { key: 'CUSTOM', label: '직접 설정' }].map((tab) => (
+                                    <button key={tab.key} type="button" className={`chart-filter-btn ${timeRange === tab.key ? 'active' : ''}`} onClick={() => setTimeRange(tab.key)}>{tab.label}</button>
                                 ))}
                             </div>
-
                             {timeRange === 'CUSTOM' && (
                                 <div className="chart-custom-date-inputs">
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="date-input"
-                                    />
+                                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input" />
                                     <span className="date-sep">~</span>
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="date-input"
-                                    />
+                                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input" />
                                 </div>
                             )}
                         </div>
@@ -348,7 +329,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* 상세 비교 분석 모달 */}
             {showCompareModal && (
                 <div className="modal-overlay" onClick={() => setShowCompareModal(false)}>
                     <div className="modal-content compare-modal glass-panel" onClick={(e) => e.stopPropagation()}>
@@ -360,29 +340,20 @@ const Dashboard = () => {
                             <div className="modal-metric-grid">
                                 <div className="metric-box">
                                     <span className="box-title">전일 대비 (1일)</span>
-                                    <span className={`box-value ${metrics.todayChange >= 0 ? 'profit-up' : 'profit-down'}`}>
-                                        {metrics.todayChange > 0 ? '+' : ''}{metrics.todayChange.toLocaleString()} P
-                                    </span>
-                                    <span className="box-sub">({metrics.dodRate > 0 ? '+' : ''}{metrics.dodRate.toFixed(2)}%)</span>
+                                    <span className={`box-value ${metrics.todayChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.todayChange > 0 ? '+' : ''}{metrics.todayChange.toLocaleString()} P</span>
                                 </div>
                                 <div className="metric-box">
                                     <span className="box-title">전주 대비 (7일)</span>
-                                    <span className={`box-value ${metrics.weekChange >= 0 ? 'profit-up' : 'profit-down'}`}>
-                                        {metrics.weekChange > 0 ? '+' : ''}{metrics.weekChange.toLocaleString()} P
-                                    </span>
-                                    <span className="box-sub">({metrics.wowRate > 0 ? '+' : ''}{metrics.wowRate.toFixed(2)}%)</span>
+                                    <span className={`box-value ${metrics.weekChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.weekChange > 0 ? '+' : ''}{metrics.weekChange.toLocaleString()} P</span>
                                 </div>
                                 <div className="metric-box">
                                     <span className="box-title">전월 대비 (30일)</span>
-                                    <span className={`box-value ${metrics.monthChange >= 0 ? 'profit-up' : 'profit-down'}`}>
-                                        {metrics.monthChange > 0 ? '+' : ''}{metrics.monthChange.toLocaleString()} P
-                                    </span>
-                                    <span className="box-sub">({metrics.momRate > 0 ? '+' : ''}{metrics.momRate.toFixed(2)}%)</span>
+                                    <span className={`box-value ${metrics.monthChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.monthChange > 0 ? '+' : ''}{metrics.monthChange.toLocaleString()} P</span>
                                 </div>
                             </div>
 
-                            <div className="modal-history-list-section">
-                                <h3>최근 자산 변동 기록 (가입 기본 지급 제외)</h3>
+                            <div className="modal-history-list-section" style={{ marginTop: '20px' }}>
+                                <h3>최근 자산 변동 기록 (가입 기본 지원금 제외)</h3>
                                 <div className="history-table-wrapper">
                                     <table className="modal-history-table">
                                         <thead>
@@ -405,7 +376,7 @@ const Dashboard = () => {
                                                         <td>{h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR') : '-'}</td>
                                                         <td>{h.historyContent || h.reason || h.description || h.historyType || '변동'}</td>
                                                         <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'}>
-                                                             {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
+                                                            {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
                                                         </td>
                                                     </tr>
                                                 ))
@@ -419,59 +390,91 @@ const Dashboard = () => {
                 </div>
             )}
 
-            <div className="portfolio-section glass-panel">
-                <div className="section-header">
-                    <h2>보유 주식 목록</h2>
+            {showProfitModal && (
+                <div className="modal-overlay" onClick={() => setShowProfitModal(false)}>
+                    <div className="modal-content compare-modal glass-panel" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>🎯 종목별 투자 손익 원인 분석</h2>
+                            <button type="button" className="modal-close-btn" onClick={() => setShowProfitModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="modal-metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: '20px' }}>
+                                <div className="metric-box">
+                                    <span className="box-title">총 투자 평가 손익</span>
+                                    <span className={`box-value ${totalProfit >= 0 ? 'profit-up' : 'profit-down'}`}>{totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()} P</span>
+                                </div>
+                                <div className="metric-box">
+                                    <span className="box-title">최고 수익 종목 (BEST)</span>
+                                    <span className="box-value profit-up" style={{ fontSize: '1.1rem' }}>{profitBreakdown.bestStock ? `${profitBreakdown.bestStock.name} (+${profitBreakdown.bestStock.profit.toLocaleString()}P)` : '없음'}</span>
+                                </div>
+                                <div className="metric-box">
+                                    <span className="box-title">최대 손실 종목 (WORST)</span>
+                                    <span className="box-value profit-down" style={{ fontSize: '1.1rem' }}>{profitBreakdown.worstStock ? `${profitBreakdown.worstStock.name} (${profitBreakdown.worstStock.profit.toLocaleString()}P)` : '없음'}</span>
+                                </div>
+                            </div>
+                            <div className="modal-history-list-section">
+                                <h3>보유 종목별 손익 기여도 현황</h3>
+                                <div className="history-table-wrapper">
+                                    <table className="modal-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>종목명</th>
+                                                <th>보유 수량</th>
+                                                <th>매수 평균가</th>
+                                                <th>현재가</th>
+                                                <th>평가 손익</th>
+                                                <th>수익률</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {profitBreakdown.unrealizedList.length === 0 ? (
+                                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>보유 중인 주식이 없습니다.</td></tr>
+                                            ) : (
+                                                profitBreakdown.unrealizedList.map((stk, i) => (
+                                                    <tr key={i}>
+                                                        <td style={{ fontWeight: '700' }}>{stk.name}</td>
+                                                        <td>{stk.amount} 주</td>
+                                                        <td>{stk.avgPrice.toLocaleString()} P</td>
+                                                        <td>{stk.currentPrice.toLocaleString()} P</td>
+                                                        <td className={stk.profit >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.profit > 0 ? '+' : ''}{stk.profit.toLocaleString()} P</td>
+                                                        <td className={stk.rate >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.rate > 0 ? '+' : ''}{stk.rate.toFixed(2)}%</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            )}
+
+            <div className="portfolio-section glass-panel">
+                <div className="section-header"><h2>보유 주식 목록</h2></div>
                 <div className="table-responsive">
                     <table className="portfolio-table">
-                        <thead>
-                            <tr>
-                                <th>종목명</th>
-                                <th>보유 수량</th>
-                                <th>매수 평균가</th>
-                                <th>현재가</th>
-                                <th>평가 손익</th>
-                                <th>수익률</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>종목명</th><th>보유 수량</th><th>매수 평균가</th><th>현재가</th><th>평가 손익</th><th>수익률</th></tr></thead>
                         <tbody>
                             {portfolio.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                                        보유 중인 주식이 없습니다.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>보유 중인 주식이 없습니다.</td></tr>
                             ) : (
                                 portfolio.map((stock, idx) => {
                                     const name = stock.stockName || stock.name || '주식';
                                     const avgPrice = stock.averagePrice ?? stock.avgPrice ?? 0;
-                                    const currentPrice = stock.currentPrice ?? 0;
+                                    const currentPrice = stock.currentPrice ?? stock.nowPrice ?? avgPrice;
                                     const amount = stock.amount ?? 0;
                                     const profit = stock.profit ?? ((currentPrice - avgPrice) * amount);
                                     const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-                                    const profitClass = profit > 0 ? 'profit-up' : profit < 0 ? 'profit-down' : '';
-
+                                    const isProfit = profit >= 0;
                                     return (
-                                        <tr key={stock.stockId || idx}>
-                                            <td className="stock-name">
-                                                <div className="stock-info">
-                                                    <div className="stock-icon">{name.charAt(0)}</div>
-                                                    {name}
-                                                </div>
-                                            </td>
-                                            <td>{amount}주</td>
+                                        <tr key={idx}>
+                                            <td className="stock-name-cell font-bold">{name}</td>
+                                            <td>{amount} 주</td>
                                             <td>{avgPrice.toLocaleString()} P</td>
                                             <td>{currentPrice.toLocaleString()} P</td>
-                                            <td className={profitClass}>
-                                                <div className="flex-right">
-                                                    {profit > 0 ? <ArrowUpRight size={16} /> : profit < 0 ? <ArrowDownRight size={16} /> : ''}
-                                                    {profit > 0 ? '+' : ''}{profit.toLocaleString()} P
-                                                </div>
-                                            </td>
-                                            <td className={profitClass}>
-                                                {rate > 0 ? '+' : ''}{rate.toFixed(2)}%
-                                            </td>
+                                            <td className={`font-bold ${isProfit ? 'profit-up' : 'profit-down'}`}>{isProfit ? '+' : ''}{profit.toLocaleString()} P</td>
+                                            <td className={`font-bold ${isProfit ? 'profit-up' : 'profit-down'}`}>{isProfit ? '+' : ''}{rate.toFixed(2)}%</td>
                                         </tr>
                                     );
                                 })

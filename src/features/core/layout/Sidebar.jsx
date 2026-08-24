@@ -82,13 +82,13 @@ const Sidebar = () => {
                     <Newspaper className="icon" size={20} /> 시장 뉴스
                 </button>
                 <button className={`menu-item ${isActive('/points')}`} onClick={() => navigate('/points')}>
-                    <Wallet className="icon" size={20} /> 포인트 내역
+                    <Wallet className="icon" size={20} /> 포인트 변동 이력
                 </button>
                 <button className={`menu-item ${isActive('/coupons')}`} onClick={() => navigate('/coupons')}>
                     <Store className="icon" size={20} /> 쿠폰 상점
                 </button>
                 <button className={`menu-item ${isActive('/my-coupons')}`} onClick={() => navigate('/my-coupons')}>
-                    <Ticket className="icon" size={20} /> 내 쿠폰함
+                    <Ticket className="icon" size={20} /> 보유 쿠폰함
                 </button>
             </nav>
             

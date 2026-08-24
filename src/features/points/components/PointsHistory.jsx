@@ -31,8 +31,8 @@ const PointsHistory = () => {
     return (
         <div className="points-history-container">
             <header className="page-header">
-                <h1 className="page-title">포인트 내역</h1>
-                <p className="page-subtitle">포인트 적립 및 사용 내역을 확인하세요.</p>
+                <h1 className="page-title">포인트 변동 이력</h1>
+                <p className="page-subtitle">포인트 지급, 차감 및 주식/쿠폰 결제 변동 내역을 확인하세요.</p>
             </header>
 
             <div className="history-list glass-panel">

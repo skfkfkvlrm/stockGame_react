@@ -60,7 +60,7 @@ const MyCoupons = () => {
         <div className="store-container">
             <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
-                    <h1 className="page-title">내 쿠폰함</h1>
+                    <h1 className="page-title">보유 쿠폰함</h1>
                     <p className="page-subtitle">보유 중인 쿠폰을 확인하고 사용하세요.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -68,7 +68,7 @@ const MyCoupons = () => {
                         🛒 쿠폰 상점
                     </button>
                     <button className="sub-tab-btn active" style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary, #6366f1)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
-                        🎫 내 쿠폰함
+                        🎫 보유 쿠폰함
                     </button>
                 </div>
             </header>
