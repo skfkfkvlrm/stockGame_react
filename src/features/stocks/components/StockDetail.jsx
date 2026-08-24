@@ -4,6 +4,7 @@ import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import api from '../../../api/axios';
 import useAuthStore from '../../auth/store/useAuthStore';
+import useMarketStore from '../../admin/store/useMarketStore';
 import { useStompResilience, ConnectionStatus } from '../../core/hooks/useStompResilience';
 import './StockDetail.css';
 
@@ -12,6 +13,11 @@ const StockDetail = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
+    const marketOpen = useMarketStore((state) => state.marketOpen);
+    const statusCode = useMarketStore((state) => state.statusCode);
+    const openTime = useMarketStore((state) => state.openTime);
+    const closeTime = useMarketStore((state) => state.closeTime);
+    const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
     
     const [stockInfo, setStockInfo] = useState(null);
     const [chartData, setChartData] = useState([]);
@@ -389,19 +395,22 @@ const StockDetail = () => {
                             </div>
                         </div>
 
-                        {stockInfo.status && stockInfo.status !== 'LISTED' && (
+                        {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
                             <div style={{
                                 padding: '12px 16px',
                                 borderRadius: '8px',
                                 marginBottom: '16px',
                                 fontWeight: 'bold',
-                                fontSize: '0.9rem',
+                                fontSize: '0.85rem',
                                 textAlign: 'center',
-                                background: stockInfo.status === 'SUSPENDED' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                color: stockInfo.status === 'SUSPENDED' ? '#d97706' : '#dc2626',
-                                border: stockInfo.status === 'SUSPENDED' ? '1px solid #f59e0b' : '1px solid #ef4444'
+                                background: !marketOpen ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                color: !marketOpen ? '#dc2626' : '#d97706',
+                                border: `1px solid ${!marketOpen ? '#fca5a5' : '#fcd34d'}`
                             }}>
-                                {stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.'}
+                                {!marketOpen 
+                                    ? `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.` 
+                                    : (stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.')
+                                }
                             </div>
                         )}
 
@@ -409,13 +418,13 @@ const StockDetail = () => {
                             type="button"
                             className={`submit-trade-btn ${tradeType.toLowerCase()}`}
                             onClick={handleTrade}
-                            disabled={isSubmitting || (stockInfo.status && stockInfo.status !== 'LISTED')}
+                            disabled={isSubmitting || !marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')}
                             style={{
-                                opacity: (stockInfo.status && stockInfo.status !== 'LISTED') ? 0.5 : 1,
-                                cursor: (stockInfo.status && stockInfo.status !== 'LISTED') ? 'not-allowed' : 'pointer'
+                                opacity: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 0.5 : 1,
+                                cursor: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            {isSubmitting ? '처리 중...' : (stockInfo.status && stockInfo.status !== 'LISTED') ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')}
+                            {isSubmitting ? '처리 중...' : !marketOpen ? '장 마감 (주문 불가)' : (stockInfo.status && stockInfo.status !== 'LISTED') ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')}
                         </button>
                     </div>
                 </div>

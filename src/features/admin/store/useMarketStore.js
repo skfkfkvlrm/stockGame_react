@@ -3,35 +3,37 @@ import api from '../../../api/axios';
 
 const useMarketStore = create((set) => ({
     marketOpen: true,
+    mode: 'AUTO',
+    openTime: '09:00',
+    closeTime: '15:30',
+    statusCode: 'OPEN',
     isLoading: false,
 
     fetchMarketStatus: async () => {
         try {
             set({ isLoading: true });
             const res = await api.get('/stock/admin/market/status');
-            const isOpen = res.data?.data?.marketOpen ?? true;
-            set({ marketOpen: isOpen, isLoading: false });
-            return isOpen;
-        } catch (err) {
-            console.error('Failed to fetch market status in store:', err);
+            const data = res.data?.data;
+            if (data) {
+                set({
+                    marketOpen: data.marketOpen ?? true,
+                    mode: data.mode || 'AUTO',
+                    openTime: data.openTime || '09:00',
+                    closeTime: data.closeTime || '15:30',
+                    statusCode: data.statusCode || 'OPEN',
+                    isLoading: false
+                });
+                return data;
+            }
             set({ isLoading: false });
-            return true;
-        }
-    },
-
-    toggleMarketStatus: async () => {
-        try {
-            set({ isLoading: true });
-            const res = await api.post('/stock/admin/market/toggle');
-            const isOpen = res.data?.data?.marketOpen;
-            set({ marketOpen: isOpen, isLoading: false });
-            return isOpen;
+            return null;
         } catch (err) {
-            console.error('Failed to toggle market status in store:', err);
+            console.error('Failed to fetch market status in student store:', err);
             set({ isLoading: false });
-            throw err;
+            return null;
         }
     }
 }));
 
 export default useMarketStore;
+
