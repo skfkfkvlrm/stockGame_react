@@ -30,12 +30,17 @@ const Dashboard = () => {
     const user = useAuthStore((state) => state.user);
     const [assetData, setAssetData] = useState(null);
     const [historyData, setHistoryData] = useState([]);
-    const [timeRange, setTimeRange] = useState('ALL'); // '1W', '1M', '3M', 'ALL', 'CUSTOM'
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [chartType, setChartType] = useState('area'); // 'area' | 'line'
+    
+    // 자산 추이 기간 게이지 스텝 정의 (0: 오늘/실시간 ~ 4: 전체/가입이래)
+    const TIMEFRAME_STEPS = [
+        { label: '당일 (실시간)', days: 1, desc: '오늘 장 시작 ~ 현재 변동' },
+        { label: '1주일', days: 7, desc: '최근 7일간 자산 추이' },
+        { label: '1개월', days: 30, desc: '최근 30일간 자산 추이' },
+        { label: '3개월', days: 90, desc: '최근 90일간 자산 추이' },
+        { label: '전체 (ALL)', days: 0, desc: '가입 이래 전체 누적 자산 추이' }
+    ];
+    const [timeframeIndex, setTimeframeIndex] = useState(4); // 기본값: 4 (전체)
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -73,9 +78,6 @@ const Dashboard = () => {
         };
         fetchDashboard();
     }, [user]);
-
-    if (isLoading) return <div className="dashboard-container"><div className="loading-spinner"></div></div>;
-    if (error) return <div className="dashboard-container"><div className="error-msg">{error}</div></div>;
 
     const totalAsset = assetData?.totalAsset ?? 0;
     const availablePoints = assetData?.totalPoint ?? assetData?.availablePoints ?? 0;
@@ -142,7 +144,7 @@ const Dashboard = () => {
 
     const metrics = computeComparisonMetrics();
 
-    // 동적 차트 옵션 및 데이터 산출 (히스토리 내역 기간 필터링 및 누적 시계열 파싱)
+    // 동적 차트 옵션 및 데이터 산출 (게이지 슬라이더 기반 시계열 필터링)
     const computeChartData = () => {
         if (!historyData || historyData.length === 0) {
             return {
@@ -152,26 +154,14 @@ const Dashboard = () => {
         }
 
         const now = new Date().getTime();
+        const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
+        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
 
         // 1. 기간 필터링
         const filteredHistory = historyData.filter((item) => {
             if (!item.historyDate) return true;
             const itemTime = new Date(item.historyDate).getTime();
-
-            if (timeRange === '1W') {
-                return itemTime >= now - (7 * 24 * 60 * 60 * 1000);
-            } else if (timeRange === '1M') {
-                return itemTime >= now - (30 * 24 * 60 * 60 * 1000);
-            } else if (timeRange === '3M') {
-                return itemTime >= now - (90 * 24 * 60 * 60 * 1000);
-            } else if (timeRange === 'CUSTOM') {
-                const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-                const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-                if (start && itemTime < start) return false;
-                if (end && itemTime > end) return false;
-                return true;
-            }
-            return true;
+            return itemTime >= cutoffTime;
         });
 
         // 과거순 정렬 (오래된 날짜가 앞)
@@ -188,8 +178,11 @@ const Dashboard = () => {
         sortedHistory.forEach((item) => {
             const change = item.pointChange || 0;
             cumulative += change;
+            const dateObj = new Date(item.historyDate);
             const dateStr = item.historyDate
-                ? new Date(item.historyDate).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit' })
+                ? (timeframeIndex === 0 
+                    ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
+                    : `${dateObj.getMonth() + 1}/${dateObj.getDate()}`)
                 : '이력';
             categories.push(dateStr);
             seriesData.push(cumulative);
@@ -197,7 +190,7 @@ const Dashboard = () => {
 
         // 가장 최근 지점은 현재 totalAsset으로 보정
         if (seriesData.length > 0) {
-            categories.push('현재 (총 자산)');
+            categories.push('현재');
             seriesData.push(totalAsset);
         } else {
             categories.push('현재');
@@ -207,7 +200,12 @@ const Dashboard = () => {
     };
 
     const { categories, seriesData } = computeChartData();
-    const dynamicChartOptions = { ...chartOptions, xaxis: { ...chartOptions.xaxis, categories: categories } };
+    const dynamicChartOptions = { 
+        ...chartOptions, 
+        chart: { ...chartOptions.chart, type: chartType },
+        stroke: { curve: 'smooth', width: 3 },
+        xaxis: { ...chartOptions.xaxis, categories: categories } 
+    };
     const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
 
     const computeProfitBreakdown = () => {
@@ -307,23 +305,58 @@ const Dashboard = () => {
                 <div className="chart-section glass-panel">
                     <div className="section-header chart-header-with-filters">
                         <h2>📈 자산 변동 추이</h2>
-                        <div className="chart-filter-controls">
-                            <div className="chart-filter-tabs">
-                                {[{ key: 'ALL', label: '전체' }, { key: '1W', label: '1주일' }, { key: '1M', label: '1개월' }, { key: '3M', label: '3개월' }, { key: 'CUSTOM', label: '직접 설정' }].map((tab) => (
-                                    <button key={tab.key} type="button" className={`chart-filter-btn ${timeRange === tab.key ? 'active' : ''}`} onClick={() => setTimeRange(tab.key)}>{tab.label}</button>
-                                ))}
+                        <div className="chart-controls-header-mini">
+                            <div className="chart-type-tabs-mini">
+                                <button 
+                                    className={`chart-type-btn-mini ${chartType === 'area' ? 'active' : ''}`}
+                                    onClick={() => setChartType('area')}
+                                    type="button"
+                                >
+                                    영역
+                                </button>
+                                <button 
+                                    className={`chart-type-btn-mini ${chartType === 'line' ? 'active' : ''}`}
+                                    onClick={() => setChartType('line')}
+                                    type="button"
+                                >
+                                    라인
+                                </button>
                             </div>
-                            {timeRange === 'CUSTOM' && (
-                                <div className="chart-custom-date-inputs">
-                                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input" />
-                                    <span className="date-sep">~</span>
-                                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input" />
-                                </div>
-                            )}
+
+                            <div className="selected-timeframe-badge-mini">
+                                <span className="badge-txt">{TIMEFRAME_STEPS[timeframeIndex].label}</span>
+                            </div>
                         </div>
                     </div>
+                    
                     <div className="chart-container">
-                        <Chart options={dynamicChartOptions} series={chartSeries} type="area" height={280} />
+                        <Chart options={dynamicChartOptions} series={chartSeries} type={chartType} height={280} />
+                    </div>
+
+                    {/* 자산 추이 기간 게이지 슬라이더 */}
+                    <div className="timeframe-gauge-container-dash">
+                        <div className="gauge-track-wrapper">
+                            <input
+                                type="range"
+                                min="0"
+                                max={TIMEFRAME_STEPS.length - 1}
+                                step="1"
+                                value={timeframeIndex}
+                                onChange={(e) => setTimeframeIndex(parseInt(e.target.value, 10))}
+                                className="timeframe-gauge-slider"
+                            />
+                            <div className="gauge-step-labels">
+                                {TIMEFRAME_STEPS.map((step, idx) => (
+                                    <span 
+                                        key={step.label} 
+                                        className={`gauge-step-label ${idx === timeframeIndex ? 'active' : ''}`}
+                                        onClick={() => setTimeframeIndex(idx)}
+                                    >
+                                        {step.label}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

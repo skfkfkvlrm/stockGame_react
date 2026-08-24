@@ -114,66 +114,92 @@
     gap: 12px;
 }
 
-.chart-filter-controls {
+.chart-controls-header-mini {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.chart-filter-tabs {
+.chart-type-tabs-mini {
     display: flex;
-    background: #f1f5f9;
-    padding: 4px;
-    border-radius: 8px;
     gap: 4px;
-    border: 1px solid #e2e8f0;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 3px;
+    border-radius: 6px;
 }
 
-.chart-filter-btn {
+.chart-type-btn-mini {
+    padding: 4px 10px;
     border: none;
+    border-radius: 4px;
     background: transparent;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
     color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.chart-filter-btn:hover {
-    color: var(--text-main);
-}
-
-.chart-filter-btn.active {
+.chart-type-btn-mini.active {
     background: #ffffff;
-    color: var(--primary-color, #8b5cf6);
+    color: #8b5cf6;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.chart-custom-date-inputs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #ffffff;
+.selected-timeframe-badge-mini {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
     padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
-.date-input {
-    border: none;
-    outline: none;
-    font-size: 0.85rem;
-    color: #334155;
-    background: transparent;
+/* Timeframe Slider Gauge in Dashboard */
+.timeframe-gauge-container-dash {
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 12px;
+    padding: 12px 16px 8px;
+    margin-top: 12px;
 }
 
-.date-sep {
-    color: #94a3b8;
-    font-weight: bold;
-    font-size: 0.85rem;
+.timeframe-gauge-container-dash .gauge-track-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.timeframe-gauge-container-dash .timeframe-gauge-slider {
+    width: 100%;
+    accent-color: #8b5cf6;
+    cursor: pointer;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.timeframe-gauge-container-dash .gauge-step-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.timeframe-gauge-container-dash .gauge-step-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease;
+    user-select: none;
+}
+
+.timeframe-gauge-container-dash .gauge-step-label:hover {
+    color: #8b5cf6;
+}
+
+.timeframe-gauge-container-dash .gauge-step-label.active {
+    color: #8b5cf6;
+    font-weight: 700;
 }
 
 .section-header h2 {
