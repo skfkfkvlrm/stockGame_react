@@ -77,57 +77,50 @@ const NewsList = () => {
 
     const parseNewsItem = (item, index) => {
         if (!item) return null;
-        if (typeof item === 'string') {
-            let tag = '실시간 뉴스';
-            let title = item;
-            let timeString = '';
+        
+        let contentStr = typeof item === 'string' ? item : (item.content || item.title || '');
+        let rawDate = null;
+        let formattedDate = '';
+        let tag = '실시간 뉴스';
+        let title = contentStr;
 
-            const tagMatch = item.match(/\[(.*?)\]/g);
-            if (tagMatch && tagMatch.length > 0) {
-                if (tagMatch[0].match(/\d{1,2}:\d{2}/)) {
-                    timeString = tagMatch[0].replace(/[\[\]]/g, '');
-                    if (tagMatch.length > 1) {
-                        tag = tagMatch[1].replace(/[\[\]]/g, '');
-                    }
-                } else {
-                    tag = tagMatch[0].replace(/[\[\]]/g, '');
-                }
-                title = item.replace(/\[.*?\]/g, '').trim();
-            }
-
-            const parsedDate = parseTimeStringToDate(timeString);
-            const formattedDate = parsedDate ? formatNewsDate(parsedDate) : (timeString || '과거 뉴스');
-
-            return {
-                id: index,
-                tag: tag || '증시시황',
-                date: formattedDate,
-                rawDate: parsedDate,
-                title: title || item
-            };
-        } else if (typeof item === 'object') {
-            let formattedDate = '';
-            let rawDate = null;
-            if (item.createdDate) {
-                rawDate = new Date(item.createdDate);
-                formattedDate = formatNewsDate(rawDate);
-            } else if (item.date && item.date !== '오늘') {
-                const parsedDate = parseTimeStringToDate(item.date);
-                rawDate = parsedDate;
-                formattedDate = parsedDate ? formatNewsDate(parsedDate) : item.date;
-            } else {
-                formattedDate = '과거 뉴스';
-            }
-
-            return {
-                id: item.newsId || item.id || index,
-                tag: item.tag || '실시간 뉴스',
-                date: formattedDate,
-                rawDate: rawDate,
-                title: item.title || item.content || '주요 시장 뉴스'
-            };
+        // 1. createdDate가 있는 경우 (백엔드 NewsResponse DTO)
+        if (typeof item === 'object' && item.createdDate) {
+            rawDate = new Date(item.createdDate);
+            formattedDate = formatNewsDate(rawDate);
         }
-        return null;
+
+        // 2. 태그 및 제목 추출 ([18:25:30] [호재] 제목 or [호재] 제목)
+        const tagMatch = contentStr.match(/\[(.*?)\]/g);
+        if (tagMatch && tagMatch.length > 0) {
+            let timeString = '';
+            if (tagMatch[0].match(/\d{1,2}:\d{2}/)) {
+                timeString = tagMatch[0].replace(/[\[\]]/g, '');
+                if (tagMatch.length > 1) {
+                    tag = tagMatch[1].replace(/[\[\]]/g, '');
+                }
+            } else {
+                tag = tagMatch[0].replace(/[\[\]]/g, '');
+            }
+            title = contentStr.replace(/\[.*?\]/g, '').trim();
+
+            if (!rawDate && timeString) {
+                rawDate = parseTimeStringToDate(timeString);
+                formattedDate = rawDate ? formatNewsDate(rawDate) : (timeString || '과거 뉴스');
+            }
+        }
+
+        if (!formattedDate) {
+            formattedDate = rawDate ? formatNewsDate(rawDate) : '최근 뉴스';
+        }
+
+        return {
+            id: (typeof item === 'object' && (item.newsId || item.id)) ? (item.newsId || item.id) : index,
+            tag: tag || '증시시황',
+            date: formattedDate,
+            rawDate: rawDate,
+            title: title || contentStr || '주요 시장 뉴스'
+        };
     };
 
     if (isLoading) return <div className="news-list-container"><div className="loading-spinner"></div></div>;
