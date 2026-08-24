@@ -85,22 +85,10 @@ const NewsList = () => {
         let tag = '실시간 뉴스';
         let title = contentStr;
 
-        // 1. createdDate가 있는 경우 (백엔드 NewsResponse DTO)
-        if (typeof item === 'object' && item.createdDate) {
-            // "2026-08-24T11:07:07" or "2026-08-24 11:07:07"
-            let dateStr = String(item.createdDate);
-            if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
-                // DB의 DATETIME이 KST 시간으로 저장되어 내려온 경우 Z를 붙이지 않고 현지 시간으로 파싱
-                dateStr = dateStr.replace(' ', 'T');
-            }
-            rawDate = new Date(dateStr);
-            formattedDate = formatNewsDate(rawDate);
-        }
-
-        // 2. 태그 및 제목 추출 ([18:25:30] [호재] 제목 or [호재] 제목)
+        // 1. 태그 및 본문 내 시간 문자열 추출 ([20:07:06] [호재] 제목 or [호재] 제목)
+        let timeString = '';
         const tagMatch = contentStr.match(/\[(.*?)\]/g);
         if (tagMatch && tagMatch.length > 0) {
-            let timeString = '';
             if (tagMatch[0].match(/\d{1,2}:\d{2}/)) {
                 timeString = tagMatch[0].replace(/[\[\]]/g, '');
                 if (tagMatch.length > 1) {
@@ -110,11 +98,31 @@ const NewsList = () => {
                 tag = tagMatch[0].replace(/[\[\]]/g, '');
             }
             title = contentStr.replace(/\[.*?\]/g, '').trim();
+        }
 
-            if (!rawDate && timeString) {
-                rawDate = parseTimeStringToDate(timeString);
-                formattedDate = rawDate ? formatNewsDate(rawDate) : (timeString || '과거 뉴스');
+        // 2. 정확한 실제 일시(rawDate) 산정
+        if (typeof item === 'object' && item.createdDate) {
+            let dateStr = String(item.createdDate);
+            const baseD = new Date(dateStr);
+            
+            // 본문 안에 [20:07:06] 형태의 한국 로컬 시간이 적혀있다면 이를 해당 날짜의 시/분/초로 우선 적용
+            if (timeString && !isNaN(baseD.getTime())) {
+                const timeMatch = timeString.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                if (timeMatch) {
+                    const hours = parseInt(timeMatch[1], 10);
+                    const minutes = parseInt(timeMatch[2], 10);
+                    const seconds = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+                    rawDate = new Date(baseD.getFullYear(), baseD.getMonth(), baseD.getDate(), hours, minutes, seconds);
+                } else {
+                    rawDate = baseD;
+                }
+            } else {
+                rawDate = baseD;
             }
+            formattedDate = formatNewsDate(rawDate);
+        } else if (timeString) {
+            rawDate = parseTimeStringToDate(timeString);
+            formattedDate = rawDate ? formatNewsDate(rawDate) : (timeString || '과거 뉴스');
         }
 
         if (!formattedDate) {
