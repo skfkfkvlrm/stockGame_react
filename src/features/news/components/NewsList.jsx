@@ -87,7 +87,13 @@ const NewsList = () => {
 
         // 1. createdDate가 있는 경우 (백엔드 NewsResponse DTO)
         if (typeof item === 'object' && item.createdDate) {
-            rawDate = new Date(item.createdDate);
+            // "2026-08-24T11:07:07" or "2026-08-24 11:07:07"
+            let dateStr = String(item.createdDate);
+            if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                // DB의 DATETIME이 KST 시간으로 저장되어 내려온 경우 Z를 붙이지 않고 현지 시간으로 파싱
+                dateStr = dateStr.replace(' ', 'T');
+            }
+            rawDate = new Date(dateStr);
             formattedDate = formatNewsDate(rawDate);
         }
 
