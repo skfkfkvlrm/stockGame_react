@@ -12,6 +12,7 @@ const NewsList = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const GAUGE_STEPS = [
+        { label: '전체', minutes: 0 },
         { label: '10분', minutes: 10 },
         { label: '30분', minutes: 30 },
         { label: '1시간', minutes: 60 },
@@ -20,8 +21,8 @@ const NewsList = () => {
         { label: '12시간', minutes: 720 },
         { label: '24시간', minutes: 1440 },
     ];
-    // 슬라이더 스텝 인덱스 (0: 10분, 1: 30분, 2: 1시간, 3: 3시간, 4: 6시간, 5: 12시간, 6: 24시간)
-    const [sliderStepIndex, setSliderStepIndex] = useState(2); // 기본값: 1시간
+    // 슬라이더 스텝 인덱스 (0: 전체, 1: 10분, 2: 30분, 3: 1시간, 4: 3시간, 5: 6시간, 6: 12시간, 7: 24시간)
+    const [sliderStepIndex, setSliderStepIndex] = useState(0); // 기본값: 전체 (날짜 선택 시 제한 없이 모든 뉴스 노출)
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -77,7 +78,7 @@ const NewsList = () => {
 
     const parseNewsItem = (item, index) => {
         if (!item) return null;
-        
+
         let contentStr = typeof item === 'string' ? item : (item.content || item.title || '');
         let rawDate = null;
         let formattedDate = '';
@@ -130,10 +131,10 @@ const NewsList = () => {
         .map((item, idx) => parseNewsItem(item, idx))
         .filter(item => item && item.date && item.date !== '오늘');
 
-    const currentGaugeMinutes = GAUGE_STEPS[sliderStepIndex]?.minutes || 60;
-    const currentGaugeLabel = GAUGE_STEPS[sliderStepIndex]?.label || '1시간';
+    const currentGaugeMinutes = GAUGE_STEPS[sliderStepIndex]?.minutes || 0;
+    const currentGaugeLabel = GAUGE_STEPS[sliderStepIndex]?.label || '전체';
 
-    // 기간 및 분/시간 단위 필터링 로직
+    // 기간 및 분/시간 단위 필터링 로직 (완전 보정본)
     const filteredList = parsedList.filter((news) => {
         if (!news.rawDate || isNaN(news.rawDate.getTime())) return true;
         const now = new Date();
@@ -149,21 +150,25 @@ const NewsList = () => {
             const oneMonthAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
             return newsTime >= oneMonthAgo;
         } else if (timeRange === 'CUSTOM') {
-            // 1. 날짜 범위 필터
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                if (newsTime < start.getTime()) return false;
-            }
+            // 1. 기준 종료 시점(baseEndTime) 결정
+            let baseEndTime = now.getTime();
+
             if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
+                const end = new Date(`${endDate}T23:59:59.999`);
+                // 오늘 날짜가 아니면 해당 과거일의 23:59:59를 기준 시점으로 잡음
+                baseEndTime = end.getTime() > now.getTime() ? now.getTime() : end.getTime();
                 if (newsTime > end.getTime()) return false;
             }
 
-            // 2. 게이지 슬라이더 시간 필터 (현재 시점 기준 currentGaugeMinutes 전부터 현재까지)
+            // 2. 시작 날짜 필터
+            if (startDate) {
+                const start = new Date(`${startDate}T00:00:00.000`);
+                if (newsTime < start.getTime()) return false;
+            }
+
+            // 3. 시간 게이지 슬라이더 필터 (currentGaugeMinutes > 0 일 때만 상대적 시간 필터 적용)
             if (currentGaugeMinutes > 0) {
-                const threshold = now.getTime() - (currentGaugeMinutes * 60 * 1000);
+                const threshold = baseEndTime - (currentGaugeMinutes * 60 * 1000);
                 if (newsTime < threshold) return false;
             }
 
@@ -221,9 +226,9 @@ const NewsList = () => {
                                         className="bar-input"
                                     />
                                     {(startDate || endDate) && (
-                                        <button 
-                                            type="button" 
-                                            className="btn-text-reset" 
+                                        <button
+                                            type="button"
+                                            className="btn-text-reset"
                                             onClick={() => { setStartDate(''); setEndDate(''); }}
                                         >
                                             날짜 초기화
@@ -253,9 +258,9 @@ const NewsList = () => {
                                         />
                                         <div className="gauge-marks">
                                             {GAUGE_STEPS.map((step, idx) => (
-                                                <span 
+                                                <span
                                                     key={step.label}
-                                                    onClick={() => setSliderStepIndex(idx)} 
+                                                    onClick={() => setSliderStepIndex(idx)}
                                                     className={sliderStepIndex === idx ? 'active' : ''}
                                                 >
                                                     {step.label}
@@ -347,7 +352,7 @@ const NewsList = () => {
                                 </p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <button 
+                                <button
                                     onClick={() => setSelectedNews(null)}
                                     style={{
                                         padding: '10px 20px',
