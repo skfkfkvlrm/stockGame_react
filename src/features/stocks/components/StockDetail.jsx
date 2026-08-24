@@ -20,7 +20,20 @@ const StockDetail = () => {
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
     
     const [stockInfo, setStockInfo] = useState(null);
+    const [rawHistoryData, setRawHistoryData] = useState([]);
     const [chartData, setChartData] = useState([]);
+    const [chartType, setChartType] = useState('candlestick'); // 'candlestick' or 'line'
+    
+    // 차트 기간 게이지 스텝 정의 (0: 당일/실시간 ~ 4: 상장 전체)
+    const TIMEFRAME_STEPS = [
+        { label: '당일 (실시간)', days: 1, desc: '오늘 장 시작 ~ 현재' },
+        { label: '1주일', days: 7, desc: '최근 7일간 시세' },
+        { label: '1개월', days: 30, desc: '최근 30일간 시세' },
+        { label: '3개월', days: 90, desc: '최근 90일간 시세' },
+        { label: '상장 전체 (ALL)', days: 0, desc: '상장 초기 ~ 현재' }
+    ];
+    const [timeframeIndex, setTimeframeIndex] = useState(0); // 기본값: 0 (당일)
+
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
     const [myOrders, setMyOrders] = useState([]);
     const [myStockAmount, setMyStockAmount] = useState(0);
@@ -72,11 +85,7 @@ const StockDetail = () => {
             }
 
             const rawHistory = Array.isArray(historyRes.data?.data) ? historyRes.data.data : [];
-            const mappedHistory = rawHistory.map(item => ({
-                x: item.date ? new Date(item.date).getTime() : Date.now(),
-                y: [item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice, item.price ?? initialPrice]
-            }));
-            setChartData([{ data: mappedHistory }]);
+            setRawHistoryData(rawHistory);
 
             const aggregateOrders = (orders) => {
                 if (!Array.isArray(orders)) return [];
@@ -214,13 +223,89 @@ const StockDetail = () => {
         }
     };
 
+    // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환
+    useEffect(() => {
+        const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
+        const currentStep = TIMEFRAME_STEPS[timeframeIndex];
+        const now = Date.now();
+        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
+
+        let filtered = rawHistoryData.filter(item => {
+            if (!item.date) return true;
+            const itemTime = new Date(item.date).getTime();
+            return itemTime >= cutoffTime;
+        });
+
+        // 당일 데이터가 부족하거나 신규 상장 종목인 경우 실시간 시세 포인트 합성
+        if (filtered.length === 0) {
+            filtered = [{
+                date: new Date(),
+                price: initialPrice
+            }];
+        }
+
+        if (chartType === 'candlestick') {
+            const mappedCandle = filtered.map(item => {
+                const itemTime = item.date ? new Date(item.date).getTime() : now;
+                const p = item.price ?? initialPrice;
+                // OHLC 데이터가 있으면 활용, 없으면 단일가 기준 캔들 구성
+                const open = item.openPrice ?? p;
+                const high = item.highPrice ?? Math.max(open, p);
+                const low = item.lowPrice ?? Math.min(open, p);
+                const close = item.closePrice ?? p;
+                return {
+                    x: itemTime,
+                    y: [open, high, low, close]
+                };
+            });
+            setChartData([{ data: mappedCandle }]);
+        } else {
+            const mappedLine = filtered.map(item => {
+                const itemTime = item.date ? new Date(item.date).getTime() : now;
+                const p = item.price ?? initialPrice;
+                return {
+                    x: itemTime,
+                    y: p
+                };
+            });
+            setChartData([{ name: '주가', data: mappedLine }]);
+        }
+    }, [rawHistoryData, timeframeIndex, chartType, stockInfo]);
+
     const chartOptions = {
-        chart: { type: 'candlestick', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+        chart: { 
+            type: chartType, 
+            background: 'transparent', 
+            toolbar: { show: false }, 
+            animations: { enabled: true, easing: 'easeinout', speed: 400 } 
+        },
         theme: { mode: 'light' },
-        plotOptions: { candlestick: { colors: { upward: '#ff4757', downward: '#3b82f6' } } },
-        xaxis: { type: 'datetime', labels: { style: { colors: '#64748b' } } },
-        yaxis: { labels: { style: { colors: '#64748b' }, formatter: (v) => v.toLocaleString() } },
-        grid: { borderColor: 'rgba(0,0,0,0.05)' }
+        stroke: { curve: 'smooth', width: chartType === 'line' ? 3 : 1 },
+        colors: chartType === 'line' ? ['#8b5cf6'] : undefined,
+        plotOptions: { 
+            candlestick: { 
+                colors: { upward: '#ff4757', downward: '#3b82f6' } 
+            } 
+        },
+        xaxis: { 
+            type: 'datetime', 
+            labels: { 
+                style: { colors: '#64748b' },
+                datetimeUTC: false,
+                format: timeframeIndex === 0 ? 'HH:mm' : 'MM/dd'
+            } 
+        },
+        yaxis: { 
+            labels: { 
+                style: { colors: '#64748b' }, 
+                formatter: (v) => `${Math.round(v).toLocaleString()}원` 
+            } 
+        },
+        grid: { borderColor: 'rgba(0,0,0,0.05)' },
+        tooltip: {
+            theme: 'light',
+            x: { format: 'yyyy-MM-dd HH:mm:ss' }
+        }
     };
 
     const maxOrderAmount = Math.max(
@@ -280,8 +365,59 @@ const StockDetail = () => {
                         </div>
                     </div>
 
+                    {/* Chart Box with Timeframe Gauge & Type Selector */}
                     <div className="glass-panel chart-box">
-                        <ReactApexChart options={chartOptions} series={chartData} type="candlestick" height="100%" />
+                        <div className="chart-controls-header">
+                            <div className="chart-type-tabs">
+                                <button 
+                                    className={`chart-type-btn ${chartType === 'candlestick' ? 'active' : ''}`}
+                                    onClick={() => setChartType('candlestick')}
+                                >
+                                    봉차트 (캔들)
+                                </button>
+                                <button 
+                                    className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
+                                    onClick={() => setChartType('line')}
+                                >
+                                    라인차트 (선)
+                                </button>
+                            </div>
+
+                            <div className="selected-timeframe-info">
+                                <span className="timeframe-badge">{TIMEFRAME_STEPS[timeframeIndex].label}</span>
+                                <span className="timeframe-desc">{TIMEFRAME_STEPS[timeframeIndex].desc}</span>
+                            </div>
+                        </div>
+
+                        <div className="chart-canvas-wrapper">
+                            <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
+                        </div>
+
+                        {/* 기간 설정 게이지바 (오늘 ~ 상장까지) */}
+                        <div className="timeframe-gauge-container">
+                            <div className="gauge-track-wrapper">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max={TIMEFRAME_STEPS.length - 1}
+                                    step="1"
+                                    value={timeframeIndex}
+                                    onChange={(e) => setTimeframeIndex(parseInt(e.target.value, 10))}
+                                    className="timeframe-gauge-slider"
+                                />
+                                <div className="gauge-step-labels">
+                                    {TIMEFRAME_STEPS.map((step, idx) => (
+                                        <span 
+                                            key={step.label} 
+                                            className={`gauge-step-label ${idx === timeframeIndex ? 'active' : ''}`}
+                                            onClick={() => setTimeframeIndex(idx)}
+                                        >
+                                            {step.label}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

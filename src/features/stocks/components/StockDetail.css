@@ -113,8 +113,119 @@
 }
 
 .chart-box {
-    padding: 24px;
-    height: 450px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 480px;
+}
+
+.chart-controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--bg-panel-border);
+    padding-bottom: 12px;
+}
+
+.chart-type-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.chart-type-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-type-btn.active {
+    background: #ffffff;
+    color: #8b5cf6;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.selected-timeframe-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timeframe-badge {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8b5cf6;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.timeframe-desc {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.chart-canvas-wrapper {
+    flex: 1;
+    min-height: 300px;
+    width: 100%;
+}
+
+/* Timeframe Slider Gauge */
+.timeframe-gauge-container {
+    background: rgba(248, 250, 252, 0.8);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 12px;
+    padding: 14px 20px 10px;
+}
+
+.gauge-track-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeframe-gauge-slider {
+    width: 100%;
+    accent-color: #8b5cf6;
+    cursor: pointer;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.gauge-step-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.gauge-step-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease;
+    user-select: none;
+}
+
+.gauge-step-label:hover {
+    color: #8b5cf6;
+}
+
+.gauge-step-label.active {
+    color: #8b5cf6;
+    font-weight: 700;
 }
 
 /* Middle: Orderbook Panel */
