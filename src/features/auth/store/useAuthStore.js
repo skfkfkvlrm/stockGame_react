@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import api from '../../../api/axios';
 
+const initialToken = localStorage.getItem('jwt_token');
+
 const useAuthStore = create((set) => ({
     user: null,
-    isAuthenticated: false,
-    isLoading: false,
+    isAuthenticated: !!initialToken,
+    isLoading: !!initialToken,
     error: null,
 
     fetchMe: async () => {
@@ -22,25 +24,25 @@ const useAuthStore = create((set) => ({
     },
 
     checkAuthStatus: async () => {
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+            set({ user: null, isAuthenticated: false, isLoading: false });
+            return;
+        }
+
         set({ isLoading: true });
         try {
-            const token = localStorage.getItem('jwt_token');
-            if (token) {
-                const meResponse = await api.get('/members/me');
-                if (meResponse.data && meResponse.data.success) {
-                    set({ user: meResponse.data.data, isAuthenticated: true, error: null });
-                } else {
-                    localStorage.removeItem('jwt_token');
-                    set({ user: null, isAuthenticated: false });
-                }
+            const meResponse = await api.get('/members/me');
+            if (meResponse.data && meResponse.data.success) {
+                set({ user: meResponse.data.data, isAuthenticated: true, error: null });
             } else {
+                localStorage.removeItem('jwt_token');
                 set({ user: null, isAuthenticated: false });
             }
         } catch (error) {
             console.error('Check Auth Status Error:', error);
-            // 토큰이 남아있고 브라우저 새로고침 시 네트워크 일시 지연인 경우 즉각 삭제하는 대신 안전 유지
-            const token = localStorage.getItem('jwt_token');
-            if (!token) {
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                localStorage.removeItem('jwt_token');
                 set({ user: null, isAuthenticated: false, error: error.message });
             }
         } finally {
