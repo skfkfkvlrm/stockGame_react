@@ -317,8 +317,65 @@ const NewsList = () => {
             {/* News Detail Modal */}
             {selectedNews && (() => {
                 const title = selectedNews.title || '';
-                const keywords = ["삼성전자", "SK하이닉스", "NAVER", "카카오", "현대차", "LG에너지솔루션", "한화에어로스페이스", "셀트리온"];
-                const matchedKey = keywords.find(k => title.includes(k)) || '주요 종목';
+                const tag = selectedNews.tag || '';
+                
+                // 실제 상장 종목 키워드 목록
+                const stockKeywords = [
+                    '새콤달콤', '포켓몬빵', '바나나우유', '쿠키런테크', '크래프톤', '넥슨게임즈', '넷마블',
+                    'PC방이용권', '닌텐도', '로블록스', 'SM엔터', '하이브', '치지직/숲',
+                    '지우개똥청소기', '샤프심연구소', '캐릭터필통', '축구공테크', '배드민턴클럽', '포켓몬카드',
+                    'AI로봇선생님', '드론배달소', '스마트책상', '급식우선권', '자리선택권', '청소면제권'
+                ];
+                
+                // 종목명 추출: 제목에서 일치하는 실제 종목 탐색, 없으면 앞부분 콜론/공백 분리
+                let matchedStock = stockKeywords.find(k => title.includes(k));
+                if (!matchedStock) {
+                    const colonMatch = title.match(/^\[?([^:\]]+)\]?:/);
+                    if (colonMatch) {
+                        matchedStock = colonMatch[1].trim();
+                    } else {
+                        matchedStock = '관련 핵심 종목';
+                    }
+                }
+
+                // 호재 / 악재 판별
+                const isPositive = tag.includes('호재') || title.includes('호재') || title.includes('상승') || title.includes('급증') || title.includes('호조') || title.includes('인기') || title.includes('수혜') || title.includes('신제품');
+                const isNegative = tag.includes('악재') || title.includes('악재') || title.includes('하락') || title.includes('둔화') || title.includes('우려') || title.includes('불만') || title.includes('장애') || title.includes('손실');
+
+                // 감성에 맞춘 맞춤형 투자 분석 및 장려/반려 권고 멘트 생성
+                let analysisBg = '#f8fafc';
+                let analysisBorder = '#8b5cf6';
+                let impactText = '';
+
+                if (isPositive) {
+                    analysisBg = 'rgba(239, 68, 68, 0.04)';
+                    analysisBorder = '#ef4444';
+                    impactText = (
+                        <>
+                            <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🚀 [투자 장려 신호] 긍정적 모멘텀 발생:</span><br />
+                            해당 이슈는 <b>{matchedStock}</b>의 실적 개선 및 신규 수요 유입에 직접적인 호재로 작용하고 있습니다. 
+                            단기 매수세 집중과 함께 목표 주가 상향 가능성이 높으므로, <b>분할 매수 및 적극적인 비중 확대를 통한 수익 실현 전략을 적극 권장</b>합니다.
+                        </>
+                    );
+                } else if (isNegative) {
+                    analysisBg = 'rgba(59, 130, 246, 0.04)';
+                    analysisBorder = '#3b82f6';
+                    impactText = (
+                        <>
+                            <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>⚠️ [투자 주의/반려 신호] 하방 리스크 확대:</span><br />
+                            해당 악재 요인은 <b>{matchedStock}</b>의 단기 수익성 악화 및 투자 심리 위축을 초래할 위험이 큽니다. 
+                            추가 가격 조정 및 매도세 출회 가능성이 높으므로, <b>신규 매수를 지양(반려)하고 보유 물량의 리스크 관리 및 손절/관망 전략을 강력히 권고</b>합니다.
+                        </>
+                    );
+                } else {
+                    impactText = (
+                        <>
+                            <span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>📊 [시장 중립 분석] 변동성 주시 필요:</span><br />
+                            해당 이슈는 <b>{matchedStock}</b>의 시장 관심도에 영향을 미칠 수 있으나 방향성이 유동적입니다. 
+                            체결량 추이와 호가창 동향을 면밀히 관찰하며 분할 매매로 대응하시기 바랍니다.
+                        </>
+                    );
+                }
 
                 return (
                     <div className="modal-overlay" onClick={() => setSelectedNews(null)} style={{
@@ -337,12 +394,19 @@ const NewsList = () => {
                             background: '#ffffff',
                             borderRadius: '16px',
                             padding: '32px',
-                            maxWidth: '560px',
+                            maxWidth: '580px',
                             width: '90%',
                             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
+                                <span style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 'bold',
+                                    background: isPositive ? 'rgba(239, 68, 68, 0.12)' : isNegative ? 'rgba(59, 130, 246, 0.12)' : 'rgba(139, 92, 246, 0.15)',
+                                    color: isPositive ? '#ef4444' : isNegative ? '#3b82f6' : '#8b5cf6'
+                                }}>
                                     {selectedNews.tag}
                                 </span>
                                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
@@ -353,13 +417,13 @@ const NewsList = () => {
                                 {selectedNews.title}
                             </h2>
                             <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
-                                <p style={{ marginBottom: '12px', fontWeight: '500', color: '#334155' }}>
+                                <p style={{ marginBottom: '14px', fontWeight: '500', color: '#334155' }}>
                                     📌 <b>시장 속보 요약</b><br />
-                                    '{selectedNews.title}' 관련 실시간 시장 데이터 분석 결과입니다. 현재 <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{matchedKey}</span>을(를) 중심으로 투자자들의 거래 관심도와 매수/매도 수급이 집중되고 있습니다.
+                                    '{selectedNews.title}' 관련 실시간 시장 데이터 분석 결과입니다. 현재 <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{matchedStock}</span>을(를) 중심으로 투자자들의 거래 관심도와 수급이 집중되고 있습니다.
                                 </p>
-                                <p style={{ marginBottom: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
+                                <p style={{ marginBottom: '12px', background: analysisBg, padding: '14px', borderRadius: '8px', borderLeft: `4px solid ${analysisBorder}` }}>
                                     📊 <b>주가 및 투자 영향 분석</b><br />
-                                    해당 호재/악재 이슈는 {matchedKey}의 단기 주가 변동성 및 관련 업종 섹터 전반에 영향을 미칠 수 있습니다. 실시간 호가창 및 체결 내역을 주시하여 투자 전략을 점검하시기 바랍니다.
+                                    {impactText}
                                 </p>
                                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '16px' }}>
                                     ※ 본 뉴스는 실시간 증시 시세 및 모의투자 시장 분석 시스템에 의해 자동으로 정제되어 출력된 뉴스 피드입니다.
@@ -369,7 +433,7 @@ const NewsList = () => {
                                 <button
                                     onClick={() => setSelectedNews(null)}
                                     style={{
-                                        padding: '10px 20px',
+                                        padding: '10px 24px',
                                         background: '#8b5cf6',
                                         color: 'white',
                                         border: 'none',
