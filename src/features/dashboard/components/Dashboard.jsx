@@ -33,8 +33,7 @@ const Dashboard = () => {
     const [timeRange, setTimeRange] = useState('ALL'); // '1W', '1M', '3M', 'ALL', 'CUSTOM'
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [showCompareModal, setShowCompareModal] = useState(false);
-    const [showProfitModal, setShowProfitModal] = useState(false);
+    const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -247,7 +246,7 @@ const Dashboard = () => {
                 <div 
                     className="stat-card stat-card-profit"
                     style={{ cursor: 'pointer', transition: 'transform 0.15s ease' }}
-                    onClick={() => setShowProfitModal(true)}
+                    onClick={() => setActiveModalTab('PROFIT')}
                     title="클릭하여 종목별 손익 원인 분석 보기"
                 >
                     <div className="stat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -301,7 +300,7 @@ const Dashboard = () => {
                             <div className="compare-sub-text">30일 전 기준 자산: {metrics.monthAgoAsset.toLocaleString()} P</div>
                         </div>
                     </div>
-                    <button type="button" className="btn-open-compare-modal" onClick={() => setShowCompareModal(true)}>
+                    <button type="button" className="btn-open-compare-modal" onClick={() => setActiveModalTab('COMPARE')}>
                         🔍 자산 변동 정밀 비교 리포트 보기
                     </button>
                 </div>
@@ -329,122 +328,178 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {showCompareModal && (
-                <div className="modal-overlay" onClick={() => setShowCompareModal(false)}>
-                    <div className="modal-content compare-modal glass-panel" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>📅 자산 변동 정밀 비교 리포트</h2>
-                            <button type="button" className="modal-close-btn" onClick={() => setShowCompareModal(false)}>✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="modal-metric-grid">
-                                <div className="metric-box">
-                                    <span className="box-title">전일 대비 (1일)</span>
-                                    <span className={`box-value ${metrics.todayChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.todayChange > 0 ? '+' : ''}{metrics.todayChange.toLocaleString()} P</span>
-                                </div>
-                                <div className="metric-box">
-                                    <span className="box-title">전주 대비 (7일)</span>
-                                    <span className={`box-value ${metrics.weekChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.weekChange > 0 ? '+' : ''}{metrics.weekChange.toLocaleString()} P</span>
-                                </div>
-                                <div className="metric-box">
-                                    <span className="box-title">전월 대비 (30일)</span>
-                                    <span className={`box-value ${metrics.monthChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.monthChange > 0 ? '+' : ''}{metrics.monthChange.toLocaleString()} P</span>
-                                </div>
+            {/* 통합 상호 전환 분석 모달 */}
+            {activeModalTab && (
+                <div className="modal-overlay" onClick={() => setActiveModalTab(null)}>
+                    <div className="modal-content compare-modal glass-panel" style={{ maxWidth: '720px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header" style={{ paddingBottom: '12px', borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.4rem' }}>{activeModalTab === 'COMPARE' ? '📅' : '🎯'}</span>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#1e293b' }}>
+                                    {activeModalTab === 'COMPARE' ? '자산 변동 정밀 비교 리포트' : '종목별 투자 손익 원인 분석'}
+                                </h2>
                             </div>
+                            <button type="button" className="modal-close-btn" onClick={() => setActiveModalTab(null)}>✕</button>
+                        </div>
 
-                            <div className="modal-history-list-section" style={{ marginTop: '20px' }}>
-                                <h3>최근 자산 변동 기록 (가입 기본 지원금 제외)</h3>
-                                <div className="history-table-wrapper">
-                                    <table className="modal-history-table">
-                                        <thead>
-                                            <tr>
-                                                <th>일시</th>
-                                                <th>사유</th>
-                                                <th>변동 포인트</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {(!actualHistoryData || actualHistoryData.length === 0) ? (
-                                                <tr>
-                                                    <td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                                                        기록된 변동 내역이 없습니다.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                [...actualHistoryData].reverse().slice(0, 10).map((h, i) => (
-                                                    <tr key={i}>
-                                                        <td>{h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR') : '-'}</td>
-                                                        <td>{h.historyContent || h.reason || h.description || h.historyType || '변동'}</td>
-                                                        <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'}>
-                                                            {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        {/* 모달 내부 상호 전환 탭 네비게이션 */}
+                        <div style={{ display: 'flex', gap: '8px', padding: '12px 24px', background: 'rgba(241, 245, 249, 0.7)', borderBottom: '1px solid #e2e8f0' }}>
+                            <button
+                                type="button"
+                                style={{
+                                    flex: 1,
+                                    padding: '9px 16px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeModalTab === 'COMPARE' ? '#6366f1' : 'transparent',
+                                    color: activeModalTab === 'COMPARE' ? 'white' : '#64748b',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: activeModalTab === 'COMPARE' ? '0 2px 6px rgba(99, 102, 241, 0.3)' : 'none'
+                                }}
+                                onClick={() => setActiveModalTab('COMPARE')}
+                            >
+                                📅 자산 변동 정밀 비교 (기간별)
+                            </button>
+                            <button
+                                type="button"
+                                style={{
+                                    flex: 1,
+                                    padding: '9px 16px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeModalTab === 'PROFIT' ? '#6366f1' : 'transparent',
+                                    color: activeModalTab === 'PROFIT' ? 'white' : '#64748b',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: activeModalTab === 'PROFIT' ? '0 2px 6px rgba(99, 102, 241, 0.3)' : 'none'
+                                }}
+                                onClick={() => setActiveModalTab('PROFIT')}
+                            >
+                                🎯 종목별 손익 원인 분석 (종목별)
+                            </button>
                         </div>
-                    </div>
-                </div>
-            )}
 
-            {showProfitModal && (
-                <div className="modal-overlay" onClick={() => setShowProfitModal(false)}>
-                    <div className="modal-content compare-modal glass-panel" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>🎯 종목별 투자 손익 원인 분석</h2>
-                            <button type="button" className="modal-close-btn" onClick={() => setShowProfitModal(false)}>✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="modal-metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: '20px' }}>
-                                <div className="metric-box">
-                                    <span className="box-title">총 투자 평가 손익</span>
-                                    <span className={`box-value ${totalProfit >= 0 ? 'profit-up' : 'profit-down'}`}>{totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()} P</span>
-                                </div>
-                                <div className="metric-box">
-                                    <span className="box-title">최고 수익 종목 (BEST)</span>
-                                    <span className="box-value profit-up" style={{ fontSize: '1.1rem' }}>{profitBreakdown.bestStock ? `${profitBreakdown.bestStock.name} (+${profitBreakdown.bestStock.profit.toLocaleString()}P)` : '없음'}</span>
-                                </div>
-                                <div className="metric-box">
-                                    <span className="box-title">최대 손실 종목 (WORST)</span>
-                                    <span className="box-value profit-down" style={{ fontSize: '1.1rem' }}>{profitBreakdown.worstStock ? `${profitBreakdown.worstStock.name} (${profitBreakdown.worstStock.profit.toLocaleString()}P)` : '없음'}</span>
-                                </div>
-                            </div>
-                            <div className="modal-history-list-section">
-                                <h3>보유 종목별 손익 기여도 현황</h3>
-                                <div className="history-table-wrapper">
-                                    <table className="modal-history-table">
-                                        <thead>
-                                            <tr>
-                                                <th>종목명</th>
-                                                <th>보유 수량</th>
-                                                <th>매수 평균가</th>
-                                                <th>현재가</th>
-                                                <th>평가 손익</th>
-                                                <th>수익률</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {profitBreakdown.unrealizedList.length === 0 ? (
-                                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>보유 중인 주식이 없습니다.</td></tr>
-                                            ) : (
-                                                profitBreakdown.unrealizedList.map((stk, i) => (
-                                                    <tr key={i}>
-                                                        <td style={{ fontWeight: '700' }}>{stk.name}</td>
-                                                        <td>{stk.amount} 주</td>
-                                                        <td>{stk.avgPrice.toLocaleString()} P</td>
-                                                        <td>{stk.currentPrice.toLocaleString()} P</td>
-                                                        <td className={stk.profit >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.profit > 0 ? '+' : ''}{stk.profit.toLocaleString()} P</td>
-                                                        <td className={stk.rate >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.rate > 0 ? '+' : ''}{stk.rate.toFixed(2)}%</td>
+                        <div className="modal-body" style={{ padding: '24px' }}>
+                            {/* TAB 1: 자산 변동 정밀 비교 */}
+                            {activeModalTab === 'COMPARE' && (
+                                <>
+                                    <div className="modal-metric-grid">
+                                        <div className="metric-box">
+                                            <span className="box-title">전일 대비 (1일)</span>
+                                            <span className={`box-value ${metrics.todayChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.todayChange > 0 ? '+' : ''}{metrics.todayChange.toLocaleString()} P</span>
+                                            <span className="box-sub">({metrics.dodRate > 0 ? '+' : ''}{metrics.dodRate.toFixed(2)}%)</span>
+                                        </div>
+                                        <div className="metric-box">
+                                            <span className="box-title">전주 대비 (7일)</span>
+                                            <span className={`box-value ${metrics.weekChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.weekChange > 0 ? '+' : ''}{metrics.weekChange.toLocaleString()} P</span>
+                                            <span className="box-sub">({metrics.wowRate > 0 ? '+' : ''}{metrics.wowRate.toFixed(2)}%)</span>
+                                        </div>
+                                        <div className="metric-box">
+                                            <span className="box-title">전월 대비 (30일)</span>
+                                            <span className={`box-value ${metrics.monthChange >= 0 ? 'profit-up' : 'profit-down'}`}>{metrics.monthChange > 0 ? '+' : ''}{metrics.monthChange.toLocaleString()} P</span>
+                                            <span className="box-sub">({metrics.momRate > 0 ? '+' : ''}{metrics.momRate.toFixed(2)}%)</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="modal-history-list-section" style={{ marginTop: '20px' }}>
+                                        <h3>최근 자산 변동 기록 (가입 기본 지원금 제외)</h3>
+                                        <div className="history-table-wrapper">
+                                            <table className="modal-history-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>일시</th>
+                                                        <th>사유</th>
+                                                        <th>변동 포인트</th>
                                                     </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                                </thead>
+                                                <tbody>
+                                                    {(!actualHistoryData || actualHistoryData.length === 0) ? (
+                                                        <tr>
+                                                            <td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                                                                기록된 변동 내역이 없습니다.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        [...actualHistoryData].reverse().slice(0, 10).map((h, i) => (
+                                                            <tr key={i}>
+                                                                <td>{h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR') : '-'}</td>
+                                                                <td>{h.historyContent || h.reason || h.description || h.historyType || '변동'}</td>
+                                                                <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'}>
+                                                                    {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* TAB 2: 종목별 투자 손익 원인 분석 */}
+                            {activeModalTab === 'PROFIT' && (
+                                <>
+                                    <div className="modal-metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: '20px' }}>
+                                        <div className="metric-box">
+                                            <span className="box-title">총 투자 평가 손익</span>
+                                            <span className={`box-value ${totalProfit >= 0 ? 'profit-up' : 'profit-down'}`}>{totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()} P</span>
+                                        </div>
+                                        <div className="metric-box">
+                                            <span className="box-title">최고 수익 종목 (BEST)</span>
+                                            <span className="box-value profit-up" style={{ fontSize: '1.05rem' }}>{profitBreakdown.bestStock ? `${profitBreakdown.bestStock.name} (+${profitBreakdown.bestStock.profit.toLocaleString()}P)` : '없음'}</span>
+                                        </div>
+                                        <div className="metric-box">
+                                            <span className="box-title">최대 손실 종목 (WORST)</span>
+                                            <span className="box-value profit-down" style={{ fontSize: '1.05rem' }}>{profitBreakdown.worstStock ? `${profitBreakdown.worstStock.name} (${profitBreakdown.worstStock.profit.toLocaleString()}P)` : '없음'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="modal-history-list-section">
+                                        <h3>보유 종목별 손익 기여도 현황</h3>
+                                        <div className="history-table-wrapper">
+                                            <table className="modal-history-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>종목명</th>
+                                                        <th>보유 수량</th>
+                                                        <th>매수 평균가</th>
+                                                        <th>현재가</th>
+                                                        <th>평가 손익</th>
+                                                        <th>수익률</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {profitBreakdown.unrealizedList.length === 0 ? (
+                                                        <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>보유 중인 주식이 없습니다.</td></tr>
+                                                    ) : (
+                                                        profitBreakdown.unrealizedList.map((stk, i) => (
+                                                            <tr key={i}>
+                                                                <td style={{ fontWeight: '700' }}>{stk.name}</td>
+                                                                <td>{stk.amount} 주</td>
+                                                                <td>{stk.avgPrice.toLocaleString()} P</td>
+                                                                <td>{stk.currentPrice.toLocaleString()} P</td>
+                                                                <td className={stk.profit >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.profit > 0 ? '+' : ''}{stk.profit.toLocaleString()} P</td>
+                                                                <td className={stk.rate >= 0 ? 'profit-up' : 'profit-down'} style={{ fontWeight: '700' }}>{stk.rate > 0 ? '+' : ''}{stk.rate.toFixed(2)}%</td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
