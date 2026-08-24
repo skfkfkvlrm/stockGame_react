@@ -6,8 +6,8 @@ import './StockList.css';
 
 const SECTOR_MAP = {
     '새콤달콤': '간식/매점', '포켓몬빵': '간식/매점', '바나나우유': '간식/매점',
-    '자리선택권': '학교생활/쿠폰', '청소면제권': '학교생활/쿠폰', '급식우선권': '학교생활/쿠폰',
-    'PC방이용권': '게임/여가', '닌텐도': '게임/여가', '로블록스': '게임/여가',
+    '쿠키런테크': '게임/콘텐츠', '크래프톤': '게임/콘텐츠', '넥슨게임즈': '게임/콘텐츠', '넷마블': '게임/콘텐츠',
+    'PC방이용권': '게임/콘텐츠', '닌텐도': '게임/콘텐츠', '로블록스': '게임/콘텐츠',
     'SM엔터': '엔터/미디어', '하이브': '엔터/미디어', '치지직/숲': '엔터/미디어',
     '지우개똥청소기': '문구/학용품', '샤프심연구소': '문구/학용품', '캐릭터필통': '문구/학용품',
     '축구공테크': '스포츠/취미', '배드민턴클럽': '스포츠/취미', '포켓몬카드': '스포츠/취미',
@@ -29,7 +29,7 @@ const StockList = () => {
     const [selectedIndexModal, setSelectedIndexModal] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const ALL_SECTORS = ['간식/매점', '학교생활/쿠폰', '게임/여가', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'];
+    const ALL_SECTORS = ['간식/매점', '게임/콘텐츠', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'];
     const [selectedSectors, setSelectedSectors] = useState(['전체']);
     const [sortOption, setSortOption] = useState('NONE'); // 'ASC', 'DESC', 'VOLUME', 'NONE'
 

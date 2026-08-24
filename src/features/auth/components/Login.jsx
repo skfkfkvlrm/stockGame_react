@@ -15,7 +15,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setErrorMessage('');
-        
+
         if (!studentId || !password) {
             setErrorMessage('아이디와 비밀번호를 모두 입력해주세요.');
             return;
@@ -36,39 +36,39 @@ const Login = () => {
                     <div className="brand-logo-large">STOCKGAME</div>
                     <p>실전 감각을 기르는 최고의 방법</p>
                 </div>
-                
+
                 {errorMessage && <div className="error-msg">{errorMessage}</div>}
-                
+
                 <form onSubmit={handleLogin} className="login-form">
                     <div className="input-group">
-                        <label>아이디</label> 
+                        <label>아이디</label>
                         <div className="input-icon-wrapper">
                             <User className="input-icon" size={18} />
-                            <input 
-                                type="text" 
-                                placeholder="학번을 입력하세요 (예: admin)"
-                                value={studentId} 
-                                onChange={(e) => setStudentId(e.target.value)} 
+                            <input
+                                type="text"
+                                placeholder="학번을 입력하세요"
+                                value={studentId}
+                                onChange={(e) => setStudentId(e.target.value)}
                             />
                         </div>
                     </div>
                     <div className="input-group">
-                        <label>비밀번호</label> 
+                        <label>비밀번호</label>
                         <div className="input-icon-wrapper">
                             <Lock className="input-icon" size={18} />
-                            <input 
-                                type="password" 
+                            <input
+                                type="password"
                                 placeholder="비밀번호를 입력하세요"
-                                value={password} 
-                                onChange={(e) => setPassword(e.target.value)} 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>
-                    
+
                     <button type="submit" className="login-btn" disabled={isLoading}>
                         <LogIn size={20} /> {isLoading ? '로그인 중...' : '로그인'}
                     </button>
-                    
+
                     <div className="login-links">
                         <span onClick={() => navigate('/register')} className="link">계정이 없으신가요? <b>회원가입</b></span>
                     </div>
