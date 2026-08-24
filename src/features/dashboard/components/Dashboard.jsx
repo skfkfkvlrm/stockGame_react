@@ -30,6 +30,9 @@ const Dashboard = () => {
     const user = useAuthStore((state) => state.user);
     const [assetData, setAssetData] = useState(null);
     const [historyData, setHistoryData] = useState([]);
+    const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
     const [chartType, setChartType] = useState('area'); // 'area' | 'line'
     
     // 자산 추이 기간 게이지 스텝 정의 (0: 오늘/실시간 ~ 4: 전체/가입이래)
