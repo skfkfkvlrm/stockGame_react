@@ -146,6 +146,55 @@ const StockDetail = () => {
         maxReconnectAttempts: 5
     });
 
+    // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
+    useEffect(() => {
+        const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
+        const currentStep = TIMEFRAME_STEPS[timeframeIndex];
+        const now = Date.now();
+        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
+
+        let filtered = rawHistoryData.filter(item => {
+            if (!item.date) return true;
+            const itemTime = new Date(item.date).getTime();
+            return itemTime >= cutoffTime;
+        });
+
+        // 당일 데이터가 부족하거나 신규 상장 종목인 경우 실시간 시세 포인트 합성
+        if (filtered.length === 0) {
+            filtered = [{
+                date: new Date(),
+                price: initialPrice
+            }];
+        }
+
+        if (chartType === 'candlestick') {
+            const mappedCandle = filtered.map(item => {
+                const itemTime = item.date ? new Date(item.date).getTime() : now;
+                const p = item.price ?? initialPrice;
+                // OHLC 데이터가 있으면 활용, 없으면 단일가 기준 캔들 구성
+                const open = item.openPrice ?? p;
+                const high = item.highPrice ?? Math.max(open, p);
+                const low = item.lowPrice ?? Math.min(open, p);
+                const close = item.closePrice ?? p;
+                return {
+                    x: itemTime,
+                    y: [open, high, low, close]
+                };
+            });
+            setChartData([{ data: mappedCandle }]);
+        } else {
+            const mappedLine = filtered.map(item => {
+                const itemTime = item.date ? new Date(item.date).getTime() : now;
+                const p = item.price ?? initialPrice;
+                return {
+                    x: itemTime,
+                    y: p
+                };
+            });
+            setChartData([{ name: '주가', data: mappedLine }]);
+        }
+    }, [rawHistoryData, timeframeIndex, chartType, stockInfo]);
+
     if (isLoading) return <div className="stock-detail-container"><div className="loading-spinner"></div></div>;
     if (error || !stockInfo) return <div className="stock-detail-container"><div className="error-msg">{error || '종목이 존재하지 않습니다.'}</div></div>;
 
@@ -222,55 +271,6 @@ const StockDetail = () => {
             showToast(errMsg, 'error');
         }
     };
-
-    // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환
-    useEffect(() => {
-        const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
-        const currentStep = TIMEFRAME_STEPS[timeframeIndex];
-        const now = Date.now();
-        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
-
-        let filtered = rawHistoryData.filter(item => {
-            if (!item.date) return true;
-            const itemTime = new Date(item.date).getTime();
-            return itemTime >= cutoffTime;
-        });
-
-        // 당일 데이터가 부족하거나 신규 상장 종목인 경우 실시간 시세 포인트 합성
-        if (filtered.length === 0) {
-            filtered = [{
-                date: new Date(),
-                price: initialPrice
-            }];
-        }
-
-        if (chartType === 'candlestick') {
-            const mappedCandle = filtered.map(item => {
-                const itemTime = item.date ? new Date(item.date).getTime() : now;
-                const p = item.price ?? initialPrice;
-                // OHLC 데이터가 있으면 활용, 없으면 단일가 기준 캔들 구성
-                const open = item.openPrice ?? p;
-                const high = item.highPrice ?? Math.max(open, p);
-                const low = item.lowPrice ?? Math.min(open, p);
-                const close = item.closePrice ?? p;
-                return {
-                    x: itemTime,
-                    y: [open, high, low, close]
-                };
-            });
-            setChartData([{ data: mappedCandle }]);
-        } else {
-            const mappedLine = filtered.map(item => {
-                const itemTime = item.date ? new Date(item.date).getTime() : now;
-                const p = item.price ?? initialPrice;
-                return {
-                    x: itemTime,
-                    y: p
-                };
-            });
-            setChartData([{ name: '주가', data: mappedLine }]);
-        }
-    }, [rawHistoryData, timeframeIndex, chartType, stockInfo]);
 
     const chartOptions = {
         chart: { 
