@@ -103,6 +103,10 @@ const NewsList = () => {
         // 2. 정확한 실제 일시(rawDate) 산정
         if (typeof item === 'object' && item.createdDate) {
             let dateStr = String(item.createdDate);
+            // 만약 'YYYY-MM-DD HH:mm:ss' 형태라면 ISO 'YYYY-MM-DDTHH:mm:ss' 표준 형태로 보정
+            if (dateStr.includes(' ') && !dateStr.includes('T')) {
+                dateStr = dateStr.replace(' ', 'T');
+            }
             const baseD = new Date(dateStr);
             
             // 본문 안에 [20:07:06] 형태의 한국 로컬 시간이 적혀있다면 이를 해당 날짜의 시/분/초로 우선 적용
@@ -223,6 +227,19 @@ const NewsList = () => {
 
                         {timeRange === 'CUSTOM' && (
                             <div className="news-custom-stacked-bars">
+                                {/* 팝오버 헤더 */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1e293b' }}>⚙️ 상세 기간/시간 설정</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTimeRange('ALL')}
+                                        style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}
+                                        title="닫기"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
                                 {/* 상단: 날짜 선택 바 */}
                                 <div className="custom-bar-row">
                                     <span className="bar-label">📅 날짜 선택:</span>
@@ -245,7 +262,7 @@ const NewsList = () => {
                                             className="btn-text-reset"
                                             onClick={() => { setStartDate(''); setEndDate(''); }}
                                         >
-                                            날짜 초기화
+                                            초기화
                                         </button>
                                     )}
                                 </div>
@@ -289,29 +306,31 @@ const NewsList = () => {
                 </div>
             </header>
 
-            <div className="news-grid">
-                {filteredList.length === 0 ? (
-                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-                        선택하신 기간에 등록된 뉴스가 없습니다.
-                    </div>
-                ) : (
-                    filteredList.map(news => (
-                        <div key={news.id} className="news-card glass-panel">
-                            <div className="news-card-header">
-                                <span className="news-tag market">{news.tag}</span>
-                                <div className="news-date">
-                                    <Clock size={14} /> {news.date}
+            <div className="news-grid-wrapper glass-panel">
+                <div className="news-grid">
+                    {filteredList.length === 0 ? (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                            선택하신 기간에 등록된 뉴스가 없습니다.
+                        </div>
+                    ) : (
+                        filteredList.map(news => (
+                            <div key={news.id} className="news-card glass-panel">
+                                <div className="news-card-header">
+                                    <span className="news-tag market">{news.tag}</span>
+                                    <div className="news-date">
+                                        <Clock size={14} /> {news.date}
+                                    </div>
+                                </div>
+                                <h3 className="news-title">{news.title}</h3>
+                                <div className="news-footer">
+                                    <button className="read-more-btn" onClick={() => setSelectedNews(news)}>
+                                        자세히 보기 <ChevronRight size={16} />
+                                    </button>
                                 </div>
                             </div>
-                            <h3 className="news-title">{news.title}</h3>
-                            <div className="news-footer">
-                                <button className="read-more-btn" onClick={() => setSelectedNews(news)}>
-                                    자세히 보기 <ChevronRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
+                        ))
+                    )}
+                </div>
             </div>
 
             {/* News Detail Modal */}

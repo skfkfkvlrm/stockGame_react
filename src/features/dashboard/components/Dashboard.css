@@ -48,10 +48,7 @@
     box-shadow: 0 12px 40px rgba(31, 38, 135, 0.1);
 }
 
-.stat-card-profit {
-    background: linear-gradient(135deg, rgba(255, 71, 87, 0.05), rgba(255, 71, 87, 0.15));
-    border: 1px solid rgba(255, 71, 87, 0.2);
-}
+
 
 .stat-header {
     display: flex;
@@ -156,50 +153,36 @@
 }
 
 /* Timeframe Slider Gauge in Dashboard */
-.timeframe-gauge-container-dash {
-    background: rgba(248, 250, 252, 0.8);
-    border: 1px solid var(--bg-panel-border);
-    border-radius: 12px;
-    padding: 12px 16px 8px;
-    margin-top: 12px;
-}
-
-.timeframe-gauge-container-dash .gauge-track-wrapper {
+.chart-timeframe-tabs {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    background: rgba(241, 245, 249, 0.8);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
-.timeframe-gauge-container-dash .timeframe-gauge-slider {
-    width: 100%;
-    accent-color: #8b5cf6;
+.timeframe-tab-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    height: 6px;
-    border-radius: 3px;
+    transition: all 0.2s ease;
 }
 
-.timeframe-gauge-container-dash .gauge-step-labels {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
+.timeframe-tab-btn:hover {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.5);
 }
 
-.timeframe-gauge-container-dash .gauge-step-label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: color 0.15s ease;
-    user-select: none;
-}
-
-.timeframe-gauge-container-dash .gauge-step-label:hover {
+.timeframe-tab-btn.active {
     color: #8b5cf6;
-}
-
-.timeframe-gauge-container-dash .gauge-step-label.active {
-    color: #8b5cf6;
-    font-weight: 700;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .section-header h2 {
@@ -363,6 +346,27 @@
     background: #ffffff;
     border-color: var(--primary-color, #8b5cf6);
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+/* 모달 오버레이 (배경 어둡게) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* 상세 비교 모달 */

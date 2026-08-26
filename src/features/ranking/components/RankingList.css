@@ -197,21 +197,53 @@
 
 .table-responsive {
     overflow-x: auto;
+    max-height: 580px;
+    overflow-y: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+/* Custom Scrollbar for Ranking Table */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: transparent;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--bg-panel-border, #cbd5e1);
+    border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
 }
 
 .leaderboard-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     text-align: left;
 }
 
+.leaderboard-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
 .leaderboard-table th {
-    background: #1e293b;
+    position: sticky;
+    top: 0;
+    background: #1e293b !important;
     color: #f8fafc;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.875rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #334155;
+    border-bottom: 2px solid #334155;
+    z-index: 20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .leaderboard-table td {
@@ -222,12 +254,15 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
-.leaderboard-table tr.my-row {
+.leaderboard-table tr.my-row td {
     background: rgba(56, 189, 248, 0.12);
+}
+
+.leaderboard-table tr.my-row {
     border-left: 4px solid #0284c7;
 }
 
-.leaderboard-table tr:hover {
+.leaderboard-table tr:hover td {
     background: #f1f5f9;
 }
 

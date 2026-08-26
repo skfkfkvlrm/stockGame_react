@@ -24,15 +24,25 @@ const StockDetail = () => {
     const [chartData, setChartData] = useState([]);
     const [chartType, setChartType] = useState('candlestick'); // 'candlestick' or 'line'
     
-    // 차트 기간 게이지 스텝 정의 (0: 당일/실시간 ~ 4: 상장 전체)
-    const TIMEFRAME_STEPS = [
-        { label: '당일 (실시간)', days: 1, desc: '오늘 장 시작 ~ 현재' },
-        { label: '1주일', days: 7, desc: '최근 7일간 시세' },
-        { label: '1개월', days: 30, desc: '최근 30일간 시세' },
-        { label: '3개월', days: 90, desc: '최근 90일간 시세' },
-        { label: '상장 전체 (ALL)', days: 0, desc: '상장 초기 ~ 현재' }
+    const ALL_TIMEFRAMES = [
+        { id: '1M', label: '1분', days: 1/1440, desc: '최근 1분 시세' },
+        { id: '3M', label: '3분', days: 3/1440, desc: '최근 3분 시세' },
+        { id: '10M', label: '10분', days: 10/1440, desc: '최근 10분 시세' },
+        { id: '1H', label: '1시간', days: 1/24, desc: '최근 1시간 시세' },
+        { id: '3H', label: '3시간', days: 3/24, desc: '최근 3시간 시세' },
+        { id: '6H', label: '6시간', days: 6/24, desc: '최근 6시간 시세' },
+        { id: '12H', label: '12시간', days: 12/24, desc: '최근 12시간 시세' },
+        { id: '1D', label: '1일', days: 1, desc: '오늘 장 시작 ~ 현재' },
+        { id: '1W', label: '1주', days: 7, desc: '최근 7일간 시세' },
+        { id: '1MO', label: '1개월', days: 30, desc: '최근 30일간 시세' },
+        { id: '3MO', label: '3개월', days: 90, desc: '최근 90일간 시세' },
+        { id: 'ALL', label: '전체', days: 0, desc: '상장 초기 ~ 현재' }
     ];
-    const [timeframeIndex, setTimeframeIndex] = useState(0); // 기본값: 0 (당일)
+    const quickTabs = ['10M', '1H', '1D', '1W'];
+    
+    const [activeTimeframeId, setActiveTimeframeId] = useState('1D');
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    const activeTimeframe = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
 
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
     const [myOrders, setMyOrders] = useState([]);
@@ -149,7 +159,7 @@ const StockDetail = () => {
     // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
     useEffect(() => {
         const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
-        const currentStep = TIMEFRAME_STEPS[timeframeIndex];
+        const currentStep = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
         const now = Date.now();
         const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
 
@@ -193,7 +203,7 @@ const StockDetail = () => {
             });
             setChartData([{ name: '주가', data: mappedLine }]);
         }
-    }, [rawHistoryData, timeframeIndex, chartType, stockInfo]);
+    }, [rawHistoryData, activeTimeframeId, chartType, stockInfo]);
 
     if (isLoading) return <div className="stock-detail-container"><div className="loading-spinner"></div></div>;
     if (error || !stockInfo) return <div className="stock-detail-container"><div className="error-msg">{error || '종목이 존재하지 않습니다.'}</div></div>;
@@ -276,8 +286,13 @@ const StockDetail = () => {
         chart: { 
             type: chartType, 
             background: 'transparent', 
-            toolbar: { show: false }, 
-            animations: { enabled: true, easing: 'easeinout', speed: 400 } 
+            toolbar: { 
+                show: false,
+                autoSelected: 'pan' 
+            }, 
+            animations: { enabled: true, easing: 'easeinout', speed: 400 },
+            zoom: { enabled: false },
+            selection: { enabled: false }
         },
         theme: { mode: 'light' },
         stroke: { curve: 'smooth', width: chartType === 'line' ? 3 : 1 },
@@ -292,7 +307,7 @@ const StockDetail = () => {
             labels: { 
                 style: { colors: '#64748b' },
                 datetimeUTC: false,
-                format: timeframeIndex === 0 ? 'HH:mm' : 'MM/dd'
+                format: (activeTimeframeId === '1D' || activeTimeframeId.endsWith('H') || activeTimeframeId.endsWith('M')) ? 'HH:mm' : 'MM/dd'
             } 
         },
         yaxis: { 
@@ -383,40 +398,62 @@ const StockDetail = () => {
                                 </button>
                             </div>
 
-                            <div className="selected-timeframe-info">
-                                <span className="timeframe-badge">{TIMEFRAME_STEPS[timeframeIndex].label}</span>
-                                <span className="timeframe-desc">{TIMEFRAME_STEPS[timeframeIndex].desc}</span>
-                            </div>
-                        </div>
-
-                        <div className="chart-canvas-wrapper">
-                            <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
-                        </div>
-
-                        {/* 기간 설정 게이지바 (오늘 ~ 상장까지) */}
-                        <div className="timeframe-gauge-container">
-                            <div className="gauge-track-wrapper">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max={TIMEFRAME_STEPS.length - 1}
-                                    step="1"
-                                    value={timeframeIndex}
-                                    onChange={(e) => setTimeframeIndex(parseInt(e.target.value, 10))}
-                                    className="timeframe-gauge-slider"
-                                />
-                                <div className="gauge-step-labels">
-                                    {TIMEFRAME_STEPS.map((step, idx) => (
-                                        <span 
-                                            key={step.label} 
-                                            className={`gauge-step-label ${idx === timeframeIndex ? 'active' : ''}`}
-                                            onClick={() => setTimeframeIndex(idx)}
-                                        >
-                                            {step.label}
-                                        </span>
-                                    ))}
+                            <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
+                                <div className="chart-timeframe-tabs">
+                                    {quickTabs.map(id => {
+                                        const tf = ALL_TIMEFRAMES.find(t => t.id === id);
+                                        return (
+                                            <button 
+                                                key={id}
+                                                type="button"
+                                                className={`timeframe-tab-btn ${activeTimeframeId === id ? 'active' : ''}`}
+                                                onClick={() => { setActiveTimeframeId(id); setIsPopoverOpen(false); }}
+                                            >
+                                                {tf.label}
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        type="button"
+                                        className={`timeframe-tab-btn ${!quickTabs.includes(activeTimeframeId) ? 'active' : ''}`}
+                                        onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+                                    >
+                                        {(!quickTabs.includes(activeTimeframeId)) ? activeTimeframe.label : '더보기 ▼'}
+                                    </button>
                                 </div>
+
+                                {isPopoverOpen && (
+                                    <div className="timeframe-popover" style={{
+                                        position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+                                        padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
+                                        width: '320px'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
+                                            <button onClick={() => setIsPopoverOpen(false)} style={{ background:'none', border:'none', cursor:'pointer' }}>✕</button>
+                                        </div>
+                                        
+                                        <div className="popover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                                            {ALL_TIMEFRAMES.map(tf => (
+                                                <button
+                                                    key={tf.id}
+                                                    type="button"
+                                                    className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
+                                                    style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
+                                                    onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
+                                                >
+                                                    {tf.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        </div>
+
+                        <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
+                            <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
                         </div>
                     </div>
                 </div>

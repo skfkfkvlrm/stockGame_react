@@ -7,7 +7,16 @@ import './Dashboard.css';
 
 // STATIC CONFIGURATIONS
 const chartOptions = {
-    chart: { type: 'area', toolbar: { show: false }, background: 'transparent' },
+    chart: { 
+        type: 'area', 
+        toolbar: { 
+            show: false,
+            autoSelected: 'pan' 
+        },
+        selection: { enabled: false },
+        zoom: { enabled: false },
+        background: 'transparent' 
+    },
     colors: ['#8b5cf6'],
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
     dataLabels: { enabled: false },
@@ -244,20 +253,10 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-value">{totalAsset.toLocaleString()} <span className="currency">P</span></div>
                 </div>
-                <div 
-                    className="stat-card stat-card-profit"
-                    style={{ cursor: 'pointer', transition: 'transform 0.15s ease' }}
-                    onClick={() => setActiveModalTab('PROFIT')}
-                    title="클릭하여 종목별 손익 원인 분석 보기"
-                >
-                    <div className="stat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div className="stat-icon-wrapper red"><TrendingUp size={20} /></div>
-                            <h3>투자 평가 손익 (Profit)</h3>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '12px', fontWeight: '700', color: '#475569' }}>
-                            분석 🔍
-                        </span>
+                <div className="glass-panel stat-card">
+                    <div className="stat-header">
+                        <div className="stat-icon-wrapper red"><TrendingUp size={20} /></div>
+                        <h3>투자 평가 손익 (Profit)</h3>
                     </div>
                     <div className={`stat-value ${totalProfit > 0 ? 'profit-up' : totalProfit < 0 ? 'profit-down' : ''}`}>
                         {totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()} <span className="currency">P</span>
@@ -326,40 +325,23 @@ const Dashboard = () => {
                                 </button>
                             </div>
 
-                            <div className="selected-timeframe-badge-mini">
-                                <span className="badge-txt">{TIMEFRAME_STEPS[timeframeIndex].label}</span>
+                            <div className="chart-timeframe-tabs">
+                                {TIMEFRAME_STEPS.map((step, idx) => (
+                                    <button 
+                                        key={step.label}
+                                        type="button"
+                                        className={`timeframe-tab-btn ${idx === timeframeIndex ? 'active' : ''}`}
+                                        onClick={() => setTimeframeIndex(idx)}
+                                    >
+                                        {step.label.replace(' (실시간)', '').replace(' (ALL)', '')}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
                     
                     <div className="chart-container">
                         <Chart options={dynamicChartOptions} series={chartSeries} type={chartType} height={280} />
-                    </div>
-
-                    {/* 자산 추이 기간 게이지 슬라이더 */}
-                    <div className="timeframe-gauge-container-dash">
-                        <div className="gauge-track-wrapper">
-                            <input
-                                type="range"
-                                min="0"
-                                max={TIMEFRAME_STEPS.length - 1}
-                                step="1"
-                                value={timeframeIndex}
-                                onChange={(e) => setTimeframeIndex(parseInt(e.target.value, 10))}
-                                className="timeframe-gauge-slider"
-                            />
-                            <div className="gauge-step-labels">
-                                {TIMEFRAME_STEPS.map((step, idx) => (
-                                    <span 
-                                        key={step.label} 
-                                        className={`gauge-step-label ${idx === timeframeIndex ? 'active' : ''}`}
-                                        onClick={() => setTimeframeIndex(idx)}
-                                    >
-                                        {step.label}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

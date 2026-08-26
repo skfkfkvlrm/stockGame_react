@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, BarChart2, Filter, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
 import api from '../../../api/axios';
 import './StockList.css';
 
@@ -32,6 +32,7 @@ const StockList = () => {
     const ALL_SECTORS = ['간식/매점', '게임/콘텐츠', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'];
     const [selectedSectors, setSelectedSectors] = useState(['전체']);
     const [sortOption, setSortOption] = useState('NONE'); // 'ASC', 'DESC', 'VOLUME', 'NONE'
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const handleSectorClick = (sector) => {
         if (sector === '전체') {
@@ -227,44 +228,107 @@ const StockList = () => {
                 })}
             </div>
 
-            <div className="stock-filter-wrapper glass-panel">
-                <div className="filter-group">
-                    <label className="filter-label">분야 선택</label>
-                    <div className="sector-buttons">
-                        {['전체', '간식/매점', '학교생활/쿠폰', '게임/여가', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'].map((sector) => (
+            {/* 슬림 필터 바 & 플로팅 필터 팝오버 */}
+            <div className="stock-filter-bar glass-panel">
+                <div className="filter-summary-info">
+                    <span className="summary-title">📈 상장 종목 목록</span>
+                    <span className="summary-count">
+                        (총 {stocks.length}개 중 <strong>{filteredAndSortedStocks.length}</strong>개 조회)
+                    </span>
+                    {(!selectedSectors.includes('전체') || sortOption !== 'NONE') && (
+                        <div className="active-filter-chips">
+                            {!selectedSectors.includes('전체') && (
+                                <span className="chip-badge sector-chip">
+                                    분야: {selectedSectors.join(', ')}
+                                </span>
+                            )}
+                            {sortOption !== 'NONE' && (
+                                <span className="chip-badge sort-chip">
+                                    정렬: {sortOption === 'ASC' ? '가격 낮은순' : sortOption === 'DESC' ? '가격 높은순' : '거래량순'}
+                                </span>
+                            )}
                             <button
-                                key={sector}
-                                className={`sector-btn ${selectedSectors.includes(sector) ? 'active' : ''}`}
-                                onClick={() => handleSectorClick(sector)}
+                                type="button"
+                                className="btn-chip-reset"
+                                onClick={() => { setSelectedSectors(['전체']); setSortOption('NONE'); }}
+                                title="필터 전체 초기화"
                             >
-                                {sector}
+                                <RotateCcw size={12} /> 초기화
                             </button>
-                        ))}
-                    </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="filter-group sort-group">
-                    <label className="filter-label">정렬 조건</label>
-                    <div className="sort-buttons">
-                        <button
-                            className={`sort-btn ${sortOption === 'ASC' ? 'active' : ''}`}
-                            onClick={() => setSortOption('ASC')}
-                        >
-                            <ArrowUp size={16} /> 가격 낮은순 (오름차순)
-                        </button>
-                        <button
-                            className={`sort-btn ${sortOption === 'DESC' ? 'active' : ''}`}
-                            onClick={() => setSortOption('DESC')}
-                        >
-                            <ArrowDown size={16} /> 가격 높은순 (내림차순)
-                        </button>
-                        <button
-                            className={`sort-btn ${sortOption === 'VOLUME' ? 'active' : ''}`}
-                            onClick={() => setSortOption('VOLUME')}
-                        >
-                            <BarChart2 size={16} /> 거래량 (유저간 체결)순
-                        </button>
-                    </div>
+                <div className="filter-popover-anchor">
+                    <button
+                        type="button"
+                        className={`btn-toggle-filter ${isFilterOpen ? 'active' : ''}`}
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    >
+                        <SlidersHorizontal size={15} />
+                        <span>필터 & 정렬</span>
+                        <ChevronDown size={14} className={isFilterOpen ? 'rotate-180' : ''} />
+                    </button>
+
+                    {isFilterOpen && (
+                        <div className="stock-filter-popover glass-panel">
+                            <div className="popover-header">
+                                <span className="popover-title">⚙️ 분야 및 정렬 필터</span>
+                                <button
+                                    type="button"
+                                    className="btn-popover-close"
+                                    onClick={() => setIsFilterOpen(false)}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="filter-popover-body">
+                                <div className="popover-section">
+                                    <label className="popover-label">분야 선택</label>
+                                    <div className="sector-buttons">
+                                        {['전체', '간식/매점', '게임/콘텐츠', '엔터/미디어', '문구/학용품', '스포츠/취미', '미래기술/IT'].map((sector) => (
+                                            <button
+                                                key={sector}
+                                                type="button"
+                                                className={`sector-btn ${selectedSectors.includes(sector) ? 'active' : ''}`}
+                                                onClick={() => handleSectorClick(sector)}
+                                            >
+                                                {sector}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="popover-section">
+                                    <label className="popover-label">정렬 기준</label>
+                                    <div className="sort-buttons">
+                                        <button
+                                            type="button"
+                                            className={`sort-btn ${sortOption === 'ASC' ? 'active' : ''}`}
+                                            onClick={() => setSortOption(sortOption === 'ASC' ? 'NONE' : 'ASC')}
+                                        >
+                                            <ArrowUp size={14} /> 가격 낮은순
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`sort-btn ${sortOption === 'DESC' ? 'active' : ''}`}
+                                            onClick={() => setSortOption(sortOption === 'DESC' ? 'NONE' : 'DESC')}
+                                        >
+                                            <ArrowDown size={14} /> 가격 높은순
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`sort-btn ${sortOption === 'VOLUME' ? 'active' : ''}`}
+                                            onClick={() => setSortOption(sortOption === 'VOLUME' ? 'NONE' : 'VOLUME')}
+                                        >
+                                            <BarChart2 size={14} /> 체결 거래량순
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -107,40 +107,42 @@ const CouponStore = () => {
                 <div className="points-value">{user?.totalPoint?.toLocaleString() || 0} <span className="currency">P</span></div>
             </div>
 
-            <div className="coupon-grid">
-                {coupons.map(coupon => {
-                    const cId = coupon.couponId || coupon.id;
-                    const detail = getCouponDetail(coupon.name);
-                    return (
-                        <div key={cId} className="coupon-card glass-panel">
-                            <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff' }}>
-                                {detail.icon}
+            <div className="coupon-grid-wrapper glass-panel">
+                <div className="coupon-grid">
+                    {coupons.map(coupon => {
+                        const cId = coupon.couponId || coupon.id;
+                        const detail = getCouponDetail(coupon.name);
+                        return (
+                            <div key={cId} className="coupon-card glass-panel">
+                                <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff' }}>
+                                    {detail.icon}
+                                </div>
+                                <h3 className="coupon-name">{coupon.name}</h3>
+                                <p className="coupon-desc">{coupon.desc || detail.desc}</p>
+                                <div className="coupon-footer">
+                                    <div className="coupon-price">{coupon.price.toLocaleString()} P</div>
+                                    {coupon.status === 'PAUSED' ? (
+                                        <button className="buy-btn" style={{ background: '#94a3b8', cursor: 'not-allowed' }} disabled>
+                                            판매 중지
+                                        </button>
+                                    ) : coupon.status === 'SOLD_OUT' ? (
+                                        <button className="buy-btn" style={{ background: '#ef4444', cursor: 'not-allowed' }} disabled>
+                                            품절/마감
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            className="buy-btn" 
+                                            onClick={() => handleBuy(coupon)}
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? '처리중...' : '구매하기'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <h3 className="coupon-name">{coupon.name}</h3>
-                            <p className="coupon-desc">{coupon.desc || detail.desc}</p>
-                            <div className="coupon-footer">
-                                <div className="coupon-price">{coupon.price.toLocaleString()} P</div>
-                                {coupon.status === 'PAUSED' ? (
-                                    <button className="buy-btn" style={{ background: '#94a3b8', cursor: 'not-allowed' }} disabled>
-                                        판매 중지
-                                    </button>
-                                ) : coupon.status === 'SOLD_OUT' ? (
-                                    <button className="buy-btn" style={{ background: '#ef4444', cursor: 'not-allowed' }} disabled>
-                                        품절/마감
-                                    </button>
-                                ) : (
-                                    <button 
-                                        className="buy-btn" 
-                                        onClick={() => handleBuy(coupon)}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? '처리중...' : '구매하기'}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

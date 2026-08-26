@@ -5,6 +5,30 @@
     animation: fadeIn 0.4s ease-out;
 }
 
+.news-grid-wrapper {
+    padding: 24px;
+    max-height: 720px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: var(--border-radius-lg);
+    position: relative;
+}
+
+/* Custom Scrollbar for News Grid Wrapper */
+.news-grid-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+.news-grid-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+.news-grid-wrapper::-webkit-scrollbar-thumb {
+    background: var(--bg-panel-border);
+    border-radius: 4px;
+}
+.news-grid-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
 .news-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -101,6 +125,7 @@
 
 /* News Filter Controls (Dashboard Style) */
 .news-filter-controls {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -138,17 +163,33 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* Custom Stacked Bars (Date Bar & Time Bar) */
+/* Custom Stacked Bars (Date Bar & Time Bar) - Floating Popover */
 .news-custom-stacked-bars {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 50;
+    min-width: 360px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     background: #ffffff;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    animation: fadeIn 0.2s ease-in-out;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.05);
+    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .custom-bar-row {

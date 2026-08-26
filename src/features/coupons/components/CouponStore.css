@@ -26,6 +26,30 @@
     color: var(--accent-primary);
 }
 
+.coupon-grid-wrapper {
+    padding: 24px;
+    max-height: 680px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: var(--border-radius-lg);
+    position: relative;
+}
+
+/* Custom Scrollbar for Coupon Grid Wrapper */
+.coupon-grid-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+.coupon-grid-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+.coupon-grid-wrapper::-webkit-scrollbar-thumb {
+    background: var(--bg-panel-border, #cbd5e1);
+    border-radius: 4px;
+}
+.coupon-grid-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary, #6366f1);
+}
+
 .coupon-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
