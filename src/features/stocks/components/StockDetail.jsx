@@ -568,6 +568,22 @@ const StockDetail = () => {
                             </div>
                         </div>
 
+                        {statusCode === 'CALL_AUCTION' && (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                fontWeight: 'bold',
+                                fontSize: '0.85rem',
+                                textAlign: 'center',
+                                background: 'rgba(245, 158, 11, 0.1)',
+                                color: '#d97706',
+                                border: '1px solid #fcd34d'
+                            }}>
+                                🔔 현재 장 마감 동시호가 접수 시간입니다. (주문은 접수되며, 15:30에 단일가로 일괄 체결됩니다)
+                            </div>
+                        )}
+
                         {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
                             <div style={{
                                 padding: '12px 16px',
@@ -597,7 +613,16 @@ const StockDetail = () => {
                                 cursor: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            {isSubmitting ? '처리 중...' : !marketOpen ? '장 마감 (주문 불가)' : (stockInfo.status && stockInfo.status !== 'LISTED') ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')}
+                            {isSubmitting 
+                                ? '처리 중...' 
+                                : !marketOpen 
+                                    ? '장 마감 (주문 불가)' 
+                                    : (stockInfo.status && stockInfo.status !== 'LISTED') 
+                                        ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') 
+                                        : (statusCode === 'CALL_AUCTION' 
+                                            ? (tradeType === 'BUY' ? '동시호가 매수 접수' : '동시호가 매도 접수')
+                                            : (tradeType === 'BUY' ? '매수 주문' : '매도 주문'))
+                            }
                         </button>
                     </div>
                 </div>

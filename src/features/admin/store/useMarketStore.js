@@ -6,6 +6,7 @@ const useMarketStore = create((set) => ({
     mode: 'AUTO',
     openTime: '09:00',
     closeTime: '15:30',
+    callAuctionStartTime: '15:20',
     statusCode: 'OPEN',
     isLoading: false,
 
@@ -20,6 +21,7 @@ const useMarketStore = create((set) => ({
                     mode: data.mode || 'AUTO',
                     openTime: data.openTime || '09:00',
                     closeTime: data.closeTime || '15:30',
+                    callAuctionStartTime: data.callAuctionStartTime || '15:20',
                     statusCode: data.statusCode || 'OPEN',
                     isLoading: false
                 });
