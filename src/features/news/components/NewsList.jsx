@@ -21,8 +21,26 @@ const NewsList = () => {
         { label: '12시간', minutes: 720 },
         { label: '24시간', minutes: 1440 },
     ];
-    // 슬라이더 스텝 인덱스 (0: 전체, 1: 10분, 2: 30분, 3: 1시간, 4: 3시간, 5: 6시간, 6: 12시간, 7: 24시간)
     const [sliderStepIndex, setSliderStepIndex] = useState(0); // 기본값: 전체 (날짜 선택 시 제한 없이 모든 뉴스 노출)
+    const customFilterRef = React.useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (customFilterRef.current && !customFilterRef.current.contains(event.target)) {
+                // 커스텀 기간 설정 팝오버 영역 바깥을 클릭하면 'ALL'로 닫기
+                setTimeRange('ALL');
+            }
+        };
+
+        if (timeRange === 'CUSTOM') {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [timeRange]);
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -226,7 +244,7 @@ const NewsList = () => {
                         </div>
 
                         {timeRange === 'CUSTOM' && (
-                            <div className="news-custom-stacked-bars">
+                            <div className="news-custom-stacked-bars" ref={customFilterRef}>
                                 {/* 팝오버 헤더 */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
                                     <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1e293b' }}>⚙️ 상세 기간/시간 설정</span>
