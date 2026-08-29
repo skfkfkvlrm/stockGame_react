@@ -570,7 +570,13 @@ const StockDetail = () => {
                             </div>
 
                             <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
-                                <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
+                                <ReactApexChart 
+                                    key={`${chartType}-${activeTimeframeId}`}
+                                    options={chartOptions} 
+                                    series={chartData} 
+                                    type={chartType} 
+                                    height="100%" 
+                                />
                             </div>
                         </div>
                     </div>
