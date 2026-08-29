@@ -163,67 +163,69 @@ const Dashboard = () => {
 
     // 동적 차트 옵션 및 데이터 산출 (게이지 슬라이더 기반 시계열 필터링)
     const computeChartData = () => {
-        if (!historyData || historyData.length === 0) {
-            return {
-                categories: ['현재'],
-                seriesData: [totalAsset]
-            };
-        }
-
         const now = new Date().getTime();
         const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
         const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
 
-        // 1. 기간 필터링
-        const filteredHistory = historyData.filter((item) => {
-            if (!item.historyDate) return true;
-            const itemTime = new Date(item.historyDate).getTime();
-            return itemTime >= cutoffTime;
-        });
+        if (!historyData || historyData.length === 0) {
+            return [{ x: now, y: totalAsset }];
+        }
 
-        // 과거순 정렬 (오래된 날짜가 앞)
-        const sortedHistory = [...filteredHistory].sort((a, b) => {
-            const dateA = new Date(a.historyDate || 0).getTime();
-            const dateB = new Date(b.historyDate || 0).getTime();
-            return dateA - dateB;
-        });
+        // 1. 기간 필터링 + 과거순 정렬
+        const sortedHistory = [...historyData]
+            .filter(item => {
+                if (!item.historyDate) return true;
+                return new Date(item.historyDate).getTime() >= cutoffTime;
+            })
+            .sort((a, b) => new Date(a.historyDate || 0).getTime() - new Date(b.historyDate || 0).getTime());
 
         let cumulative = 0;
-        const categories = [];
-        const seriesData = [];
-
-        sortedHistory.forEach((item) => {
-            const change = item.pointChange || 0;
-            cumulative += change;
-            const dateObj = new Date(item.historyDate);
-            const dateStr = item.historyDate
-                ? (timeframeIndex === 0 
-                    ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
-                    : `${dateObj.getMonth() + 1}/${dateObj.getDate()}`)
-                : '이력';
-            categories.push(dateStr);
-            seriesData.push(cumulative);
+        const points = sortedHistory.map(item => {
+            cumulative += item.pointChange || 0;
+            return {
+                x: new Date(item.historyDate).getTime(),
+                y: cumulative
+            };
         });
 
         // 가장 최근 지점은 현재 totalAsset으로 보정
-        if (seriesData.length > 0) {
-            categories.push('현재');
-            seriesData.push(totalAsset);
-        } else {
-            categories.push('현재');
-            seriesData.push(totalAsset);
-        }
-        return { categories, seriesData };
+        points.push({ x: now, y: totalAsset });
+
+        return points;
     };
 
-    const { categories, seriesData } = computeChartData();
-    const dynamicChartOptions = { 
-        ...chartOptions, 
+    const chartSeriesData = computeChartData();
+    const nowTime = Date.now();
+    const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
+    const minTime = currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : undefined;
+
+    const dynamicChartOptions = {
+        ...chartOptions,
         chart: { ...chartOptions.chart, type: 'area' },
         stroke: { curve: 'smooth', width: 3 },
-        xaxis: { ...chartOptions.xaxis, categories: categories } 
+        xaxis: {
+            type: 'datetime',
+            min: minTime,
+            max: nowTime,
+            labels: {
+                style: { colors: '#94a3b8' },
+                datetimeUTC: false,
+                hideOverlappingLabels: true,
+                formatter: (val) => {
+                    if (!val) return '';
+                    const d = new Date(val);
+                    if (isNaN(d.getTime())) return val;
+                    if (timeframeIndex === 0) {
+                        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                    }
+                    return `${d.getMonth() + 1}/${d.getDate()}`;
+                }
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        }
     };
-    const chartSeries = [{ name: '총 자산 추이', data: seriesData }];
+    const chartSeries = [{ name: '총 자산 추이', data: chartSeriesData }];
 
     const computeProfitBreakdown = () => {
         const unrealizedList = (portfolio || []).map(stk => {

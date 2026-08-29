@@ -205,7 +205,7 @@ const StockDetail = () => {
 
         if (chartType === 'candlestick') {
             if (!isIntraday) {
-                // 일/주/월/전체: 실제 거래일의 OHLC 집계
+                // 일/주/월/전체: 실제 거래일의 OHLC 집계 (category x축용 문자열 라벨 사용)
                 const dayGroups = {};
                 filtered.forEach(item => {
                     const d = item.baseDate || item.date || item.createdDate;
@@ -219,11 +219,7 @@ const StockDetail = () => {
                     const close = item.closePrice ?? p;
 
                     if (!dayGroups[dateKey]) {
-                        dayGroups[dateKey] = {
-                            x: label,
-                            rawTime: dateObj.getTime(),
-                            open, high, low, close
-                        };
+                        dayGroups[dateKey] = { label, rawTime: dateObj.getTime(), open, high, low, close };
                     } else {
                         dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
                         dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
@@ -231,16 +227,32 @@ const StockDetail = () => {
                     }
                 });
 
-                const sortedCandles = Object.values(dayGroups)
-                    .sort((a, b) => a.rawTime - b.rawTime)
-                    .map(g => ({
-                        x: g.x,
-                        y: [g.open, g.high, g.low, g.close]
-                    }));
+                let finalCandles;
 
-                setChartData([{ data: sortedCandles }]);
+                if (activeTimeframeId === '1W') {
+                    // 1주: 7일 전체를 반드시 표시. 거래 없는 날은 null 캔들로 채움
+                    finalCandles = [];
+                    const rangeStart = new Date(cutoffTime);
+                    const rangeEnd = new Date(now);
+                    for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
+                        const dateKey = d.toISOString().slice(0, 10);
+                        const label = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+                        const g = dayGroups[dateKey];
+                        finalCandles.push({
+                            x: label,
+                            y: g ? [g.open, g.high, g.low, g.close] : [null, null, null, null]
+                        });
+                    }
+                } else {
+                    // 1MO, 3MO, ALL: 실제 거래일만 표시
+                    finalCandles = Object.values(dayGroups)
+                        .sort((a, b) => a.rawTime - b.rawTime)
+                        .map(g => ({ x: g.label, y: [g.open, g.high, g.low, g.close] }));
+                }
+
+                setChartData([{ data: finalCandles }]);
             } else {
-                // 당일/시간 단위
+                // 당일/시간 단위 (category x축용 시간 문자열 사용)
                 const mappedCandle = filtered.map(item => {
                     const d = item.baseDate || item.date || item.createdDate;
                     const dateObj = new Date(d || Date.now());
@@ -250,10 +262,7 @@ const StockDetail = () => {
                     const high = item.highPrice ?? Math.max(open, p);
                     const low = item.lowPrice ?? Math.min(open, p);
                     const close = item.closePrice ?? p;
-                    return {
-                        x: label,
-                        y: [open, high, low, close]
-                    };
+                    return { x: label, y: [open, high, low, close] };
                 });
                 setChartData([{ data: mappedCandle }]);
             }
@@ -360,6 +369,15 @@ const StockDetail = () => {
         }
     };
 
+    const getTickAmount = (tfId) => {
+        if (tfId === '10M') return 5;
+        if (tfId === '1H' || tfId === '3H' || tfId === '6H' || tfId === '12H' || tfId === '1D') return 6;
+        if (tfId === '1W') return 7; // 1주일은 7일 전체 표시
+        if (tfId === '1MO') return 6;
+        if (tfId === '3MO') return 6;
+        return 6;
+    };
+
     const currentStepConfig = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
     const nowTime = Date.now();
     const minTime = currentStepConfig.days > 0 ? nowTime - (currentStepConfig.days * 24 * 60 * 60 * 1000) : undefined;
@@ -385,15 +403,18 @@ const StockDetail = () => {
             } 
         },
         xaxis: chartType === 'candlestick' ? {
+            // 봉차트: category 타입 (데이터 개수에 따라 간격 균등 배분 → 날짜 겹침 없음)
             type: 'category',
             labels: {
-                style: { colors: '#64748b', fontSize: '0.82rem', fontWeight: 500 }
+                style: { colors: '#64748b', fontSize: '0.8rem' },
+                hideOverlappingLabels: true,
             }
-        } : { 
+        } : {
+            // 라인차트: datetime 타입 (시간 연속성 보장 → 빈 구간도 정확한 간격으로 표시)
             type: 'datetime', 
             min: minTime,
             max: nowTime,
-            tickAmount: 4,
+            tickAmount: getTickAmount(activeTimeframeId),
             labels: { 
                 style: { colors: '#64748b', fontSize: '0.8rem' },
                 datetimeUTC: false,
@@ -503,13 +524,13 @@ const StockDetail = () => {
                                 <div className="chart-type-tabs">
                                     <button 
                                         className={`chart-type-btn ${chartType === 'candlestick' ? 'active' : ''}`}
-                                        onClick={() => setChartType('candlestick')}
+                                        onClick={() => { setChartData([]); setChartType('candlestick'); }}
                                     >
                                         봉차트 (캔들)
                                     </button>
                                     <button 
                                         className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
-                                        onClick={() => setChartType('line')}
+                                        onClick={() => { setChartData([]); setChartType('line'); }}
                                     >
                                         라인차트 (선)
                                     </button>
