@@ -35,7 +35,7 @@
 
 .user-profile {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--bg-panel-border);
@@ -53,18 +53,28 @@
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--accent-primary);
+    flex-shrink: 0;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
 
 .user-name {
     font-size: 1rem;
     color: var(--text-main);
-    margin-bottom: 2px;
+    margin: 0 0 4px 0;
     font-weight: 600;
+    line-height: 1.2;
 }
 
 .user-class {
     font-size: 0.8rem;
     color: var(--text-muted);
+    margin: 0;
+    line-height: 1.2;
 }
 
 .point-card {
