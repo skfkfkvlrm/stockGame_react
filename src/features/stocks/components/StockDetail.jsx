@@ -205,21 +205,23 @@ const StockDetail = () => {
 
         if (chartType === 'candlestick') {
             if (!isIntraday) {
-                // 일/주/월/전체: 실제 거래가 있었던 날짜만 일별 OHLC로 집계 (순수 timestamp 사용)
+                // 일/주/월/전체: 실제 거래일의 OHLC 집계
                 const dayGroups = {};
                 filtered.forEach(item => {
                     const d = item.baseDate || item.date || item.createdDate;
-                    const dateKey = d ? new Date(d).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                    const dateObj = new Date(d || Date.now());
+                    const dateKey = d ? dateObj.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                    const label = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
                     const p = item.closePrice ?? item.price ?? initialPrice;
                     const open = item.openPrice ?? p;
                     const high = item.highPrice ?? Math.max(open, p);
                     const low = item.lowPrice ?? Math.min(open, p);
                     const close = item.closePrice ?? p;
-                    const time = new Date(`${dateKey}T12:00:00`).getTime();
 
                     if (!dayGroups[dateKey]) {
                         dayGroups[dateKey] = {
-                            x: time,
+                            x: label,
+                            rawTime: dateObj.getTime(),
                             open, high, low, close
                         };
                     } else {
@@ -230,7 +232,7 @@ const StockDetail = () => {
                 });
 
                 const sortedCandles = Object.values(dayGroups)
-                    .sort((a, b) => a.x - b.x)
+                    .sort((a, b) => a.rawTime - b.rawTime)
                     .map(g => ({
                         x: g.x,
                         y: [g.open, g.high, g.low, g.close]
@@ -238,17 +240,18 @@ const StockDetail = () => {
 
                 setChartData([{ data: sortedCandles }]);
             } else {
-                // 당일/시간 단위: 시간순 거래 포인트
+                // 당일/시간 단위
                 const mappedCandle = filtered.map(item => {
                     const d = item.baseDate || item.date || item.createdDate;
-                    const itemTime = d ? new Date(d).getTime() : now;
+                    const dateObj = new Date(d || Date.now());
+                    const label = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
                     const p = item.closePrice ?? item.price ?? initialPrice;
                     const open = item.openPrice ?? p;
                     const high = item.highPrice ?? Math.max(open, p);
                     const low = item.lowPrice ?? Math.min(open, p);
                     const close = item.closePrice ?? p;
                     return {
-                        x: itemTime,
+                        x: label,
                         y: [open, high, low, close]
                     };
                 });
@@ -381,7 +384,12 @@ const StockDetail = () => {
                 colors: { upward: '#ff4757', downward: '#3b82f6' } 
             } 
         },
-        xaxis: { 
+        xaxis: chartType === 'candlestick' ? {
+            type: 'category',
+            labels: {
+                style: { colors: '#64748b', fontSize: '0.82rem', fontWeight: 500 }
+            }
+        } : { 
             type: 'datetime', 
             min: minTime,
             max: nowTime,
