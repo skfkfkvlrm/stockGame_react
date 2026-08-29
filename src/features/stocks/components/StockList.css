@@ -45,12 +45,13 @@
 }
 
 .stock-table-wrapper {
-    padding: 0 24px 24px 24px;
-    overflow-x: auto;
+    padding: 0 16px 16px 16px;
+    overflow-x: hidden;
     max-height: 720px;
     overflow-y: auto;
     border-radius: var(--border-radius-lg);
     position: relative;
+    scrollbar-gutter: stable;
 }
 
 .stock-table {
@@ -58,6 +59,7 @@
     border-collapse: separate;
     border-spacing: 0;
     text-align: right;
+    table-layout: fixed;
 }
 
 .stock-table thead {
@@ -71,24 +73,69 @@
     top: 0;
     background: #ffffff !important;
     z-index: 20;
-    padding: 18px 16px;
+    padding: 14px 8px;
     color: var(--text-muted);
     font-weight: 700;
+    font-size: 0.9rem;
     border-bottom: 2px solid var(--bg-panel-border);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    white-space: nowrap;
+    user-select: none;
 }
 
+/* ── Percent Column Distribution (Total 100%) ── */
 .stock-table th:first-child,
 .stock-table td:first-child {
     text-align: left;
+    width: 23%; /* 종목명 (아이콘+명칭+코드) */
+    padding-left: 12px;
+}
+
+.stock-table th:nth-child(2),
+.stock-table td:nth-child(2) {
+    width: 11%; /* 분야 배지 */
+    text-align: center;
+}
+
+.stock-table th:nth-child(3),
+.stock-table td:nth-child(3) {
+    width: 11%; /* 현재가 */
+}
+
+.stock-table th:nth-child(4),
+.stock-table td:nth-child(4) {
+    width: 10%; /* 전일비 */
+}
+
+.stock-table th:nth-child(5),
+.stock-table td:nth-child(5) {
+    width: 11%; /* 등락률 */
+}
+
+.stock-table th:nth-child(6),
+.stock-table td:nth-child(6) {
+    width: 11%; /* 발행량 */
+}
+
+.stock-table th:nth-child(7),
+.stock-table td:nth-child(7) {
+    width: 11%; /* 거래량 */
+}
+
+.stock-table th:nth-child(8),
+.stock-table td:nth-child(8) {
+    width: 12%; /* 액션 버튼 */
+    text-align: center;
+    padding-right: 12px;
 }
 
 .stock-table td {
-    padding: 16px;
+    padding: 12px 8px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .stock-table tr:hover td {
@@ -98,7 +145,9 @@
 .stock-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
 }
 
 .stock-icon-small {
@@ -112,23 +161,33 @@
     justify-content: center;
     font-size: 0.9rem;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .stock-name-wrapper {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .stock-name {
     font-weight: 700;
     color: var(--text-main);
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stock-code {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .flex-right {
