@@ -60,11 +60,39 @@ const StockDetail = () => {
         toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, show: false })), 3500);
     };
     
-    // Trading state
     const [tradeType, setTradeType] = useState('BUY'); // BUY or SELL
     const [price, setPrice] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Mobile/Desktop Drag-to-Scroll for Detail Layout
+    const scrollContainerRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const handleMouseDown = (e) => {
+        // Prevent dragging when clicking interactive elements (buttons, inputs, order rows)
+        if (['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A'].includes(e.target.tagName) || e.target.closest('.order-row') || e.target.closest('.trade-form') || e.target.closest('.chart-controls-header')) {
+            return;
+        }
+        if (!scrollContainerRef.current) return;
+        setIsDragging(true);
+        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+        setScrollLeft(scrollContainerRef.current.scrollLeft);
+    };
+
+    const handleMouseLeaveOrUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging || !scrollContainerRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollContainerRef.current.offsetLeft;
+        const walk = (x - startX) * 1.5; // Scroll speed multiplier
+        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+    };
 
     // Fetch initial data
     const fetchAllData = async () => {
@@ -367,288 +395,317 @@ const StockDetail = () => {
                 <ArrowLeft size={18} /> 뒤로 가기
             </button>
             
-            <div className="detail-layout">
-                {/* 1. Chart Section */}
-                <div className="chart-section">
-                    <div className="glass-panel stock-header">
-                        <div className="stock-title">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <h1>{stockInfo.stockName}</h1>
-                                <div 
-                                    className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
-                                    title={
-                                        wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
-                                        wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
-                                        wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
-                                        wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
-                                    }
-                                >
-                                    <span className="ws-pulse-dot"></span>
-                                </div>
-                            </div>
-                            {stockInfo.content && (
-                                <p className="stock-description" style={{
-                                    margin: '4px 0 0 0',
-                                    color: 'var(--text-muted)',
-                                    fontSize: '0.95rem',
-                                    lineHeight: '1.4'
-                                }}>
-                                    {stockInfo.content}
-                                </p>
-                            )}
-                        </div>
-                        <div className="stock-price-info">
-                            <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
-                            <span className={`price-change ${colorClass}`}>
-                                {isUp ? '+' : ''}{changeAmount.toLocaleString()} ({isUp ? '+' : ''}{changeRate}%)
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Chart Box with Timeframe Gauge & Type Selector */}
-                    <div className="glass-panel chart-box">
-                        <div className="chart-controls-header">
-                            <div className="chart-type-tabs">
-                                <button 
-                                    className={`chart-type-btn ${chartType === 'candlestick' ? 'active' : ''}`}
-                                    onClick={() => setChartType('candlestick')}
-                                >
-                                    봉차트 (캔들)
-                                </button>
-                                <button 
-                                    className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
-                                    onClick={() => setChartType('line')}
-                                >
-                                    라인차트 (선)
-                                </button>
-                            </div>
-
-                            <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
-                                <div className="chart-timeframe-tabs">
-                                    {quickTabs.map(id => {
-                                        const tf = ALL_TIMEFRAMES.find(t => t.id === id);
-                                        return (
-                                            <button 
-                                                key={id}
-                                                type="button"
-                                                className={`timeframe-tab-btn ${activeTimeframeId === id ? 'active' : ''}`}
-                                                onClick={() => { setActiveTimeframeId(id); setIsPopoverOpen(false); }}
-                                            >
-                                                {tf.label}
-                                            </button>
-                                        );
-                                    })}
-                                    <button 
-                                        type="button"
-                                        className={`timeframe-tab-btn ${!quickTabs.includes(activeTimeframeId) ? 'active' : ''}`}
-                                        onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+            <div 
+                className={`detail-layout-scroll-wrapper ${isDragging ? 'dragging' : ''}`}
+                ref={scrollContainerRef}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeaveOrUp}
+                onMouseUp={handleMouseLeaveOrUp}
+                onMouseMove={handleMouseMove}
+            >
+                <div className="detail-layout">
+                    {/* 1. Chart Section */}
+                    <div className="chart-section">
+                        <div className="glass-panel stock-header">
+                            <div className="stock-title">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <h1>{stockInfo.stockName}</h1>
+                                    <div 
+                                        className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
+                                        title={
+                                            wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
+                                            wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
+                                            wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
+                                            wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
+                                        }
                                     >
-                                        {(!quickTabs.includes(activeTimeframeId)) ? activeTimeframe.label : '더보기 ▼'}
+                                        <span className="ws-pulse-dot"></span>
+                                    </div>
+                                </div>
+                                {stockInfo.content && (
+                                    <p className="stock-description" style={{
+                                        margin: '4px 0 0 0',
+                                        color: 'var(--text-muted)',
+                                        fontSize: '0.95rem',
+                                        lineHeight: '1.4'
+                                    }}>
+                                        {stockInfo.content}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="stock-price-info">
+                                <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
+                                <span className={`price-change ${colorClass}`}>
+                                    {isUp ? '+' : ''}{changeAmount.toLocaleString()} ({isUp ? '+' : ''}{changeRate}%)
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Chart Box with Timeframe Gauge & Type Selector */}
+                        <div className="glass-panel chart-box">
+                            <div className="chart-controls-header">
+                                <div className="chart-type-tabs">
+                                    <button 
+                                        className={`chart-type-btn ${chartType === 'candlestick' ? 'active' : ''}`}
+                                        onClick={() => setChartType('candlestick')}
+                                    >
+                                        봉차트 (캔들)
+                                    </button>
+                                    <button 
+                                        className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
+                                        onClick={() => setChartType('line')}
+                                    >
+                                        라인차트 (선)
                                     </button>
                                 </div>
 
-                                {isPopoverOpen && (
-                                    <div className="timeframe-popover" style={{
-                                        position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
-                                        padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
-                                        width: '320px'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                            <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
-                                            <button onClick={() => setIsPopoverOpen(false)} style={{ background:'none', border:'none', cursor:'pointer' }}>✕</button>
-                                        </div>
-                                        
-                                        <div className="popover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                                            {ALL_TIMEFRAMES.map(tf => (
-                                                <button
-                                                    key={tf.id}
+                                <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
+                                    <div className="chart-timeframe-tabs">
+                                        {quickTabs.map(id => {
+                                            const tf = ALL_TIMEFRAMES.find(t => t.id === id);
+                                            return (
+                                                <button 
+                                                    key={id}
                                                     type="button"
-                                                    className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
-                                                    style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
-                                                    onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
+                                                    className={`timeframe-tab-btn ${activeTimeframeId === id ? 'active' : ''}`}
+                                                    onClick={() => { setActiveTimeframeId(id); setIsPopoverOpen(false); }}
                                                 >
                                                     {tf.label}
                                                 </button>
-                                            ))}
-                                        </div>
+                                            );
+                                        })}
+                                        <button 
+                                            type="button"
+                                            className={`timeframe-tab-btn ${!quickTabs.includes(activeTimeframeId) ? 'active' : ''}`}
+                                            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+                                        >
+                                            {(!quickTabs.includes(activeTimeframeId)) ? activeTimeframe.label : '더보기 ▼'}
+                                        </button>
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
-                            <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. Orderbook Panel */}
-                <div className="glass-panel orderbook-panel">
-                    <h3>호가</h3>
-                    <div className="orderbook-container">
-                        {/* Sell Orders (Descending) */}
-                        {orderbook.sell.map((order, idx) => {
-                            const isMyOrder = mySellPrices.includes(order.price);
-                            return (
-                                <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
-                                    <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
-                                    <span className="order-price">
-                                        {order.price.toLocaleString()}
-                                        {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#3b82f6', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
-                                    </span>
-                                    <span className="order-amount">{order.amount.toLocaleString()}</span>
+                                    {isPopoverOpen && (
+                                        <div className="timeframe-popover" style={{
+                                            position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+                                            padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
+                                            width: '320px'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
+                                                <button onClick={() => setIsPopoverOpen(false)} style={{ background:'none', border:'none', cursor:'pointer' }}>✕</button>
+                                            </div>
+                                            
+                                            <div className="popover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                                                {ALL_TIMEFRAMES.map(tf => (
+                                                    <button
+                                                        key={tf.id}
+                                                        type="button"
+                                                        className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
+                                                        style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
+                                                        onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
+                                                    >
+                                                        {tf.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            );
-                        })}
-                        
-                        <div className="orderbook-divider"></div>
+                            </div>
 
-                        {/* Buy Orders (Descending) */}
-                        {orderbook.buy.map((order, idx) => {
-                            const isMyOrder = myBuyPrices.includes(order.price);
-                            return (
-                                <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
-                                    <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
-                                    <span className="order-price">
-                                        {order.price.toLocaleString()}
-                                        {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
-                                    </span>
-                                    <span className="order-amount">{order.amount.toLocaleString()}</span>
+                            <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
+                                <ReactApexChart options={chartOptions} series={chartData} type={chartType} height="100%" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. Orderbook Panel */}
+                    <div className="glass-panel orderbook-panel">
+                        <h3>호가</h3>
+                        <div className="orderbook-container">
+                            {orderbook.sell.length === 0 && orderbook.buy.length === 0 ? (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '100%',
+                                    minHeight: '260px',
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.85rem',
+                                    textAlign: 'center',
+                                    padding: '20px'
+                                }}>
+                                    <span style={{ fontSize: '1.5rem', marginBottom: '8px' }}>📊</span>
+                                    현재 접수된 실시간 매수/매도<br />대기 호가가 없습니다.
                                 </div>
-                            );
-                        })}
+                            ) : (
+                                <>
+                                    {/* Sell Orders (Descending) */}
+                                    {orderbook.sell.map((order, idx) => {
+                                        const isMyOrder = mySellPrices.includes(order.price);
+                                        return (
+                                            <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                                <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
+                                                <span className="order-price">
+                                                    {order.price.toLocaleString()}
+                                                    {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#3b82f6', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                                </span>
+                                                <span className="order-amount">{order.amount.toLocaleString()}</span>
+                                            </div>
+                                        );
+                                    })}
+                                    
+                                    <div className="orderbook-divider"></div>
+
+                                    {/* Buy Orders (Descending) */}
+                                    {orderbook.buy.map((order, idx) => {
+                                        const isMyOrder = myBuyPrices.includes(order.price);
+                                        return (
+                                            <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                                <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
+                                                <span className="order-price">
+                                                    {order.price.toLocaleString()}
+                                                    {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                                </span>
+                                                <span className="order-amount">{order.amount.toLocaleString()}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* 3. Trading Panel */}
-                <div className="glass-panel trading-panel">
-                    <div className="trade-tabs">
-                        <button 
-                            type="button"
-                            className={`trade-tab ${tradeType === 'BUY' ? 'active buy' : ''}`}
-                            onClick={() => setTradeType('BUY')}
-                        >
-                            매수
-                        </button>
-                        <button 
-                            type="button"
-                            className={`trade-tab ${tradeType === 'SELL' ? 'active sell' : ''}`}
-                            onClick={() => setTradeType('SELL')}
-                        >
-                            매도
-                        </button>
-                    </div>
-
-                    <div className="trade-form">
-                        <div className="form-group">
-                            <label>{tradeType === 'BUY' ? '주문 가능 포인트' : '주문 가능 수량'}</label>
-                            <div className="available-points">
-                                <span className="points-value">
-                                    {tradeType === 'BUY' 
-                                        ? (user?.totalPoint ?? user?.point ?? 0).toLocaleString() 
-                                        : myStockAmount.toLocaleString()}
-                                </span>
-                                <span className="points-unit">
-                                    {tradeType === 'BUY' ? 'P' : '주'}
-                                </span>
-                            </div>
+                    {/* 3. Trading Panel */}
+                    <div className="glass-panel trading-panel">
+                        <div className="trade-tabs">
+                            <button 
+                                type="button"
+                                className={`trade-tab ${tradeType === 'BUY' ? 'active buy' : ''}`}
+                                onClick={() => setTradeType('BUY')}
+                            >
+                                매수
+                            </button>
+                            <button 
+                                type="button"
+                                className={`trade-tab ${tradeType === 'SELL' ? 'active sell' : ''}`}
+                                onClick={() => setTradeType('SELL')}
+                            >
+                                매도
+                            </button>
                         </div>
 
-                        <div className="form-group">
-                            <label>주문 단가 (P)</label>
-                            <div className="price-control">
-                                <button type="button" onClick={() => setPrice(Math.max(50, (price || 0) - 50))}><Minus size={18}/></button>
-                                <input 
-                                    type="number" 
-                                    value={price} 
-                                    onChange={handlePriceChange}
-                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
-                                    step="50"
-                                    min="1"
-                                />
-                                <button type="button" onClick={() => setPrice((price || 0) + 50)}><Plus size={18}/></button>
+                        <div className="trade-form">
+                            <div className="form-group">
+                                <label>{tradeType === 'BUY' ? '주문 가능 포인트' : '주문 가능 수량'}</label>
+                                <div className="available-points">
+                                    <span className="points-value">
+                                        {tradeType === 'BUY' 
+                                            ? (user?.totalPoint ?? user?.point ?? 0).toLocaleString() 
+                                            : myStockAmount.toLocaleString()}
+                                    </span>
+                                    <span className="points-unit">
+                                        {tradeType === 'BUY' ? 'P' : '주'}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="form-group">
-                            <label>주문 수량 (주)</label>
-                            <div className="quantity-control">
-                                <button type="button" onClick={() => setQuantity(Math.max(1, (quantity || 0) - 1))}><Minus size={18}/></button>
-                                <input 
-                                    type="number" 
-                                    value={quantity} 
-                                    onChange={handleQuantityChange}
-                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
-                                    min="1"
-                                />
-                                <button type="button" onClick={() => setQuantity((quantity || 0) + 1)}><Plus size={18}/></button>
+                            <div className="form-group">
+                                <label>주문 단가 (P)</label>
+                                <div className="price-control">
+                                    <button type="button" onClick={() => setPrice(Math.max(50, (price || 0) - 50))}><Minus size={18}/></button>
+                                    <input 
+                                        type="number" 
+                                        value={price} 
+                                        onChange={handlePriceChange}
+                                        onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                        step="50"
+                                        min="1"
+                                    />
+                                    <button type="button" onClick={() => setPrice((price || 0) + 50)}><Plus size={18}/></button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="form-group total-calc">
-                            <label>총 주문 금액</label>
-                            <div className="total-amount">
-                                {((price || 0) * (quantity || 0)).toLocaleString()} <span className="currency">P</span>
+                            <div className="form-group">
+                                <label>주문 수량 (주)</label>
+                                <div className="quantity-control">
+                                    <button type="button" onClick={() => setQuantity(Math.max(1, (quantity || 0) - 1))}><Minus size={18}/></button>
+                                    <input 
+                                        type="number" 
+                                        value={quantity} 
+                                        onChange={handleQuantityChange}
+                                        onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                        min="1"
+                                    />
+                                    <button type="button" onClick={() => setQuantity((quantity || 0) + 1)}><Plus size={18}/></button>
+                                </div>
                             </div>
-                        </div>
 
-                        {statusCode === 'CALL_AUCTION' && (
-                            <div style={{
-                                padding: '12px 16px',
-                                borderRadius: '8px',
-                                marginBottom: '16px',
-                                fontWeight: 'bold',
-                                fontSize: '0.85rem',
-                                textAlign: 'center',
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                color: '#d97706',
-                                border: '1px solid #fcd34d'
-                            }}>
-                                🔔 현재 장 마감 동시호가 접수 시간입니다. (주문은 접수되며, 15:30에 단일가로 일괄 체결됩니다)
+                            <div className="form-group total-calc">
+                                <label>총 주문 금액</label>
+                                <div className="total-amount">
+                                    {((price || 0) * (quantity || 0)).toLocaleString()} <span className="currency">P</span>
+                                </div>
                             </div>
-                        )}
 
-                        {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
-                            <div style={{
-                                padding: '12px 16px',
-                                borderRadius: '8px',
-                                marginBottom: '16px',
-                                fontWeight: 'bold',
-                                fontSize: '0.85rem',
-                                textAlign: 'center',
-                                background: !marketOpen ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                color: !marketOpen ? '#dc2626' : '#d97706',
-                                border: `1px solid ${!marketOpen ? '#fca5a5' : '#fcd34d'}`
-                            }}>
-                                {!marketOpen 
-                                    ? `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.` 
-                                    : (stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.')
+                            {statusCode === 'CALL_AUCTION' && (
+                                <div style={{
+                                    padding: '12px 16px',
+                                    borderRadius: '8px',
+                                    marginBottom: '16px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    textAlign: 'center',
+                                    background: 'rgba(245, 158, 11, 0.1)',
+                                    color: '#d97706',
+                                    border: '1px solid #fcd34d'
+                                }}>
+                                    🔔 현재 장 마감 동시호가 접수 시간입니다. (주문은 접수되며, 15:30에 단일가로 일괄 체결됩니다)
+                                </div>
+                            )}
+
+                            {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
+                                <div style={{
+                                    padding: '12px 16px',
+                                    borderRadius: '8px',
+                                    marginBottom: '16px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    textAlign: 'center',
+                                    background: !marketOpen ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                    color: !marketOpen ? '#dc2626' : '#d97706',
+                                    border: `1px solid ${!marketOpen ? '#fca5a5' : '#fcd34d'}`
+                                }}>
+                                    {!marketOpen 
+                                        ? `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.` 
+                                        : (stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.')
+                                    }
+                                </div>
+                            )}
+
+                            <button 
+                                type="button"
+                                className={`submit-trade-btn ${tradeType.toLowerCase()}`}
+                                onClick={handleTrade}
+                                disabled={isSubmitting || !marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')}
+                                style={{
+                                    opacity: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 0.5 : 1,
+                                    cursor: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {isSubmitting 
+                                    ? '처리 중...' 
+                                    : !marketOpen 
+                                        ? '장 마감 (주문 불가)' 
+                                        : (stockInfo.status && stockInfo.status !== 'LISTED') 
+                                            ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') 
+                                            : (statusCode === 'CALL_AUCTION' 
+                                                ? (tradeType === 'BUY' ? '동시호가 매수 접수' : '동시호가 매도 접수')
+                                                : (tradeType === 'BUY' ? '매수 주문' : '매도 주문'))
                                 }
-                            </div>
-                        )}
-
-                        <button 
-                            type="button"
-                            className={`submit-trade-btn ${tradeType.toLowerCase()}`}
-                            onClick={handleTrade}
-                            disabled={isSubmitting || !marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')}
-                            style={{
-                                opacity: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 0.5 : 1,
-                                cursor: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            {isSubmitting 
-                                ? '처리 중...' 
-                                : !marketOpen 
-                                    ? '장 마감 (주문 불가)' 
-                                    : (stockInfo.status && stockInfo.status !== 'LISTED') 
-                                        ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') 
-                                        : (statusCode === 'CALL_AUCTION' 
-                                            ? (tradeType === 'BUY' ? '동시호가 매수 접수' : '동시호가 매도 접수')
-                                            : (tradeType === 'BUY' ? '매수 주문' : '매도 주문'))
-                            }
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -659,7 +716,7 @@ const StockDetail = () => {
                     📋 내 미체결 (예약) 주문 목록 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(체결 전까지 취소 가능)</span>
                 </h3>
                 {myOrders.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                    <div style={{ padding: '30px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem', background: 'var(--bg-main)', borderRadius: '10px', border: '1px dashed var(--bg-panel-border)' }}>
                         현재 체결 대기 중인 예약 주문이 없습니다.
                     </div>
                 ) : (
@@ -724,6 +781,3 @@ const StockDetail = () => {
 };
 
 export default StockDetail;
-
-
-
