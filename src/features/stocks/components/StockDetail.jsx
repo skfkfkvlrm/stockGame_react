@@ -164,8 +164,9 @@ const StockDetail = () => {
         const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
 
         let filtered = rawHistoryData.filter(item => {
-            if (!item.date) return true;
-            const itemTime = new Date(item.date).getTime();
+            const d = item.baseDate || item.date || item.createdDate;
+            if (!d) return true;
+            const itemTime = new Date(d).getTime();
             return itemTime >= cutoffTime;
         });
 
@@ -179,8 +180,9 @@ const StockDetail = () => {
 
         if (chartType === 'candlestick') {
             const mappedCandle = filtered.map(item => {
-                const itemTime = item.date ? new Date(item.date).getTime() : now;
-                const p = item.price ?? initialPrice;
+                const d = item.baseDate || item.date || item.createdDate;
+                const itemTime = d ? new Date(d).getTime() : now;
+                const p = item.closePrice ?? item.price ?? initialPrice;
                 // OHLC 데이터가 있으면 활용, 없으면 단일가 기준 캔들 구성
                 const open = item.openPrice ?? p;
                 const high = item.highPrice ?? Math.max(open, p);
@@ -194,8 +196,9 @@ const StockDetail = () => {
             setChartData([{ data: mappedCandle }]);
         } else {
             const mappedLine = filtered.map(item => {
-                const itemTime = item.date ? new Date(item.date).getTime() : now;
-                const p = item.price ?? initialPrice;
+                const d = item.baseDate || item.date || item.createdDate;
+                const itemTime = d ? new Date(d).getTime() : now;
+                const p = item.closePrice ?? item.price ?? initialPrice;
                 return {
                     x: itemTime,
                     y: p
@@ -316,7 +319,13 @@ const StockDetail = () => {
                 formatter: (v) => `${Math.round(v).toLocaleString()}원` 
             } 
         },
-        grid: { borderColor: 'rgba(0,0,0,0.05)' },
+        grid: { 
+            borderColor: '#cbd5e1', 
+            strokeDashArray: 3,
+            opacity: 0.8,
+            xaxis: { lines: { show: false } },
+            yaxis: { lines: { show: true } }
+        },
         tooltip: {
             theme: 'light',
             x: { format: 'yyyy-MM-dd HH:mm:ss' }
