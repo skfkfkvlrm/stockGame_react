@@ -190,6 +190,7 @@ const StockDetail = () => {
         const currentStep = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
         const now = Date.now();
         const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
+        const isIntraday = activeTimeframeId.endsWith('M') || activeTimeframeId.endsWith('H') || activeTimeframeId === '1D';
 
         let filtered = rawHistoryData.filter(item => {
             const d = item.baseDate || item.date || item.createdDate;
@@ -207,21 +208,55 @@ const StockDetail = () => {
         }
 
         if (chartType === 'candlestick') {
-            const mappedCandle = filtered.map(item => {
-                const d = item.baseDate || item.date || item.createdDate;
-                const itemTime = d ? new Date(d).getTime() : now;
-                const p = item.closePrice ?? item.price ?? initialPrice;
-                // OHLC 데이터가 있으면 활용, 없으면 단일가 기준 캔들 구성
-                const open = item.openPrice ?? p;
-                const high = item.highPrice ?? Math.max(open, p);
-                const low = item.lowPrice ?? Math.min(open, p);
-                const close = item.closePrice ?? p;
-                return {
-                    x: itemTime,
-                    y: [open, high, low, close]
-                };
-            });
-            setChartData([{ data: mappedCandle }]);
+            if (!isIntraday) {
+                // 일/주/월 이상 기간에서는 동일 일자의 거래를 1개의 캔들(OHLC)로 일 단위 머지하여 중복 일자 제거
+                const dayGroups = {};
+                filtered.forEach(item => {
+                    const d = item.baseDate || item.date || item.createdDate;
+                    const dateKey = d ? new Date(d).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                    const p = item.closePrice ?? item.price ?? initialPrice;
+                    const open = item.openPrice ?? p;
+                    const high = item.highPrice ?? Math.max(open, p);
+                    const low = item.lowPrice ?? Math.min(open, p);
+                    const close = item.closePrice ?? p;
+                    const time = new Date(`${dateKey}T12:00:00`).getTime();
+
+                    if (!dayGroups[dateKey]) {
+                        dayGroups[dateKey] = {
+                            x: time,
+                            open: open,
+                            high: high,
+                            low: low,
+                            close: close
+                        };
+                    } else {
+                        dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
+                        dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
+                        dayGroups[dateKey].close = close; // 마지막 체결가로 종가 갱신
+                    }
+                });
+
+                const mappedCandle = Object.values(dayGroups).map(g => ({
+                    x: g.x,
+                    y: [g.open, g.high, g.low, g.close]
+                }));
+                setChartData([{ data: mappedCandle }]);
+            } else {
+                const mappedCandle = filtered.map(item => {
+                    const d = item.baseDate || item.date || item.createdDate;
+                    const itemTime = d ? new Date(d).getTime() : now;
+                    const p = item.closePrice ?? item.price ?? initialPrice;
+                    const open = item.openPrice ?? p;
+                    const high = item.highPrice ?? Math.max(open, p);
+                    const low = item.lowPrice ?? Math.min(open, p);
+                    const close = item.closePrice ?? p;
+                    return {
+                        x: itemTime,
+                        y: [open, high, low, close]
+                    };
+                });
+                setChartData([{ data: mappedCandle }]);
+            }
         } else {
             const mappedLine = filtered.map(item => {
                 const d = item.baseDate || item.date || item.createdDate;
@@ -325,6 +360,10 @@ const StockDetail = () => {
         }
     };
 
+    const currentStepConfig = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
+    const nowTime = Date.now();
+    const minTime = currentStepConfig.days > 0 ? nowTime - (currentStepConfig.days * 24 * 60 * 60 * 1000) : undefined;
+
     const chartOptions = {
         chart: { 
             type: chartType, 
@@ -347,6 +386,9 @@ const StockDetail = () => {
         },
         xaxis: { 
             type: 'datetime', 
+            min: minTime,
+            max: nowTime,
+            tickAmount: 5,
             labels: { 
                 style: { colors: '#64748b' },
                 datetimeUTC: false,
