@@ -169,12 +169,12 @@
     top: calc(100% + 8px);
     right: 0;
     z-index: 50;
-    min-width: 360px;
+    min-width: 400px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     background: #ffffff;
-    padding: 14px 18px;
+    padding: 16px 20px;
     border-radius: 14px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -195,26 +195,30 @@
 .custom-bar-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .custom-bar-row .bar-label {
     font-size: 0.8rem;
     font-weight: 700;
     color: #475569;
-    min-width: 75px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .custom-bar-row .bar-input {
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.82rem;
+    padding: 4px 6px;
+    font-size: 0.8rem;
     color: #1e293b;
     background: #f8fafc;
     outline: none;
     transition: all 0.2s ease;
+    width: 125px;
+    flex-shrink: 0;
 }
 
 .custom-bar-row .bar-input:focus {
@@ -227,6 +231,7 @@
     color: #94a3b8;
     font-weight: bold;
     font-size: 0.85rem;
+    flex-shrink: 0;
 }
 
 .custom-bar-row .btn-text-reset {
@@ -236,7 +241,9 @@
     font-size: 0.75rem;
     cursor: pointer;
     text-decoration: underline;
-    margin-left: 4px;
+    margin-left: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .custom-bar-row .btn-text-reset:hover {
