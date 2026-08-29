@@ -23,7 +23,13 @@ const chartOptions = {
     stroke: { curve: 'smooth', width: 3 },
     xaxis: { categories: ['1일', '2일', '3일', '4일', '5일', '6일', '오늘'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: '#94a3b8' } } },
     yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (value) => value.toLocaleString() } },
-    grid: { borderColor: 'rgba(0,0,0,0.05)', strokeDashArray: 4 },
+    grid: { 
+        borderColor: '#cbd5e1', 
+        strokeDashArray: 3,
+        opacity: 0.8,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } }
+    },
     theme: { mode: 'light' }
 };
 
@@ -42,7 +48,6 @@ const Dashboard = () => {
     const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [chartType, setChartType] = useState('area'); // 'area' | 'line'
     
     // 자산 추이 기간 게이지 스텝 정의 (0: 오늘/실시간 ~ 4: 전체/가입이래)
     const TIMEFRAME_STEPS = [
@@ -214,7 +219,7 @@ const Dashboard = () => {
     const { categories, seriesData } = computeChartData();
     const dynamicChartOptions = { 
         ...chartOptions, 
-        chart: { ...chartOptions.chart, type: chartType },
+        chart: { ...chartOptions.chart, type: 'area' },
         stroke: { curve: 'smooth', width: 3 },
         xaxis: { ...chartOptions.xaxis, categories: categories } 
     };
@@ -308,23 +313,6 @@ const Dashboard = () => {
                     <div className="section-header chart-header-with-filters">
                         <h2>📈 자산 변동 추이</h2>
                         <div className="chart-controls-header-mini">
-                            <div className="chart-type-tabs-mini">
-                                <button 
-                                    className={`chart-type-btn-mini ${chartType === 'area' ? 'active' : ''}`}
-                                    onClick={() => setChartType('area')}
-                                    type="button"
-                                >
-                                    영역
-                                </button>
-                                <button 
-                                    className={`chart-type-btn-mini ${chartType === 'line' ? 'active' : ''}`}
-                                    onClick={() => setChartType('line')}
-                                    type="button"
-                                >
-                                    라인
-                                </button>
-                            </div>
-
                             <div className="chart-timeframe-tabs">
                                 {TIMEFRAME_STEPS.map((step, idx) => (
                                     <button 
@@ -341,7 +329,7 @@ const Dashboard = () => {
                     </div>
                     
                     <div className="chart-container">
-                        <Chart options={dynamicChartOptions} series={chartSeries} type={chartType} height={280} />
+                        <Chart options={dynamicChartOptions} series={chartSeries} type="area" height={280} />
                     </div>
                 </div>
             </div>
