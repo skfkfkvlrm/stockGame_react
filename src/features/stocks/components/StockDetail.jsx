@@ -249,6 +249,18 @@ const StockDetail = () => {
             showToast(`보유 주식 수량(${myStockAmount}주)을 초과하여 매도할 수 없습니다.`, 'error');
             return;
         }
+
+        const tradeTypeText = tradeType === 'BUY' ? '매수' : '매도';
+        const confirmMessage = `[${stockInfo.name}] 종목을 다음과 같이 ${tradeTypeText} 주문하시겠습니까?\n\n` +
+            `• 주문 유형: ${tradeTypeText} 주문\n` +
+            `• 주문 가격: ${prc.toLocaleString()} P\n` +
+            `• 주문 수량: ${qty.toLocaleString()} 주\n` +
+            `• 총 주문 금액: ${totalAmount.toLocaleString()} P\n\n` +
+            `확인 시 잔고 및 주문이 즉시 반영됩니다.`;
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
         
         setIsSubmitting(true);
         try {

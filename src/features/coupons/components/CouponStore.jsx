@@ -68,6 +68,15 @@ const CouponStore = () => {
             alert('포인트가 부족합니다!');
             return;
         }
+
+        const confirmMsg = `[${coupon.name}] 쿠폰을 구매하시겠습니까?\n\n` +
+            `• 차감 포인트: ${coupon.price.toLocaleString()} P\n` +
+            `• 구매 후 보유 잔여 포인트: ${(user.totalPoint - coupon.price).toLocaleString()} P\n\n` +
+            `구매 완료 후 취소 및 포인트 환불은 불가합니다.`;
+
+        if (!window.confirm(confirmMsg)) {
+            return;
+        }
         
         setIsSubmitting(true);
         try {
