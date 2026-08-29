@@ -92,6 +92,22 @@ button {
   color: var(--text-main) !important;
 }
 
+/* Global Table Standards & Scroll Stability */
+table {
+  scrollbar-gutter: stable;
+}
+
+th, td {
+  white-space: nowrap;
+}
+
+.table-responsive,
+.table-container,
+.stock-table-wrapper,
+.history-table-wrapper {
+  scrollbar-gutter: stable;
+}
+
 /* Functional Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
