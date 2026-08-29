@@ -265,14 +265,6 @@ const StockList = () => {
                                     정렬: {sortOption === 'ASC' ? '가격 낮은순' : sortOption === 'DESC' ? '가격 높은순' : '거래량순'}
                                 </span>
                             )}
-                            <button
-                                type="button"
-                                className="btn-chip-reset"
-                                onClick={() => { setSelectedSectors(['전체']); setSortOption('NONE'); }}
-                                title="필터 전체 초기화"
-                            >
-                                <RotateCcw size={12} /> 초기화
-                            </button>
                         </div>
                     )}
                 </div>
@@ -292,13 +284,25 @@ const StockList = () => {
                         <div className="stock-filter-popover glass-panel">
                             <div className="popover-header">
                                 <span className="popover-title">⚙️ 분야 및 정렬 필터</span>
-                                <button
-                                    type="button"
-                                    className="btn-popover-close"
-                                    onClick={() => setIsFilterOpen(false)}
-                                >
-                                    ✕
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {(!selectedSectors.includes('전체') || sortOption !== 'NONE') && (
+                                        <button
+                                            type="button"
+                                            className="btn-popover-reset"
+                                            onClick={() => { setSelectedSectors(['전체']); setSortOption('NONE'); }}
+                                            title="필터 전체 초기화"
+                                        >
+                                            <RotateCcw size={12} /> 초기화
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="btn-popover-close"
+                                        onClick={() => setIsFilterOpen(false)}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="filter-popover-body">
