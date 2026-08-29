@@ -208,8 +208,62 @@ const StockDetail = () => {
         }
 
         if (chartType === 'candlestick') {
-            if (!isIntraday) {
-                // 일/주/월 이상 기간에서는 동일 일자의 거래를 1개의 캔들(OHLC)로 일 단위 머지하여 중복 일자 제거
+            if (!isIntraday && currentStep.days > 0 && currentStep.days <= 90) {
+                // 1주(1W), 1개월(1MO), 3개월(3MO) 등: 과거 시작일부터 오늘까지의 '모든 일자'를 생성하여 연속적인 캔들 차트 구성
+                const dayGroups = {};
+                filtered.forEach(item => {
+                    const d = item.baseDate || item.date || item.createdDate;
+                    const dateKey = d ? new Date(d).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                    const p = item.closePrice ?? item.price ?? initialPrice;
+                    const open = item.openPrice ?? p;
+                    const high = item.highPrice ?? Math.max(open, p);
+                    const low = item.lowPrice ?? Math.min(open, p);
+                    const close = item.closePrice ?? p;
+
+                    if (!dayGroups[dateKey]) {
+                        dayGroups[dateKey] = { open, high, low, close };
+                    } else {
+                        dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
+                        dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
+                        dayGroups[dateKey].close = close;
+                    }
+                });
+
+                // 시작일 ~ 오늘까지 날짜 생성 (거래 없는 날은 이전 종가로 시가/고가/저가/종가 유지)
+                const fullDayCandles = [];
+                const daysCount = Math.round(currentStep.days);
+                let lastKnownPrice = initialPrice;
+
+                // 최초 이전 가격 탐색
+                const sortedKeys = Object.keys(dayGroups).sort();
+                if (sortedKeys.length > 0) {
+                    lastKnownPrice = dayGroups[sortedKeys[0]].open || initialPrice;
+                }
+
+                for (let i = daysCount - 1; i >= 0; i--) {
+                    const targetDate = new Date(now - (i * 24 * 60 * 60 * 1000));
+                    const dateKey = targetDate.toISOString().slice(0, 10);
+                    const time = new Date(`${dateKey}T12:00:00`).getTime();
+
+                    if (dayGroups[dateKey]) {
+                        const g = dayGroups[dateKey];
+                        fullDayCandles.push({
+                            x: time,
+                            y: [g.open, g.high, g.low, g.close]
+                        });
+                        lastKnownPrice = g.close;
+                    } else {
+                        // 거래 없는 날 (이전 종가 유지 도지 캔들)
+                        fullDayCandles.push({
+                            x: time,
+                            y: [lastKnownPrice, lastKnownPrice, lastKnownPrice, lastKnownPrice]
+                        });
+                    }
+                }
+
+                setChartData([{ data: fullDayCandles }]);
+            } else if (!isIntraday) {
+                // ALL 등 장기 데이터
                 const dayGroups = {};
                 filtered.forEach(item => {
                     const d = item.baseDate || item.date || item.createdDate;
@@ -222,17 +276,11 @@ const StockDetail = () => {
                     const time = new Date(`${dateKey}T12:00:00`).getTime();
 
                     if (!dayGroups[dateKey]) {
-                        dayGroups[dateKey] = {
-                            x: time,
-                            open: open,
-                            high: high,
-                            low: low,
-                            close: close
-                        };
+                        dayGroups[dateKey] = { x: time, open, high, low, close };
                     } else {
                         dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
                         dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
-                        dayGroups[dateKey].close = close; // 마지막 체결가로 종가 갱신
+                        dayGroups[dateKey].close = close;
                     }
                 });
 
@@ -388,7 +436,7 @@ const StockDetail = () => {
             type: 'datetime', 
             min: minTime,
             max: nowTime,
-            tickAmount: 5,
+            tickAmount: activeTimeframeId === '1W' ? 7 : 5,
             labels: { 
                 style: { colors: '#64748b' },
                 datetimeUTC: false,
