@@ -199,17 +199,13 @@ const StockDetail = () => {
             return itemTime >= cutoffTime;
         });
 
-        // 당일 데이터가 부족하거나 신규 상장 종목인 경우 실시간 시세 포인트 합성
         if (filtered.length === 0) {
-            filtered = [{
-                date: new Date(),
-                price: initialPrice
-            }];
+            filtered = [{ date: new Date(), price: initialPrice }];
         }
 
         if (chartType === 'candlestick') {
-            if (!isIntraday && currentStep.days > 0 && currentStep.days <= 90) {
-                // 1주(1W), 1개월(1MO), 3개월(3MO) 등: 과거 시작일부터 오늘까지의 '모든 일자'를 생성하여 연속적인 캔들 차트 구성
+            if (!isIntraday) {
+                // 일/주/월/전체: 실제 거래가 있었던 날짜만 일별 OHLC로 집계
                 const dayGroups = {};
                 filtered.forEach(item => {
                     const d = item.baseDate || item.date || item.createdDate;
@@ -219,9 +215,15 @@ const StockDetail = () => {
                     const high = item.highPrice ?? Math.max(open, p);
                     const low = item.lowPrice ?? Math.min(open, p);
                     const close = item.closePrice ?? p;
+                    const dateObj = new Date(d || Date.now());
+                    const label = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
 
                     if (!dayGroups[dateKey]) {
-                        dayGroups[dateKey] = { open, high, low, close };
+                        dayGroups[dateKey] = {
+                            x: label,
+                            rawTime: dateObj.getTime(),
+                            open, high, low, close
+                        };
                     } else {
                         dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
                         dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
@@ -229,70 +231,20 @@ const StockDetail = () => {
                     }
                 });
 
-                // 시작일 ~ 오늘까지 날짜 생성 (거래 없는 날은 이전 종가로 시가/고가/저가/종가 유지)
-                const fullDayCandles = [];
-                const daysCount = Math.round(currentStep.days);
-                let lastKnownPrice = initialPrice;
+                const sortedCandles = Object.values(dayGroups)
+                    .sort((a, b) => a.rawTime - b.rawTime)
+                    .map(g => ({
+                        x: g.x,
+                        y: [g.open, g.high, g.low, g.close]
+                    }));
 
-                // 최초 이전 가격 탐색
-                const sortedKeys = Object.keys(dayGroups).sort();
-                if (sortedKeys.length > 0) {
-                    lastKnownPrice = dayGroups[sortedKeys[0]].open || initialPrice;
-                }
-
-                for (let i = daysCount - 1; i >= 0; i--) {
-                    const targetDate = new Date(now - (i * 24 * 60 * 60 * 1000));
-                    const dateKey = targetDate.toISOString().slice(0, 10);
-                    const time = new Date(`${dateKey}T12:00:00`).getTime();
-
-                    if (dayGroups[dateKey]) {
-                        const g = dayGroups[dateKey];
-                        fullDayCandles.push({
-                            x: time,
-                            y: [g.open, g.high, g.low, g.close]
-                        });
-                        lastKnownPrice = g.close;
-                    } else {
-                        // 거래 없는 날 (이전 종가 유지 도지 캔들)
-                        fullDayCandles.push({
-                            x: time,
-                            y: [lastKnownPrice, lastKnownPrice, lastKnownPrice, lastKnownPrice]
-                        });
-                    }
-                }
-
-                setChartData([{ data: fullDayCandles }]);
-            } else if (!isIntraday) {
-                // ALL 등 장기 데이터
-                const dayGroups = {};
-                filtered.forEach(item => {
-                    const d = item.baseDate || item.date || item.createdDate;
-                    const dateKey = d ? new Date(d).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-                    const p = item.closePrice ?? item.price ?? initialPrice;
-                    const open = item.openPrice ?? p;
-                    const high = item.highPrice ?? Math.max(open, p);
-                    const low = item.lowPrice ?? Math.min(open, p);
-                    const close = item.closePrice ?? p;
-                    const time = new Date(`${dateKey}T12:00:00`).getTime();
-
-                    if (!dayGroups[dateKey]) {
-                        dayGroups[dateKey] = { x: time, open, high, low, close };
-                    } else {
-                        dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
-                        dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
-                        dayGroups[dateKey].close = close;
-                    }
-                });
-
-                const mappedCandle = Object.values(dayGroups).map(g => ({
-                    x: g.x,
-                    y: [g.open, g.high, g.low, g.close]
-                }));
-                setChartData([{ data: mappedCandle }]);
+                setChartData([{ data: sortedCandles }]);
             } else {
+                // 당일/시간 단위: 시간순 거래 포인트
                 const mappedCandle = filtered.map(item => {
                     const d = item.baseDate || item.date || item.createdDate;
-                    const itemTime = d ? new Date(d).getTime() : now;
+                    const dateObj = new Date(d || Date.now());
+                    const label = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
                     const p = item.closePrice ?? item.price ?? initialPrice;
                     const open = item.openPrice ?? p;
                     const high = item.highPrice ?? Math.max(open, p);
@@ -432,7 +384,12 @@ const StockDetail = () => {
                 colors: { upward: '#ff4757', downward: '#3b82f6' } 
             } 
         },
-        xaxis: { 
+        xaxis: chartType === 'candlestick' ? {
+            type: 'category',
+            labels: { 
+                style: { colors: '#64748b' }
+            }
+        } : { 
             type: 'datetime', 
             min: minTime,
             max: nowTime,
