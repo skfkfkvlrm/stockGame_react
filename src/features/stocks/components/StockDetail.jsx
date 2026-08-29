@@ -385,10 +385,11 @@ const StockDetail = () => {
             type: 'datetime', 
             min: minTime,
             max: nowTime,
-            tickAmount: activeTimeframeId === '1W' ? 7 : 5,
+            tickAmount: 4,
             labels: { 
-                style: { colors: '#64748b' },
+                style: { colors: '#64748b', fontSize: '0.8rem' },
                 datetimeUTC: false,
+                hideOverlappingLabels: true,
                 formatter: (val) => {
                     if (!val) return '';
                     const d = new Date(val);
