@@ -251,7 +251,7 @@ const StockDetail = () => {
                     const low = item.lowPrice ?? Math.min(open, p);
                     const close = item.closePrice ?? p;
                     return {
-                        x: itemTime,
+                        x: label,
                         y: [open, high, low, close]
                     };
                 });
