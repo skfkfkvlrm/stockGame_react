@@ -372,14 +372,18 @@ const StockDetail = () => {
                 <div className="chart-section">
                     <div className="glass-panel stock-header">
                         <div className="stock-title">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <h1>{stockInfo.stockName}</h1>
-                                <div className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}>
-                                    {wsStatus === ConnectionStatus.CONNECTED && '🟢 실시간 시세 연결됨'}
-                                    {wsStatus === ConnectionStatus.CONNECTING && '🟡 연결 중...'}
-                                    {wsStatus === ConnectionStatus.RECONNECTING && `🟡 재연결 중... (${retryCount}/5)`}
-                                    {wsStatus === ConnectionStatus.FAILED && '🔴 실시간 연결 실패 (새로고침 필요)'}
-                                    {wsStatus === ConnectionStatus.DISCONNECTED && '⚪ 연결 종료'}
+                                <div 
+                                    className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
+                                    title={
+                                        wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
+                                        wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
+                                        wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
+                                        wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
+                                    }
+                                >
+                                    <span className="ws-pulse-dot"></span>
                                 </div>
                             </div>
                             {stockInfo.content && (
