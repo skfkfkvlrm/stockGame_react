@@ -85,7 +85,7 @@ const Register = () => {
                 studentId: formData.studentId.trim(),
                 name: formData.name.trim(),
                 grade: parseInt(formData.grade, 10),
-                className: `${formData.className}반`,
+                className: formData.className,
                 classNumber: parseInt(formData.classNumber, 10),
                 password: formData.password
             };
