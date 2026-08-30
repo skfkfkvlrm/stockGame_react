@@ -85,7 +85,8 @@ const StockList = () => {
                     api.get('/stock'),
                     api.get('/stock/market-index').catch(() => ({ data: { data: [] } }))
                 ]);
-                setStocks(stocksRes.data.data);
+                const activeStocks = (stocksRes.data.data || []).filter(stock => stock.status !== 'DELISTED');
+                setStocks(activeStocks);
                 if (indicesRes.data && Array.isArray(indicesRes.data.data)) {
                     setMarketIndices(indicesRes.data.data);
                 }
