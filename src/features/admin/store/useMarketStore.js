@@ -13,7 +13,7 @@ const useMarketStore = create((set) => ({
     fetchMarketStatus: async () => {
         try {
             set({ isLoading: true });
-            const res = await api.get('/stock/admin/market/status');
+            const res = await api.get('/stock/market/status');
             const data = res.data?.data;
             if (data) {
                 set({

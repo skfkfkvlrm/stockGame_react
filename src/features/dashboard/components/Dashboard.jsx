@@ -517,24 +517,26 @@ const Dashboard = () => {
                 <div className="section-header"><h2>보유 주식 목록</h2></div>
                 <div className="table-responsive">
                     <table className="portfolio-table">
-                        <thead><tr><th>종목명</th><th>보유 수량</th><th>매수 평균가</th><th>현재가</th><th>평가 손익</th><th>수익률</th></tr></thead>
+                        <thead><tr><th>종목명</th><th>보유 수량</th><th>매수 평균가</th><th>총 구매 금액</th><th>현재가</th><th>평가 손익</th><th>수익률</th></tr></thead>
                         <tbody>
                             {portfolio.length === 0 ? (
-                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>보유 중인 주식이 없습니다.</td></tr>
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>보유 중인 주식이 없습니다.</td></tr>
                             ) : (
                                 portfolio.map((stock, idx) => {
                                     const name = stock.stockName || stock.name || '주식';
                                     const avgPrice = stock.averagePrice ?? stock.avgPrice ?? 0;
                                     const currentPrice = stock.currentPrice ?? stock.nowPrice ?? avgPrice;
                                     const amount = stock.amount ?? 0;
+                                    const purchasePrice = avgPrice > 0 ? (avgPrice * amount) : (stock.purchasePrice || 0);
                                     const profit = stock.profit ?? ((currentPrice - avgPrice) * amount);
                                     const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
                                     const isProfit = profit >= 0;
                                     return (
                                         <tr key={idx}>
                                             <td className="stock-name-cell font-bold">{name}</td>
-                                            <td>{amount} 주</td>
+                                            <td>{amount.toLocaleString()} 주</td>
                                             <td>{avgPrice.toLocaleString()} P</td>
+                                            <td style={{ fontWeight: '600' }}>{purchasePrice.toLocaleString()} P</td>
                                             <td>{currentPrice.toLocaleString()} P</td>
                                             <td className={`font-bold ${isProfit ? 'profit-up' : 'profit-down'}`}>{isProfit ? '+' : ''}{profit.toLocaleString()} P</td>
                                             <td className={`font-bold ${isProfit ? 'profit-up' : 'profit-down'}`}>{isProfit ? '+' : ''}{rate.toFixed(2)}%</td>

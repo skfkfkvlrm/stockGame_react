@@ -123,8 +123,22 @@ const CouponStore = () => {
                         const detail = getCouponDetail(coupon.name);
                         return (
                             <div key={cId} className="coupon-card glass-panel">
-                                <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff' }}>
-                                    {detail.icon}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
+                                    <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff', margin: 0 }}>
+                                        {detail.icon}
+                                    </div>
+                                    <span style={{
+                                        fontFamily: 'Consolas, monospace',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '700',
+                                        color: '#6366f1',
+                                        background: 'rgba(99, 102, 241, 0.08)',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px',
+                                        border: '1px solid rgba(99, 102, 241, 0.2)'
+                                    }}>
+                                        {coupon.couponCode || `CPN-2026-${String(cId).padStart(4, '0')}`}
+                                    </span>
                                 </div>
                                 <h3 className="coupon-name">{coupon.name}</h3>
                                 <p className="coupon-desc">{coupon.desc || detail.desc}</p>

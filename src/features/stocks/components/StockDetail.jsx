@@ -458,6 +458,10 @@ const StockDetail = () => {
     const mySellPrices = myOrders.filter(o => o.content === 'SELL' || o.content === '매도').map(o => o.price);
     const myBuyPrices = myOrders.filter(o => o.content === 'BUY' || o.content === '매수').map(o => o.price);
 
+    const currentPriceVal = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
+    const availablePoints = user?.totalPoint ?? user?.point ?? 0;
+    const maxBuyQuantity = currentPriceVal > 0 ? Math.floor(availablePoints / currentPriceVal) : 0;
+
     return (
         <div className="stock-detail-container">
             {/* Toast Notification */}
@@ -681,16 +685,14 @@ const StockDetail = () => {
 
                         <div className="trade-form">
                             <div className="form-group">
-                                <label>{tradeType === 'BUY' ? '주문 가능 포인트' : '주문 가능 수량'}</label>
+                                <label>주문 가능 수량</label>
                                 <div className="available-points">
                                     <span className="points-value">
                                         {tradeType === 'BUY' 
-                                            ? (user?.totalPoint ?? user?.point ?? 0).toLocaleString() 
+                                            ? maxBuyQuantity.toLocaleString() 
                                             : myStockAmount.toLocaleString()}
                                     </span>
-                                    <span className="points-unit">
-                                        {tradeType === 'BUY' ? 'P' : '주'}
-                                    </span>
+                                    <span className="points-unit">주</span>
                                 </div>
                             </div>
 
