@@ -175,8 +175,13 @@ const StockDetail = () => {
             {
                 topic: `/topic/orders/${stockId}`,
                 callback: (msg) => {
-                    if (msg.body === 'ORDER_UPDATED') {
+                    if (msg.body === 'ORDER_UPDATED' || msg.body === 'STATIC_VI_TRIGGERED' || msg.body === 'STATIC_VI_RELEASED') {
                         fetchAllData();
+                        if (msg.body === 'STATIC_VI_TRIGGERED') {
+                            showToast('정적 VI(변동성 완화장치)가 발동되었습니다. 2분간 단일가 매매로 전환됩니다.', 'error');
+                        } else if (msg.body === 'STATIC_VI_RELEASED') {
+                            showToast('정적 VI가 해제되어 정규장(연속매매)으로 복귀했습니다.', 'success');
+                        }
                     }
                 }
             }
@@ -491,6 +496,21 @@ const StockDetail = () => {
                             <div className="stock-title">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <h1>{stockInfo.stockName}</h1>
+                                    {stockInfo.marketStatus === 'STATIC_VI' && (
+                                        <div style={{
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            background: '#f59e0b',
+                                            color: '#fff',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            letterSpacing: '0.02em',
+                                            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
+                                            animation: 'pulse-amber 2s infinite'
+                                        }}>
+                                            정적 VI 발동 중
+                                        </div>
+                                    )}
                                     <div 
                                         className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
                                         title={
@@ -750,6 +770,22 @@ const StockDetail = () => {
                                 </div>
                             )}
 
+                            {stockInfo.marketStatus === 'STATIC_VI' && (
+                                <div style={{
+                                    padding: '12px 16px',
+                                    borderRadius: '8px',
+                                    marginBottom: '16px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    textAlign: 'center',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    color: '#b91c1c',
+                                    border: '1px solid #fca5a5'
+                                }}>
+                                    🚨 현재 이 종목은 가격 급변으로 정적 VI(변동성 완화장치)가 발동되었습니다. 2분간 단일가 매매로 주문이 접수됩니다.
+                                </div>
+                            )}
+
                             {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
                                 <div style={{
                                     padding: '12px 16px',
@@ -785,9 +821,11 @@ const StockDetail = () => {
                                         ? '장 마감 (주문 불가)' 
                                         : (stockInfo.status && stockInfo.status !== 'LISTED') 
                                             ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') 
-                                            : (statusCode === 'CALL_AUCTION' 
-                                                ? (tradeType === 'BUY' ? '동시호가 매수 접수' : '동시호가 매도 접수')
-                                                : (tradeType === 'BUY' ? '매수 주문' : '매도 주문'))
+                                            : (stockInfo.marketStatus === 'STATIC_VI'
+                                                ? (tradeType === 'BUY' ? '단일가 매수 접수' : '단일가 매도 접수')
+                                                : (statusCode === 'CALL_AUCTION' 
+                                                    ? (tradeType === 'BUY' ? '동시호가 매수 접수' : '동시호가 매도 접수')
+                                                    : (tradeType === 'BUY' ? '매수 주문' : '매도 주문')))
                                 }
                             </button>
                         </div>

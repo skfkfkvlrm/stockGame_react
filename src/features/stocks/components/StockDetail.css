@@ -616,9 +616,209 @@
         opacity: 0;
         transform: translateX(40px);
     }
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.available-points {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    height: 32px;
+    line-height: 32px;
+}
+
+.available-points .points-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.available-points .points-unit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.quantity-control,
+.price-control {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-panel);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    border: 1px solid var(--bg-panel-border);
+    height: 46px;
+}
+
+.quantity-control button,
+.price-control button {
+    flex-shrink: 0;
+    width: 46px;
+    height: 100%;
+    padding: 0;
+    background: var(--bg-main);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.quantity-control button:hover,
+.price-control button:hover {
+    background: var(--bg-panel-hover);
+    color: var(--text-main);
+}
+
+.quantity-control input,
+.price-control input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    -moz-appearance: textfield;
+}
+
+.quantity-control input::-webkit-outer-spin-button,
+.quantity-control input::-webkit-inner-spin-button,
+.price-control input::-webkit-outer-spin-button,
+.price-control input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quantity-control input:focus,
+.price-control input:focus {
+    outline: none;
+    background: var(--bg-panel-hover);
+}
+
+.total-calc {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--bg-panel-border);
+}
+
+.total-amount {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.submit-trade-btn {
+    margin-top: auto;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: var(--border-radius-md);
+    color: white;
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+}
+
+.submit-trade-btn.buy {
+    background: var(--accent-red);
+}
+
+.submit-trade-btn.sell {
+    background: var(--accent-blue);
+}
+
+.submit-trade-btn:hover {
+    opacity: 0.9;
+}
+
+.submit-trade-btn:active {
+    transform: scale(0.98);
+    /* Snappy click feedback instead of shadows */
+}
+
+@media (max-width: 1200px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Toast Notification ── */
+.trade-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    animation: toastSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    min-width: 260px;
+    max-width: 420px;
+}
+
+.trade-toast--success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.trade-toast--error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.trade-toast span {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.trade-toast__close {
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    color: #fff;
+    font-size: 0.9rem;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.trade-toast__close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
 
     to {
         opacity: 1;
         transform: translateX(0);
     }
+}
+@keyframes pulse-amber {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
 }
