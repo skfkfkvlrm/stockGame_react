@@ -60,7 +60,7 @@
     text-align: center;
     border-radius: 18px;
     position: relative;
-    transition: all 0.25 ease;
+    transition: all 0.25s ease;
     background: #ffffff;
     border: 1px solid var(--bg-panel-border, rgba(0,0,0,0.08));
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
@@ -75,6 +75,11 @@
     border: 2px solid #f59e0b;
     box-shadow: 0 12px 30px rgba(245, 158, 11, 0.2);
     background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, #ffffff 100%);
+}
+
+.podium-card.first-place:hover {
+    transform: translateY(-16px);
+    box-shadow: 0 18px 40px rgba(245, 158, 11, 0.3);
 }
 
 .crown-icon {
@@ -333,5 +338,8 @@
     }
     .podium-card.first-place {
         transform: none;
+    }
+    .podium-card.first-place:hover {
+        transform: translateY(-4px);
     }
 }
