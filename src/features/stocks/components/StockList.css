@@ -46,7 +46,7 @@
 
 .stock-table-wrapper {
     padding: 0 16px 16px 16px;
-    overflow-x: hidden;
+    overflow-x: auto;
     max-height: 720px;
     overflow-y: auto;
     border-radius: var(--border-radius-lg);
@@ -60,6 +60,7 @@
     border-spacing: 0;
     text-align: right;
     table-layout: fixed;
+    min-width: 800px;
 }
 
 .stock-table thead {

@@ -9,6 +9,7 @@ const NewsList = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '1D' | '1W' | '1M' | 'CUSTOM'
+    const [isCustomMenuOpen, setIsCustomMenuOpen] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const GAUGE_STEPS = [
@@ -27,12 +28,12 @@ const NewsList = () => {
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (customFilterRef.current && !customFilterRef.current.contains(event.target)) {
-                // 커스텀 기간 설정 팝오버 영역 바깥을 클릭하면 'ALL'로 닫기
-                setTimeRange('ALL');
+                // 커스텀 기간 설정 팝오버 영역 바깥을 클릭하면 닫기만 하고 timeRange는 유지
+                setIsCustomMenuOpen(false);
             }
         };
 
-        if (timeRange === 'CUSTOM') {
+        if (isCustomMenuOpen) {
             document.addEventListener('mousedown', handleClickOutside);
             document.addEventListener('touchstart', handleClickOutside);
         }
@@ -40,7 +41,7 @@ const NewsList = () => {
             document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('touchstart', handleClickOutside);
         };
-    }, [timeRange]);
+    }, [isCustomMenuOpen]);
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -236,21 +237,28 @@ const NewsList = () => {
                                     key={tab.key}
                                     type="button"
                                     className={`news-filter-btn ${timeRange === tab.key ? 'active' : ''}`}
-                                    onClick={() => setTimeRange(tab.key)}
+                                    onClick={() => {
+                                        setTimeRange(tab.key);
+                                        if (tab.key === 'CUSTOM') {
+                                            setIsCustomMenuOpen(true);
+                                        } else {
+                                            setIsCustomMenuOpen(false);
+                                        }
+                                    }}
                                 >
                                     {tab.label}
                                 </button>
                             ))}
                         </div>
 
-                        {timeRange === 'CUSTOM' && (
+                        {isCustomMenuOpen && (
                             <div className="news-custom-stacked-bars" ref={customFilterRef}>
                                 {/* 팝오버 헤더 */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
                                     <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1e293b' }}>⚙️ 상세 기간/시간 설정</span>
                                     <button
                                         type="button"
-                                        onClick={() => setTimeRange('ALL')}
+                                        onClick={() => setIsCustomMenuOpen(false)}
                                         style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}
                                         title="닫기"
                                     >

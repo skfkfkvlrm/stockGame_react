@@ -26,7 +26,7 @@
 
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
 }
 
@@ -192,12 +192,13 @@
 }
 
 .table-responsive {
-    overflow-x: hidden;
+    overflow-x: auto;
     scrollbar-gutter: stable;
 }
 
 .portfolio-table {
     width: 100%;
+    min-width: 800px; /* 중첩 방지를 위한 최소 너비 확보 */
     border-collapse: collapse;
     text-align: right;
     table-layout: fixed;
@@ -301,8 +302,20 @@
     margin-bottom: 24px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1300px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .summary-cards > :last-child {
+        grid-column: 1 / -1; /* 3번째 카드를 전체 너비로 확장 */
+    }
     .analytics-split-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .summary-cards {
         grid-template-columns: 1fr;
     }
 }

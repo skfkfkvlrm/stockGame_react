@@ -22,8 +22,6 @@ const StockDetail = () => {
     const [stockInfo, setStockInfo] = useState(null);
     const [rawHistoryData, setRawHistoryData] = useState([]);
     const [chartData, setChartData] = useState([]);
-    const [chartType, setChartType] = useState('candlestick'); // 'candlestick' or 'line'
-    
     const ALL_TIMEFRAMES = [
         { id: '1M', label: '1분', days: 1/1440, desc: '최근 1분 시세' },
         { id: '3M', label: '3분', days: 3/1440, desc: '최근 3분 시세' },
@@ -208,7 +206,7 @@ const StockDetail = () => {
             filtered = [{ date: new Date(), price: initialPrice }];
         }
 
-        if (chartType === 'candlestick') {
+        
             if (!isIntraday) {
                 // 일/주/월/전체: 실제 거래일의 OHLC 집계 (category x축용 문자열 라벨 사용)
                 const dayGroups = {};
@@ -271,19 +269,7 @@ const StockDetail = () => {
                 });
                 setChartData([{ data: mappedCandle }]);
             }
-        } else {
-            const mappedLine = filtered.map(item => {
-                const d = item.baseDate || item.date || item.createdDate;
-                const itemTime = d ? new Date(d).getTime() : now;
-                const p = item.closePrice ?? item.price ?? initialPrice;
-                return {
-                    x: itemTime,
-                    y: p
-                };
-            });
-            setChartData([{ name: '주가', data: mappedLine }]);
-        }
-    }, [rawHistoryData, activeTimeframeId, chartType, stockInfo]);
+    }, [rawHistoryData, activeTimeframeId, stockInfo]);
 
     if (isLoading) return <div className="stock-detail-container"><div className="loading-spinner"></div></div>;
     if (error || !stockInfo) return <div className="stock-detail-container"><div className="error-msg">{error || '종목이 존재하지 않습니다.'}</div></div>;
@@ -389,7 +375,7 @@ const StockDetail = () => {
 
     const chartOptions = {
         chart: { 
-            type: chartType, 
+            type: "candlestick", 
             background: 'transparent', 
             toolbar: { 
                 show: false,
@@ -400,40 +386,19 @@ const StockDetail = () => {
             selection: { enabled: false }
         },
         theme: { mode: 'light' },
-        stroke: { curve: 'smooth', width: chartType === 'line' ? 3 : 1 },
-        colors: chartType === 'line' ? ['#8b5cf6'] : undefined,
+        stroke: { curve: "smooth", width: 1 },
+        
         plotOptions: { 
             candlestick: { 
                 colors: { upward: '#ff4757', downward: '#3b82f6' } 
             } 
         },
-        xaxis: chartType === 'candlestick' ? {
-            // 봉차트: category 타입 (데이터 개수에 따라 간격 균등 배분 → 날짜 겹침 없음)
+        xaxis: {
             type: 'category',
             labels: {
                 style: { colors: '#64748b', fontSize: '0.8rem' },
                 hideOverlappingLabels: true,
             }
-        } : {
-            // 라인차트: datetime 타입 (시간 연속성 보장 → 빈 구간도 정확한 간격으로 표시)
-            type: 'datetime', 
-            min: minTime,
-            max: nowTime,
-            tickAmount: getTickAmount(activeTimeframeId),
-            labels: { 
-                style: { colors: '#64748b', fontSize: '0.8rem' },
-                datetimeUTC: false,
-                hideOverlappingLabels: true,
-                formatter: (val) => {
-                    if (!val) return '';
-                    const d = new Date(val);
-                    if (isNaN(d.getTime())) return val;
-                    if (activeTimeframeId === '1D' || activeTimeframeId.endsWith('H') || activeTimeframeId.endsWith('M')) {
-                        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                    }
-                    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-                }
-            } 
         },
         yaxis: { 
             labels: { 
@@ -545,20 +510,7 @@ const StockDetail = () => {
                         {/* Chart Box with Timeframe Gauge & Type Selector */}
                         <div className="glass-panel chart-box">
                             <div className="chart-controls-header">
-                                <div className="chart-type-tabs">
-                                    <button 
-                                        className={`chart-type-btn ${chartType === 'candlestick' ? 'active' : ''}`}
-                                        onClick={() => { setChartData([]); setChartType('candlestick'); }}
-                                    >
-                                        봉차트 (캔들)
-                                    </button>
-                                    <button 
-                                        className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
-                                        onClick={() => { setChartData([]); setChartType('line'); }}
-                                    >
-                                        라인차트 (선)
-                                    </button>
-                                </div>
+                                
 
                                 <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
                                     <div className="chart-timeframe-tabs">
@@ -619,7 +571,7 @@ const StockDetail = () => {
                                     key={`${chartType}-${activeTimeframeId}`}
                                     options={chartOptions} 
                                     series={chartData} 
-                                    type={chartType} 
+                                    type="candlestick" 
                                     height="100%" 
                                 />
                             </div>

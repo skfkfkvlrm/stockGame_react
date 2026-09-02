@@ -45,6 +45,7 @@ const Dashboard = () => {
     const user = useAuthStore((state) => state.user);
     const [assetData, setAssetData] = useState(null);
     const [historyData, setHistoryData] = useState([]);
+    const [historyFilter, setHistoryFilter] = useState('1M'); // '1W' | '1M' | '3M' | 'ALL'
     const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -179,17 +180,38 @@ const Dashboard = () => {
             })
             .sort((a, b) => new Date(a.historyDate || 0).getTime() - new Date(b.historyDate || 0).getTime());
 
-        let cumulative = 0;
-        const points = sortedHistory.map(item => {
-            cumulative += item.pointChange || 0;
-            return {
-                x: new Date(item.historyDate).getTime(),
-                y: cumulative
-            };
-        });
-
-        // 가장 최근 지점은 현재 totalAsset으로 보정
-        points.push({ x: now, y: totalAsset });
+        // 역방향 추적 기법 (Reverse Tracking from actual current cash)
+        // 백엔드 내역 누락이나 초기값 불일치로 인한 오차를 방지하기 위해 
+        // 실제 현재 현금(availablePoints)에서 시작하여 과거로 되돌아가는 방식으로 계산합니다.
+        let cumulative = availablePoints;
+        
+        // 내역을 역순으로 탐색
+        const reverseHistory = [...sortedHistory].reverse();
+        const reversePoints = [];
+        
+        for (const item of reverseHistory) {
+            reversePoints.push({
+                x: new Date(item.historyDate || 0).getTime(),
+                y: Math.max(0, cumulative)
+            });
+            cumulative -= (item.pointChange || 0); // 과거 잔고로 되돌림
+        }
+        
+        // 다시 시간순으로 정렬
+        const points = reversePoints.reverse();
+        
+        // 맨 처음 시작점 (가장 오래된 내역의 직전)
+        if (points.length > 0) {
+            points.unshift({
+                x: cutoffTime === 0 ? points[0].x - 86400000 : cutoffTime,
+                y: Math.max(0, cumulative)
+            });
+            // 차트의 끝이 현재 시간까지 자연스럽게 이어지도록 최신 점 추가
+            points.push({ x: now, y: Math.max(0, availablePoints) });
+        } else {
+            points.push({ x: cutoffTime === 0 ? now - 86400000 : cutoffTime, y: Math.max(0, availablePoints) });
+            points.push({ x: now, y: Math.max(0, availablePoints) });
+        }
 
         return points;
     };
@@ -226,6 +248,19 @@ const Dashboard = () => {
         }
     };
     const chartSeries = [{ name: '총 자산 추이', data: chartSeriesData }];
+
+    const computeFilteredHistory = () => {
+        const now = Date.now();
+        if (historyFilter === 'ALL') return actualHistoryData;
+        
+        const daysMap = { '1W': 7, '1M': 30, '3M': 90 };
+        const days = daysMap[historyFilter] || 30;
+        const cutoff = now - (days * 24 * 60 * 60 * 1000);
+        
+        return actualHistoryData.filter(h => new Date(h.historyDate || 0).getTime() >= cutoff);
+    };
+    
+    const displayedHistory = computeFilteredHistory();
 
     const computeProfitBreakdown = () => {
         const unrealizedList = (portfolio || []).map(stk => {
@@ -313,7 +348,7 @@ const Dashboard = () => {
                 </div>
                 <div className="chart-section glass-panel">
                     <div className="section-header chart-header-with-filters">
-                        <h2>📈 자산 변동 추이</h2>
+                        <h2>📉 현금(포인트) 변동 추이</h2>
                         <div className="chart-controls-header-mini">
                             <div className="chart-timeframe-tabs">
                                 {TIMEFRAME_STEPS.map((step, idx) => (
@@ -421,29 +456,56 @@ const Dashboard = () => {
                                     </div>
 
                                     <div className="modal-history-list-section" style={{ marginTop: '20px' }}>
-                                        <h3>최근 자산 변동 기록 (가입 기본 지원금 제외)</h3>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            <h3 style={{ margin: 0 }}>자산 변동 기록 (가입 기본 지원금 제외)</h3>
+                                            <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '4px', borderRadius: '6px' }}>
+                                                {['1W', '1M', '3M', 'ALL'].map(f => (
+                                                    <button 
+                                                        key={f}
+                                                        onClick={() => setHistoryFilter(f)}
+                                                        style={{
+                                                            border: 'none',
+                                                            background: historyFilter === f ? '#fff' : 'transparent',
+                                                            boxShadow: historyFilter === f ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                                            color: historyFilter === f ? '#0f172a' : '#64748b',
+                                                            fontWeight: '600',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.8rem'
+                                                        }}
+                                                    >
+                                                        {f === '1W' ? '1주일' : f === '1M' ? '1개월' : f === '3M' ? '3개월' : '전체'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <div className="history-table-wrapper">
-                                            <table className="modal-history-table">
+                                            <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
                                                 <thead>
                                                     <tr>
-                                                        <th>일시</th>
-                                                        <th>사유</th>
-                                                        <th>변동 포인트</th>
+                                                        <th style={{ width: '35%' }}>일시</th>
+                                                        <th style={{ width: '40%' }}>사유</th>
+                                                        <th style={{ width: '25%', textAlign: 'right' }}>변동 포인트</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {(!actualHistoryData || actualHistoryData.length === 0) ? (
+                                                    {displayedHistory.length === 0 ? (
                                                         <tr>
                                                             <td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                                                                기록된 변동 내역이 없습니다.
+                                                                해당 기간에 기록된 변동 내역이 없습니다.
                                                             </td>
                                                         </tr>
                                                     ) : (
-                                                        [...actualHistoryData].reverse().slice(0, 10).map((h, i) => (
+                                                        displayedHistory.map((h, i) => (
                                                             <tr key={i}>
-                                                                <td>{h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR') : '-'}</td>
-                                                                <td>{h.historyContent || h.reason || h.description || h.historyType || '변동'}</td>
-                                                                <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'}>
+                                                                <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {h.historyDate ? new Date(h.historyDate).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+                                                                </td>
+                                                                <td style={{ wordBreak: 'keep-all', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                                                    {h.historyContent || h.reason || h.description || h.historyType || '변동'}
+                                                                </td>
+                                                                <td className={(h.pointChange || 0) >= 0 ? 'profit-up' : 'profit-down'} style={{ textAlign: 'right', whiteSpace: 'nowrap', fontWeight: '700' }}>
                                                                     {(h.pointChange || 0) > 0 ? '+' : ''}{(h.pointChange || 0).toLocaleString()} P
                                                                 </td>
                                                             </tr>
