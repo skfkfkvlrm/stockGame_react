@@ -763,7 +763,9 @@ const StockDetail = () => {
                                     border: `1px solid ${!marketOpen ? '#fca5a5' : '#fcd34d'}`
                                 }}>
                                     {!marketOpen 
-                                        ? `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.` 
+                                        ? (statusCode === 'MANUAL_PAUSE'
+                                            ? '🚨 교사 긴급 점검으로 인해 전 종목 시장 거래가 일시 정지되었습니다. 모든 신규 주문 접수가 차단됩니다.'
+                                            : `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.`)
                                         : (stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.')
                                     }
                                 </div>
@@ -782,7 +784,7 @@ const StockDetail = () => {
                                 {isSubmitting 
                                     ? '처리 중...' 
                                     : !marketOpen 
-                                        ? '장 마감 (주문 불가)' 
+                                        ? (statusCode === 'MANUAL_PAUSE' ? '거래 일시정지 (점검 중)' : '장 마감 (주문 불가)')
                                         : (stockInfo.status && stockInfo.status !== 'LISTED') 
                                             ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨') 
                                             : (stockInfo.marketStatus === 'STATIC_VI'

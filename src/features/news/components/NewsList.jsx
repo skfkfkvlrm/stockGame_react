@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Newspaper, ChevronRight, Clock } from 'lucide-react';
-import api from '../../../api/axios';
+import newsService from '../../../services/newsService';
 import './NewsList.css';
 
 const NewsList = () => {
@@ -46,9 +46,9 @@ const NewsList = () => {
     useEffect(() => {
         const fetchNews = async () => {
             try {
-                // api.js의 인스턴스를 통해 요청합니다. (프록시 및 Mock 적용됨)
-                const response = await api.get('/news');
-                setNewsData(response.data.data || []);
+                // newsService를 통해 초기 뉴스 목록 조회 (Dual-Run 완벽 지원)
+                const data = await newsService.getNews();
+                setNewsData(data || []);
             } catch (err) {
                 console.error("News fetch error:", err);
                 setError('뉴스를 불러오지 못했습니다.');
@@ -59,10 +59,22 @@ const NewsList = () => {
 
         fetchNews();
 
-        // 5초 간격으로 실시간 뉴스 자동 폴링 (새로운 뉴스가 생성되면 새로고침 없이 자동 갱신)
-        const intervalId = setInterval(fetchNews, 5000);
+        // Supabase Realtime 웹소켓 실시간 이벤트 구독 (기존 5초 주기 HTTP 폴링 전면 대체)
+        const unsubscribe = newsService.subscribeNews((newNewsItem) => {
+            setNewsData((prev) => {
+                const newId = newNewsItem.id || newNewsItem.newsId;
+                if (prev.some(item => (item.id || item.newsId) === newId)) {
+                    return prev;
+                }
+                return [newNewsItem, ...prev];
+            });
+        });
 
-        return () => clearInterval(intervalId);
+        return () => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
+        };
     }, []);
 
     const formatNewsDate = (dateObj) => {
@@ -152,12 +164,27 @@ const NewsList = () => {
             formattedDate = rawDate ? formatNewsDate(rawDate) : '최근 뉴스';
         }
 
+        // 3. 감성 태그 및 제목/본문 보정
+        if (typeof item === 'object') {
+            if (item.sentiment === 'POSITIVE') {
+                tag = '호재';
+            } else if (item.sentiment === 'NEGATIVE') {
+                tag = '악재';
+            }
+            if (item.headline) {
+                title = item.headline;
+            }
+        }
+
         return {
             id: (typeof item === 'object' && (item.newsId || item.id)) ? (item.newsId || item.id) : index,
             tag: tag || '증시시황',
             date: formattedDate,
             rawDate: rawDate,
-            title: title || contentStr || '주요 시장 뉴스'
+            title: title || contentStr || '주요 시장 뉴스',
+            content: typeof item === 'object' ? (item.content || '') : '',
+            stockName: typeof item === 'object' ? (item.stockName || '') : '',
+            sentiment: typeof item === 'object' ? (item.sentiment || '') : ''
         };
     };
 
@@ -464,7 +491,11 @@ const NewsList = () => {
                             <div style={{ fontSize: '0.95rem', color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
                                 <p style={{ marginBottom: '14px', fontWeight: '500', color: '#334155' }}>
                                     📌 <b>시장 속보 요약</b><br />
-                                    '{selectedNews.title}' 관련 실시간 시장 데이터 분석 결과입니다. 현재 <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{matchedStock}</span>을(를) 중심으로 투자자들의 거래 관심도와 수급이 집중되고 있습니다.
+                                    {selectedNews.content ? (
+                                        selectedNews.content
+                                    ) : (
+                                        <>'{selectedNews.title}' 관련 실시간 시장 데이터 분석 결과입니다. 현재 <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{matchedStock}</span>을(를) 중심으로 투자자들의 거래 관심도와 수급이 집중되고 있습니다.</>
+                                    )}
                                 </p>
                                 <p style={{ marginBottom: '12px', background: analysisBg, padding: '14px', borderRadius: '8px', borderLeft: `4px solid ${analysisBorder}` }}>
                                     📊 <b>주가 및 투자 영향 분석</b><br />
