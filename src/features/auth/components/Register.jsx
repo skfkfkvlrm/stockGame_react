@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Hash, UserPlus, CheckCircle2, GraduationCap, School, ListOrdered, Gift } from 'lucide-react';
-import api from '../../../api/axios';
+import authService from '../../../services/authService';
 import './Login.css';
 
 const Register = () => {
@@ -40,8 +40,7 @@ const Register = () => {
         setIsCheckingId(true);
         setIdCheckMessage('');
         try {
-            const response = await api.get(`/members/id-check?studentId=${encodeURIComponent(formData.studentId.trim())}`);
-            const isDuplicate = response.data?.data;
+            const isDuplicate = await authService.checkStudentIdDuplicate(formData.studentId.trim());
             if (isDuplicate) {
                 setIsIdChecked(false);
                 setIdCheckMessage('❌ 이미 등록된 학번입니다.');
@@ -81,24 +80,18 @@ const Register = () => {
         }
 
         try {
-            const payload = {
+            await authService.register({
                 studentId: formData.studentId.trim(),
                 name: formData.name.trim(),
-                grade: parseInt(formData.grade, 10),
+                grade: formData.grade,
                 className: formData.className,
-                classNumber: parseInt(formData.classNumber, 10),
+                classNumber: formData.classNumber,
                 password: formData.password
-            };
-
-            const response = await api.post('/members/join', payload);
-            if (response.data && response.data.data === true) {
-                alert("회원가입이 완료되었습니다. 초기 모의투자 지원금 100,000 P가 지급되었습니다! 로그인해주세요.");
-                navigate('/login');
-            } else {
-                setErrorMessage(response.data?.message || '회원가입에 실패했습니다.');
-            }
+            });
+            alert("회원가입이 완료되었습니다. 초기 모의투자 지원금 100,000 P가 지급되었습니다! 로그인해주세요.");
+            navigate('/login');
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || '서버 오류로 인해 회원가입에 실패했습니다.');
+            setErrorMessage(error.message || '서버 오류로 인해 회원가입에 실패했습니다.');
         } finally {
             setIsLoading(false);
         }

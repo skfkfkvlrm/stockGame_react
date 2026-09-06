@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, BarChart2, Filter, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
 import api from '../../../api/axios';
+import stockService from '../../../services/stockService';
+import { supabase, isSupabaseMode } from '../../../lib/supabaseClient';
 import './StockList.css';
 
 const SECTOR_MAP = {
@@ -79,24 +81,61 @@ const StockList = () => {
     };
 
     useEffect(() => {
+        let unsubscribe = () => {};
         const fetchStocks = async () => {
             try {
-                const [stocksRes, indicesRes] = await Promise.all([
-                    api.get('/stock'),
+                const [stocksData, indicesRes] = await Promise.all([
+                    stockService.getStocks(),
                     api.get('/stock/market-index').catch(() => ({ data: { data: [] } }))
                 ]);
-                const activeStocks = (stocksRes.data.data || []).filter(stock => stock.status !== 'DELISTED');
+                const activeStocks = (stocksData || []).filter(stock => stock.status !== 'DELISTED');
                 setStocks(activeStocks);
                 if (indicesRes.data && Array.isArray(indicesRes.data.data)) {
                     setMarketIndices(indicesRes.data.data);
                 }
             } catch (err) {
+                console.error('Fetch stocks error:', err);
                 setError('주식 목록을 불러오는 데 실패했습니다.');
             } finally {
                 setIsLoading(false);
             }
         };
+
         fetchStocks();
+
+        if (isSupabaseMode) {
+            const channel = supabase
+                .channel('stocks_realtime_list')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'stocks' },
+                    (payload) => {
+                        setStocks(prev => prev.map(s => {
+                            if (s.id === payload.new.id) {
+                                return {
+                                    ...s,
+                                    nowPrice: payload.new.current_price,
+                                    price: payload.new.current_price,
+                                    prevPrice: payload.new.prev_price,
+                                    pubAmount: payload.new.publication_balance,
+                                    status: payload.new.status,
+                                    marketStatus: payload.new.market_status
+                                };
+                            }
+                            return s;
+                        }));
+                    }
+                )
+                .subscribe();
+
+            unsubscribe = () => {
+                supabase.removeChannel(channel);
+            };
+        }
+
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     const filteredAndSortedStocks = useMemo(() => {

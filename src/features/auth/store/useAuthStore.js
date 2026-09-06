@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../../../api/axios';
+import authService from '../../../services/authService';
 
 const initialToken = localStorage.getItem('jwt_token');
 
@@ -11,12 +11,9 @@ const useAuthStore = create((set) => ({
 
     fetchMe: async () => {
         try {
-            const token = localStorage.getItem('jwt_token');
-            if (token) {
-                const meResponse = await api.get('/members/me');
-                if (meResponse.data && meResponse.data.success) {
-                    set({ user: meResponse.data.data, isAuthenticated: true });
-                }
+            const user = await authService.getCurrentUser();
+            if (user) {
+                set({ user, isAuthenticated: true });
             }
         } catch (error) {
             console.error('Silent refresh user info error:', error);
@@ -32,19 +29,17 @@ const useAuthStore = create((set) => ({
 
         set({ isLoading: true });
         try {
-            const meResponse = await api.get('/members/me');
-            if (meResponse.data && meResponse.data.success) {
-                set({ user: meResponse.data.data, isAuthenticated: true, error: null });
+            const user = await authService.getCurrentUser();
+            if (user) {
+                set({ user, isAuthenticated: true, error: null });
             } else {
                 localStorage.removeItem('jwt_token');
                 set({ user: null, isAuthenticated: false });
             }
         } catch (error) {
             console.error('Check Auth Status Error:', error);
-            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                localStorage.removeItem('jwt_token');
-                set({ user: null, isAuthenticated: false, error: error.message });
-            }
+            localStorage.removeItem('jwt_token');
+            set({ user: null, isAuthenticated: false, error: error.message });
         } finally {
             set({ isLoading: false });
         }
@@ -53,19 +48,13 @@ const useAuthStore = create((set) => ({
     login: async (studentId, password) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.post('/members/login', { studentId, password });
-            if (response.data && response.data.success) {
-                const token = response.data.data?.token || response.data.message; 
-                if (token) {
-                    localStorage.setItem('jwt_token', token);
-                }
-                set({ user: response.data.data, isAuthenticated: true });
-                return { success: true };
-            }
-            return { success: false, message: response.data?.message || '로그인 실패' };
+            const user = await authService.login(studentId, password);
+            set({ user, isAuthenticated: true, error: null });
+            return { success: true };
         } catch (error) {
-            set({ error: error.response?.data?.message || '서버 에러가 발생했습니다.', isLoading: false });
-            return { success: false, message: error.response?.data?.message || '로그인 실패' };
+            const msg = error.message || '로그인에 실패했습니다.';
+            set({ error: msg, isLoading: false });
+            return { success: false, message: msg };
         } finally {
             set({ isLoading: false });
         }
@@ -74,9 +63,9 @@ const useAuthStore = create((set) => ({
     logout: async () => {
         set({ isLoading: true });
         try {
-            await api.post('/members/logout');
+            await authService.logout();
         } catch (error) {
-            console.error(error);
+            console.error('Logout error:', error);
         } finally {
             localStorage.removeItem('jwt_token');
             set({ user: null, isAuthenticated: false, error: null, isLoading: false });

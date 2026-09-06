@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import api from '../../../api/axios';
+import stockService from '../../../services/stockService';
+import assetService from '../../../services/assetService';
+import { isSupabaseMode } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
 import useMarketStore from '../../admin/store/useMarketStore';
 import { useStompResilience, ConnectionStatus } from '../../core/hooks/useStompResilience';
@@ -95,15 +98,14 @@ const StockDetail = () => {
     // Fetch initial data
     const fetchAllData = async () => {
         try {
-            const [infoRes, historyRes, orderbookRes, myOrdersRes, assetRes] = await Promise.all([
-                api.get(`/stock/${stockId}`).catch(e => ({ data: { success: false, data: null } })),
-                api.get(`/stock/${stockId}/history`).catch(e => ({ data: { success: false, data: [] } })),
-                api.get(`/stock/${stockId}/orderbook`).catch(e => ({ data: { success: false, data: { sell: [], buy: [] } } })),
-                api.get(`/stock/${stockId}/orders/my`).catch(e => ({ data: { success: false, data: [] } })),
-                api.get('/asset').catch(e => ({ data: { success: false, data: null } }))
+            const [info, rawHistory, orderbookData, myOrdersData, assetData] = await Promise.all([
+                stockService.getStockDetail(stockId).catch(e => null),
+                stockService.getStockHistory(stockId).catch(e => []),
+                stockService.getOrderbook(stockId).catch(e => ({ sell: [], buy: [] })),
+                stockService.getMyOrders(stockId, user?.id).catch(e => []),
+                assetService.getMyAsset(user?.id).catch(e => null)
             ]);
             
-            const info = infoRes.data?.data;
             if (!info) {
                 setError('종목 정보를 불러올 수 없습니다.');
                 setIsLoading(false);
@@ -115,13 +117,12 @@ const StockDetail = () => {
             if (price === 0) setPrice(initialPrice);
 
             // Set my stock holding amount
-            if (assetRes.data?.data?.myStocks) {
-                const myStockItem = assetRes.data.data.myStocks.find(s => s.stockName === info.stockName);
+            if (assetData?.myStocks) {
+                const myStockItem = assetData.myStocks.find(s => s.stockName === info.stockName || String(s.stockId) === String(info.stockId));
                 setMyStockAmount(myStockItem ? myStockItem.amount : 0);
             }
 
-            const rawHistory = Array.isArray(historyRes.data?.data) ? historyRes.data.data : [];
-            setRawHistoryData(rawHistory);
+            setRawHistoryData(Array.isArray(rawHistory) ? rawHistory : []);
 
             const aggregateOrders = (orders) => {
                 if (!Array.isArray(orders)) return [];
@@ -132,13 +133,13 @@ const StockDetail = () => {
                     map[o.price] += (o.amount || 0);
                 });
                 return Object.entries(map).map(([p, amt]) => ({
-                    price: parseInt(p),
+                    price: parseInt(p, 10),
                     amount: amt
                 }));
             };
 
-            const sellOrders = orderbookRes.data?.data?.sell || [];
-            const buyOrders = orderbookRes.data?.data?.buy || [];
+            const sellOrders = orderbookData?.sell || [];
+            const buyOrders = orderbookData?.buy || [];
 
             const sellGrouped = aggregateOrders(sellOrders).sort((a, b) => b.price - a.price);
             const buyGrouped = aggregateOrders(buyOrders).sort((a, b) => b.price - a.price);
@@ -148,11 +149,7 @@ const StockDetail = () => {
                 buy: buyGrouped.slice(0, 10)
             });
 
-            if (Array.isArray(myOrdersRes.data?.data)) {
-                setMyOrders(myOrdersRes.data.data);
-            } else {
-                setMyOrders([]);
-            }
+            setMyOrders(Array.isArray(myOrdersData) ? myOrdersData : []);
             
         } catch (err) {
             console.error('Fetch Stock Detail Error:', err);
@@ -164,6 +161,22 @@ const StockDetail = () => {
 
     useEffect(() => {
         fetchAllData();
+    }, [stockId, user?.id]);
+
+    // Supabase Realtime Subscription Hook
+    useEffect(() => {
+        if (!isSupabaseMode || !stockId) return;
+
+        const unsubscribe = stockService.subscribeOrderbook(stockId, (eventType) => {
+            fetchAllData();
+            if (eventType === 'TRADE_UPDATED') {
+                showToast('새로운 주식 체결이 발생하여 호가창이 실시간 갱신되었습니다.', 'success');
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, [stockId]);
 
     // Resilience STOMP Hook
@@ -327,12 +340,11 @@ const StockDetail = () => {
         
         setIsSubmitting(true);
         try {
-            const endpoint = tradeType === 'BUY' ? '/orders/buy' : '/orders/sell';
-            await api.post(endpoint, {
-                stockId: parseInt(stockId),
-                amount: qty,
-                quantity: qty,
-                price: prc
+            await stockService.placeOrder({
+                stockId: parseInt(stockId, 10),
+                orderType: tradeType,
+                price: prc,
+                amount: qty
             });
             setIsSubmitting(false);
             const successMsg = tradeType === 'BUY' ? '매수 주문이 접수되었습니다.' : '매도 주문이 접수되었습니다.';
@@ -342,7 +354,7 @@ const StockDetail = () => {
             checkAuthStatus();
         } catch (err) {
             setIsSubmitting(false);
-            const errMsg = err.response?.data?.message || '주문 처리에 실패했습니다.';
+            const errMsg = err.message || err.response?.data?.message || '주문 처리에 실패했습니다.';
             showToast(errMsg, 'error');
         }
     };
@@ -350,12 +362,12 @@ const StockDetail = () => {
     const handleCancelOrder = async (orderId) => {
         if (!window.confirm('선택한 예약 주문을 정말 취소하시겠습니까?')) return;
         try {
-            await api.post(`/orders/cancel?orderId=${orderId}&stockId=${stockId}`);
+            await stockService.cancelOrder(orderId, stockId);
             showToast('주문이 취소되었습니다.', 'success');
             fetchAllData();
             checkAuthStatus();
         } catch (err) {
-            const errMsg = err.response?.data?.message || '주문 취소 처리에 실패했습니다.';
+            const errMsg = err.message || err.response?.data?.message || '주문 취소 처리에 실패했습니다.';
             showToast(errMsg, 'error');
         }
     };

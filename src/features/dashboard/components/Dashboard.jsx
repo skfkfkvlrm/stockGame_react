@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 import api from '../../../api/axios';
+import assetService from '../../../services/assetService';
+import { supabase, isSupabaseMode } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './Dashboard.css';
 
@@ -61,15 +63,16 @@ const Dashboard = () => {
     const [timeframeIndex, setTimeframeIndex] = useState(4); // 기본값: 4 (전체)
 
     useEffect(() => {
+        let unsubscribe = () => {};
         const fetchDashboard = async () => {
             try {
-                const [assetRes, historyRes] = await Promise.all([
-                    api.get('/asset').catch(() => ({ data: { data: null } })),
-                    api.get('/history').catch(() => ({ data: { data: [] } }))
+                const [asset, history] = await Promise.all([
+                    assetService.getMyAsset(user?.id),
+                    assetService.getHistory(user?.id)
                 ]);
 
-                if (assetRes.data && assetRes.data.data) {
-                    setAssetData(assetRes.data.data);
+                if (asset) {
+                    setAssetData(asset);
                 } else {
                     setAssetData({
                         totalAsset: user?.totalPoint || 0,
@@ -79,8 +82,8 @@ const Dashboard = () => {
                     });
                 }
 
-                if (historyRes.data && Array.isArray(historyRes.data.data)) {
-                    setHistoryData(historyRes.data.data);
+                if (Array.isArray(history)) {
+                    setHistoryData(history);
                 }
             } catch (err) {
                 console.error('Fetch Asset Error:', err);
@@ -94,7 +97,32 @@ const Dashboard = () => {
                 setIsLoading(false);
             }
         };
+
         fetchDashboard();
+
+        if (isSupabaseMode && user?.id) {
+            const channel = supabase
+                .channel(`dashboard_user_${user.id}`)
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+                    () => fetchDashboard()
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'user_holdings', filter: `user_id=eq.${user.id}` },
+                    () => fetchDashboard()
+                )
+                .subscribe();
+
+            unsubscribe = () => {
+                supabase.removeChannel(channel);
+            };
+        }
+
+        return () => {
+            unsubscribe();
+        };
     }, [user]);
 
     const totalAsset = assetData?.totalAsset ?? 0;
