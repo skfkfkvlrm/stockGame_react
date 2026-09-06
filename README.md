@@ -127,6 +127,6 @@ npm run build
 
 ## 🔗 7. 관련 레포지토리
 - 🚀 차세대 백엔드: [stockGame_supabase](https://github.com/skfkfkvlrm/stockGame_supabase)
-- 👩‍🏫 관리자 전용 웹: [stockGame_admin_react](https://github.com/skfkfkvlrm/stockGame_admin_react)
+- 👩‍🏫 관리자 전용 웹: [stockGame-admin-react](https://github.com/skfkfkvlrm/stockGame-admin-react)
 - 🏛️ 레거시 보존 백엔드 (v1): [stockGame_mechanism](https://github.com/skfkfkvlrm/stockGame_mechanism)
 - 📚 마스터 기획서 및 감사 보고서: [skfkfkvlrm-json-lib](https://github.com/skfkfkvlrm/skfkfkvlrm-json-lib)
