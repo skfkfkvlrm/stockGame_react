@@ -55,9 +55,6 @@ const MyCoupons = () => {
         }
     };
 
-    if (isLoading) return <div className="my-coupons-container"><div className="loading-spinner"></div></div>;
-    if (error) return <div className="my-coupons-container"><div className="error-msg">{error}</div></div>;
-
     return (
         <div className="store-container">
             <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
@@ -75,50 +72,62 @@ const MyCoupons = () => {
                 </div>
             </header>
 
-            <div className="coupon-grid-wrapper glass-panel">
-                <div className="coupon-grid">
-                    {myCoupons.length === 0 ? (
-                        <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)'}}>
-                            보유 중인 쿠폰이 없습니다.
-                        </div>
-                    ) : (
-                        myCoupons.map((item, idx) => {
-                            const couponName = item.name || item.coupon?.name || '쿠폰';
-                            const rawState = item.state || item.status || '사용전';
-                            const isUnused = rawState === '사용전' || rawState === 'UNUSED' || rawState === '미사용';
-                            const isWaiting = rawState === '대기' || rawState === 'WAITING';
-                            const isUsed = rawState === '사용' || rawState === 'USED';
-
-                            const keyId = item.couponPurchaseId || item.id || item.purchaseId || item.couponId || idx;
-                            const dateStr = item.createdDate ? new Date(item.createdDate).toLocaleDateString() : new Date().toLocaleDateString();
-
-                            return (
-                                <div key={keyId} className={`coupon-card glass-panel ${isUsed ? 'used' : ''}`}>
-                                    <div className="coupon-icon" style={{ backgroundColor: '#8b5cf6' }}>
-                                        <Ticket />
-                                    </div>
-                                    <div className="coupon-info">
-                                        <h3>{couponName}</h3>
-                                        <p className="purchase-date">구매일: {dateStr}</p>
-                                    </div>
-                                    <div className="coupon-status">
-                                        {isUnused && <span className="badge badge-unused">사용 가능</span>}
-                                        {isWaiting && <span className="badge badge-waiting"><Clock size={12}/> 대기중</span>}
-                                        {isUsed && <span className="badge badge-used"><CheckCircle size={12}/> 사용 완료</span>}
-                                    </div>
-                                    <button 
-                                        className="use-btn" 
-                                        disabled={!isUnused || isUsing}
-                                        onClick={() => handleUse(item)}
-                                    >
-                                        {isUnused ? (isUsing ? '처리 중...' : '사용하기') : (isWaiting ? '승인 대기' : '사용 완료')}
-                                    </button>
-                                </div>
-                            );
-                        })
-                    )}
+            {error && (
+                <div className="error-banner glass-panel" style={{ padding: '16px 20px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontWeight: 600 }}>
+                    {error}
                 </div>
-            </div>
+            )}
+
+            {isLoading ? (
+                <div className="loading-box" style={{ padding: '60px', textAlign: 'center' }}>
+                    <div className="loading-spinner"></div>
+                </div>
+            ) : (
+                <div className="coupon-grid-wrapper glass-panel">
+                    <div className="coupon-grid">
+                        {myCoupons.length === 0 ? (
+                            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)'}}>
+                                보유 중인 쿠폰이 없습니다.
+                            </div>
+                        ) : (
+                            myCoupons.map((item, idx) => {
+                                const couponName = item.name || item.coupon?.name || '쿠폰';
+                                const rawState = item.state || item.status || '사용전';
+                                const isUnused = rawState === '사용전' || rawState === 'UNUSED' || rawState === '미사용';
+                                const isWaiting = rawState === '대기' || rawState === 'WAITING';
+                                const isUsed = rawState === '사용' || rawState === 'USED';
+
+                                const keyId = item.couponPurchaseId || item.id || item.purchaseId || item.couponId || idx;
+                                const dateStr = item.createdDate ? new Date(item.createdDate).toLocaleDateString() : new Date().toLocaleDateString();
+
+                                return (
+                                    <div key={keyId} className={`coupon-card glass-panel ${isUsed ? 'used' : ''}`}>
+                                        <div className="coupon-icon" style={{ backgroundColor: '#8b5cf6' }}>
+                                            <Ticket />
+                                        </div>
+                                        <div className="coupon-info">
+                                            <h3>{couponName}</h3>
+                                            <p className="purchase-date">구매일: {dateStr}</p>
+                                        </div>
+                                        <div className="coupon-status">
+                                            {isUnused && <span className="badge badge-unused">사용 가능</span>}
+                                            {isWaiting && <span className="badge badge-waiting"><Clock size={12}/> 대기중</span>}
+                                            {isUsed && <span className="badge badge-used"><CheckCircle size={12}/> 사용 완료</span>}
+                                        </div>
+                                        <button 
+                                            className="use-btn" 
+                                            disabled={!isUnused || isUsing}
+                                            onClick={() => handleUse(item)}
+                                        >
+                                            {isUnused ? (isUsing ? '처리 중...' : '사용하기') : (isWaiting ? '승인 대기' : '사용 완료')}
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

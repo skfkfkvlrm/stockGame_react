@@ -1,5 +1,6 @@
 import { supabase, isSupabaseMode } from '../lib/supabaseClient';
 import api from '../api/axios';
+import useAuthStore from '../features/auth/store/useAuthStore';
 
 export const couponService = {
     /**
@@ -7,20 +8,28 @@ export const couponService = {
      */
     async getCoupons() {
         if (isSupabaseMode) {
-            const { data, error } = await supabase
-                .from('coupons')
-                .select('*')
-                .order('price', { ascending: true });
+            try {
+                const { data, error } = await supabase
+                    .from('coupons')
+                    .select('*')
+                    .order('price', { ascending: true });
 
-            if (error) throw error;
-            return (data || []).map(c => ({
-                id: c.id,
-                couponId: c.id,
-                couponCode: c.coupon_code,
-                name: c.name,
-                price: c.price,
-                status: c.status
-            }));
+                if (error) {
+                    console.error('Fetch coupons error from Supabase:', error);
+                    return [];
+                }
+                return (data || []).map(c => ({
+                    id: c.id,
+                    couponId: c.id,
+                    couponCode: c.coupon_code,
+                    name: c.name,
+                    price: c.price,
+                    status: c.status
+                }));
+            } catch (err) {
+                console.error('getCoupons unexpected error:', err);
+                return [];
+            }
         }
 
         const response = await api.get('/coupons');
@@ -37,6 +46,9 @@ export const couponService = {
             });
 
             if (error) {
+                if (error.code === 'PGRST202') {
+                    throw new Error('쿠폰 구매 함수(buy_coupon)가 아직 Supabase DB에 등록되지 않았습니다. 관리자(SQL 실행)에게 문의하세요.');
+                }
                 throw new Error(error.message || '쿠폰 구매에 실패했습니다.');
             }
             return data;
@@ -51,16 +63,41 @@ export const couponService = {
      */
     async getMyCoupons() {
         if (isSupabaseMode) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return [];
+            let userId = null;
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user?.id) {
+                    userId = session.user.id;
+                } else {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user?.id) {
+                        userId = user.id;
+                    }
+                }
+            } catch (authErr) {
+                console.warn('Session retrieval warning:', authErr);
+            }
+
+            // Fallback to Zustand Auth Store user ID
+            if (!userId) {
+                const storeUser = useAuthStore.getState().user;
+                userId = storeUser?.id;
+            }
+
+            if (!userId) {
+                return [];
+            }
 
             const { data, error } = await supabase
                 .from('user_coupons')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', userId)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.warn('user_coupons query warning:', error);
+                return [];
+            }
 
             return (data || []).map(c => ({
                 id: c.id,
@@ -89,6 +126,9 @@ export const couponService = {
             });
 
             if (error) {
+                if (error.code === 'PGRST202') {
+                    throw new Error('쿠폰 사용 함수(use_coupon)가 아직 Supabase DB에 등록되지 않았습니다. 관리자(SQL 실행)에게 문의하세요.');
+                }
                 throw new Error(error.message || '쿠폰 사용 처리에 실패했습니다.');
             }
             return data;

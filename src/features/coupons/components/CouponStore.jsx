@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Ticket, Sparkles, Crown, Heart, Gift, Star, Clock } from 'lucide-react';
 import couponService from '../../../services/couponService';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './CouponStore.css';
 
 const getCouponDetail = (name = '') => {
-    if (name.includes('자리 교환')) {
+    if (name.includes('자리 교환') || name.includes('자리 변경')) {
         return {
             icon: <Ticket size={26} />,
             desc: '원하는 친구와 하루 동안 자리를 교환할 수 있는 인기 쿠폰입니다.',
@@ -37,8 +38,6 @@ const getCouponDetail = (name = '') => {
     };
 };
 
-import { useNavigate } from 'react-router-dom';
-
 const CouponStore = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
@@ -65,14 +64,15 @@ const CouponStore = () => {
 
     const handleBuy = async (coupon) => {
         const couponId = coupon.couponId || coupon.id;
-        if (!user || user.totalPoint < coupon.price) {
-            alert('포인트가 부족합니다!');
+        const currentPoints = user?.totalPoint ?? 0;
+        if (!user || currentPoints < coupon.price) {
+            alert(`포인트가 부족합니다! (필요: ${coupon.price.toLocaleString()} P / 보유: ${currentPoints.toLocaleString()} P)`);
             return;
         }
 
         const confirmMsg = `[${coupon.name}] 쿠폰을 구매하시겠습니까?\n\n` +
             `• 차감 포인트: ${coupon.price.toLocaleString()} P\n` +
-            `• 구매 후 보유 잔여 포인트: ${(user.totalPoint - coupon.price).toLocaleString()} P\n\n` +
+            `• 구매 후 보유 잔여 포인트: ${(currentPoints - coupon.price).toLocaleString()} P\n\n` +
             `구매 완료 후 취소 및 포인트 환불은 불가합니다.`;
 
         if (!window.confirm(confirmMsg)) {
@@ -92,9 +92,6 @@ const CouponStore = () => {
             setIsSubmitting(false);
         }
     };
-
-    if (isLoading) return <div className="coupon-store-container"><div className="loading-spinner"></div></div>;
-    if (error) return <div className="coupon-store-container"><div className="error-msg">{error}</div></div>;
 
     return (
         <div className="store-container">
@@ -118,46 +115,64 @@ const CouponStore = () => {
                 <div className="points-value">{user?.totalPoint?.toLocaleString() || 0} <span className="currency">P</span></div>
             </div>
 
-            <div className="coupon-grid-wrapper glass-panel">
-                <div className="coupon-grid">
-                    {coupons.map(coupon => {
-                        const cId = coupon.couponId || coupon.id;
-                        const detail = getCouponDetail(coupon.name);
-                        return (
-                            <div key={cId} className="coupon-card glass-panel">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
-                                    <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff', margin: 0 }}>
-                                        {detail.icon}
-                                    </div>
-                                    <span style={{ display: 'none' }}></span>
-                                </div>
-                                <h3 className="coupon-name">{coupon.name}</h3>
-                                <p className="coupon-desc">{coupon.desc || detail.desc}</p>
-                                <div className="coupon-footer">
-                                    <div className="coupon-price">{coupon.price.toLocaleString()} P</div>
-                                    {coupon.status === 'PAUSED' ? (
-                                        <button className="buy-btn" style={{ background: '#94a3b8', cursor: 'not-allowed' }} disabled>
-                                            판매 중지
-                                        </button>
-                                    ) : coupon.status === 'SOLD_OUT' ? (
-                                        <button className="buy-btn" style={{ background: '#ef4444', cursor: 'not-allowed' }} disabled>
-                                            품절/마감
-                                        </button>
-                                    ) : (
-                                        <button 
-                                            className="buy-btn" 
-                                            onClick={() => handleBuy(coupon)}
-                                            disabled={isSubmitting}
-                                        >
-                                            {isSubmitting ? '처리중...' : '구매하기'}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+            {error && (
+                <div className="error-banner glass-panel" style={{ padding: '16px 20px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontWeight: 600 }}>
+                    {error}
                 </div>
-            </div>
+            )}
+
+            {isLoading ? (
+                <div className="loading-box" style={{ padding: '60px', textAlign: 'center' }}>
+                    <div className="loading-spinner"></div>
+                </div>
+            ) : (
+                <div className="coupon-grid-wrapper glass-panel">
+                    <div className="coupon-grid">
+                        {coupons.length === 0 ? (
+                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                현재 판매 중인 쿠폰이 없습니다.
+                            </div>
+                        ) : (
+                            coupons.map(coupon => {
+                                const cId = coupon.couponId || coupon.id;
+                                const detail = getCouponDetail(coupon.name);
+                                return (
+                                    <div key={cId} className="coupon-card glass-panel">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '8px' }}>
+                                            <div className="coupon-icon-wrapper" style={{ background: detail.bg, color: '#ffffff', margin: 0 }}>
+                                                {detail.icon}
+                                            </div>
+                                            <span style={{ display: 'none' }}></span>
+                                        </div>
+                                        <h3 className="coupon-name">{coupon.name}</h3>
+                                        <p className="coupon-desc">{coupon.desc || detail.desc}</p>
+                                        <div className="coupon-footer">
+                                            <div className="coupon-price">{coupon.price.toLocaleString()} P</div>
+                                            {coupon.status === 'PAUSED' ? (
+                                                <button className="buy-btn" style={{ background: '#94a3b8', cursor: 'not-allowed' }} disabled>
+                                                    판매 중지
+                                                </button>
+                                            ) : coupon.status === 'SOLD_OUT' ? (
+                                                <button className="buy-btn" style={{ background: '#ef4444', cursor: 'not-allowed' }} disabled>
+                                                    품절/마감
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    className="buy-btn" 
+                                                    onClick={() => handleBuy(coupon)}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    {isSubmitting ? '처리중...' : '구매하기'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
