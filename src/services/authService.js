@@ -8,12 +8,25 @@ export const authService = {
     async login(studentId, password) {
         if (isSupabaseMode) {
             const cleanId = studentId.trim();
-            const email = `${cleanId}@stockgame.local`;
+            let email = `${cleanId}@skfkfkvlrm.kr`;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            let { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
+
+            // 하위 호환성 지원: 이전 .local 도메인 계정 시도
+            if (error && error.message === 'Invalid login credentials') {
+                const legacyEmail = `${cleanId}@stockgame.local`;
+                const legacyRes = await supabase.auth.signInWithPassword({
+                    email: legacyEmail,
+                    password
+                });
+                if (!legacyRes.error) {
+                    data = legacyRes.data;
+                    error = null;
+                }
+            }
 
             if (error) {
                 const msg = error.message === 'Invalid login credentials'
@@ -65,7 +78,7 @@ export const authService = {
     async register({ studentId, name, grade, className, classNumber, password }) {
         if (isSupabaseMode) {
             const cleanId = studentId.trim();
-            const email = `${cleanId}@stockgame.local`;
+            const email = `${cleanId}@skfkfkvlrm.kr`;
 
             const { data, error } = await supabase.auth.signUp({
                 email,
