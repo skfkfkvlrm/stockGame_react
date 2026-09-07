@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, Sparkles, Crown, Heart, Gift, Star, Clock } from 'lucide-react';
-import api from '../../../api/axios';
+import couponService from '../../../services/couponService';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './CouponStore.css';
 
@@ -51,9 +51,10 @@ const CouponStore = () => {
     useEffect(() => {
         const fetchCoupons = async () => {
             try {
-                const response = await api.get('/coupons');
-                setCoupons(response.data.data);
+                const data = await couponService.getCoupons();
+                setCoupons(data || []);
             } catch (err) {
+                console.error('Fetch coupons error:', err);
                 setError('쿠폰 목록을 불러오는 데 실패했습니다.');
             } finally {
                 setIsLoading(false);
@@ -80,12 +81,13 @@ const CouponStore = () => {
         
         setIsSubmitting(true);
         try {
-            const response = await api.post(`/coupons/${couponId}/buy`);
-            alert(response.data?.data || `${coupon.name} 쿠폰을 성공적으로 구매했습니다!`);
+            const res = await couponService.buyCoupon(couponId);
+            alert(res?.message || `${coupon.name} 쿠폰을 성공적으로 구매했습니다!`);
             await fetchMe();
             navigate('/my-coupons');
         } catch (err) {
-            alert(err.response?.data?.message || '쿠폰 구매에 실패했습니다.');
+            console.error('Buy coupon error:', err);
+            alert(err.message || '쿠폰 구매에 실패했습니다.');
         } finally {
             setIsSubmitting(false);
         }

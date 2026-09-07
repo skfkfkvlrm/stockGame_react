@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Ticket, Clock, CheckCircle } from 'lucide-react';
-import api from '../../../api/axios';
+import couponService from '../../../services/couponService';
 import './MyCoupons.css';
 
 const MyCoupons = () => {
@@ -10,17 +10,19 @@ const MyCoupons = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
+    const fetchMyCoupons = async () => {
+        try {
+            const data = await couponService.getMyCoupons();
+            setMyCoupons(data || []);
+        } catch (err) {
+            console.error('Fetch my coupons error:', err);
+            setError('보유 쿠폰 목록을 불러오는 데 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchMyCoupons = async () => {
-            try {
-                const response = await api.get('/coupons/my');
-                setMyCoupons(response.data.data);
-            } catch (err) {
-                setError('보유 쿠폰 목록을 불러오는 데 실패했습니다.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchMyCoupons();
     }, []);
 
@@ -41,13 +43,13 @@ const MyCoupons = () => {
 
         setIsUsing(true);
         try {
-            await api.patch(`/coupons/${purchaseId}/use`);
-            alert(`'${name}' 쿠폰 사용이 완료되었습니다!`);
+            const res = await couponService.useCoupon(purchaseId);
+            alert(res?.message || `'${name}' 쿠폰 사용이 완료되었습니다!`);
             // 목록 새로고침
-            const response = await api.get('/coupons/my');
-            setMyCoupons(response.data.data || []);
+            await fetchMyCoupons();
         } catch (err) {
-            alert(err.response?.data?.message || '쿠폰 사용 처리 중 오류가 발생했습니다.');
+            console.error('Use coupon error:', err);
+            alert(err.message || '쿠폰 사용 처리 중 오류가 발생했습니다.');
         } finally {
             setIsUsing(false);
         }
