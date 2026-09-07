@@ -6,6 +6,7 @@ Vite + React 기반으로 구축된 **학생 주식 모의투자 시뮬레이션
 [![GitHub Repo](https://img.shields.io/badge/GitHub-stockGame__react-181717?logo=github)](https://github.com/skfkfkvlrm/stockGame_react)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6-646C9A?logo=vite)](https://vitejs.dev/)
+[![Vercel Production](https://img.shields.io/badge/Production-stock.skfkfkvlrm.kr-black?logo=vercel)](https://stock.skfkfkvlrm.kr)
 [![Dual Run](https://img.shields.io/badge/Backend-Supabase_%7C_Spring_Cloud-success)]()
 
 ---
@@ -70,7 +71,8 @@ src/
 ├── services/                    # 듀얼 런 서비스 어댑터 계층 (신규)
 │   ├── authService.js           # Supabase GoTrue & Spring Auth 스위처
 │   ├── stockService.js          # 주식 목록, 10단계 호가창, 주문 체결 RPC
-│   └── assetService.js          # 개인 자산 및 포인트 변동 이력 어댑터
+│   ├── assetService.js          # 개인 자산 및 포인트 변동 이력 어댑터
+│   └── couponService.js         # 쿠폰 상점, 쿠폰 구매 RPC, 보유 쿠폰함 어댑터
 ├── features/                    # 도메인 주도 Feature 컴포넌트
 │   ├── auth/                    # 로그인, 회원가입, 세션 스토어
 │   ├── core/                    # Navbar, Sidebar, Protected Route
@@ -79,20 +81,23 @@ src/
 │   ├── points/                  # 포인트 변동 이력
 │   ├── news/                    # 가상 경제 뉴스
 │   ├── ranking/                 # 실시간 랭킹
-│   └── coupons/                 # 쿠폰 상점 및 보유 쿠폰함
-└── App.jsx                      # 전역 라우팅
+│   └── coupons/                 # 쿠폰 상점 및 보유 쿠폰함 (글래스모픽 UI)
+└── App.jsx                      # 전역 라우팅 (와일드카드 Fallback 탑재)
 ```
 
 ---
 
 ## 🔒 5. 프론트엔드 안전 가드 (Guardrails)
 
-1. **React 훅 호출 순서 무결성 (`Rules of Hooks`)**:
+1. **Vercel SPA 404 NOT_FOUND 원천 방지**:
+   - `vercel.json` 내 전역 Rewrite 규칙(`"/(.*)" -> "/index.html"`) 및 `App.jsx` 루트 레벨 전역 와일드카드 Fallback 라우트(`<Route path="*" element={<Navigate to="/" replace />} />`) 배치로 브라우저 새로고침(F5) 및 뒤로가기 시 404 완전 차단.
+2. **React 훅 호출 순서 무결성 (`Rules of Hooks`)**:
    - `if (isLoading) return` 등의 조건부 조기 반환 아래에 훅을 절대 배치하지 않고 컴포넌트 최상단에 100% 선언.
-2. **음수 입력 원천 차단 (Zero-Tolerance Negative Input)**:
+3. **음수 입력 원천 차단 (Zero-Tolerance Negative Input)**:
    - 주문 단가, 주문 수량 필드에서 키보드 `-` 및 `e` 키를 `onKeyDown` 이벤트에서 즉시 차단.
-3. **실시간 채널 클린업**:
+4. **실시간 채널 클린업**:
    - `useEffect` 언마운트 시 `supabase.removeChannel()`을 명시적으로 호출하여 메모리 누수 및 좀비 웹소켓 방지.
+
 
 ---
 
