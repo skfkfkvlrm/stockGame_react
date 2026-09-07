@@ -55,8 +55,10 @@ function App() {
             <Route path="points" element={<PointsHistory />} />
             <Route path="coupons" element={<CouponStore />} />
             <Route path="my-coupons" element={<MyCoupons />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
+
+        {/* 전역 Fallback: 정의되지 않은 모든 경로는 메인으로 리디렉션 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
