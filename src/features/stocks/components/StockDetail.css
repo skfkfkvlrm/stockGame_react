@@ -37,7 +37,7 @@
 
 .detail-layout {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 0.95fr) minmax(0, 1.05fr);
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.95fr) minmax(0, 1.45fr);
     gap: 16px;
     width: 100%;
     max-width: 100%;
@@ -351,10 +351,10 @@
 
 /* Right: Trading Panel */
 .trading-panel {
-    padding: 18px 20px;
+    padding: 22px 24px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
     min-height: 480px;
     min-width: 0;
     box-sizing: border-box;
@@ -362,20 +362,21 @@
 
 .trade-tabs {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     background: var(--bg-main);
-    padding: 4px;
+    padding: 5px;
     border-radius: var(--border-radius-md);
     border: 1px solid var(--bg-panel-border);
 }
 
 .trade-tab {
     flex: 1;
-    padding: 9px;
+    padding: 10px;
     background: transparent;
     color: var(--text-muted);
-    border-radius: 4px;
-    font-weight: 600;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -396,18 +397,18 @@
 .trade-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .form-group label {
     color: var(--text-muted);
-    font-size: 0.88rem;
+    font-size: 0.92rem;
     font-weight: 600;
 }
 
@@ -415,19 +416,19 @@
     display: flex;
     align-items: baseline;
     gap: 6px;
-    height: 28px;
-    line-height: 28px;
+    height: 30px;
+    line-height: 30px;
 }
 
 .available-points .points-value {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--text-main);
     line-height: 1;
 }
 
 .available-points .points-unit {
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--text-muted);
     line-height: 1;
@@ -441,18 +442,18 @@
     border-radius: var(--border-radius-md);
     overflow: hidden;
     border: 1px solid var(--bg-panel-border);
-    height: 42px;
+    height: 44px;
 }
 
 .quantity-control button,
 .price-control button {
     flex-shrink: 0;
-    width: 40px;
+    width: 44px;
     height: 100%;
     padding: 0;
     background: var(--bg-main);
     color: var(--text-muted);
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -477,7 +478,7 @@
     border: none;
     color: var(--text-main);
     text-align: center;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 600;
     -moz-appearance: textfield;
 }
@@ -497,21 +498,21 @@
 }
 
 .total-calc {
-    margin-top: 6px;
-    padding-top: 12px;
+    margin-top: 8px;
+    padding-top: 14px;
     border-top: 1px dashed var(--bg-panel-border);
 }
 
 .total-amount {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: var(--text-main);
 }
 
 .submit-trade-btn {
     margin-top: auto;
-    padding: 13px;
-    font-size: 1.05rem;
+    padding: 14px;
+    font-size: 1.1rem;
     font-weight: 700;
     border-radius: var(--border-radius-md);
     color: white;
