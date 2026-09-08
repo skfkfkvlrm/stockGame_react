@@ -47,6 +47,8 @@ const StockDetail = () => {
 
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
     const [myOrders, setMyOrders] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [activeGridTab, setActiveGridTab] = useState('MY_ORDERS');
     const [myStockAmount, setMyStockAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -98,12 +100,13 @@ const StockDetail = () => {
     // Fetch initial data
     const fetchAllData = async () => {
         try {
-            const [info, rawHistory, orderbookData, myOrdersData, assetData] = await Promise.all([
+            const [info, rawHistory, orderbookData, myOrdersData, assetData, txData] = await Promise.all([
                 stockService.getStockDetail(stockId).catch(e => null),
                 stockService.getStockHistory(stockId).catch(e => []),
                 stockService.getOrderbook(stockId).catch(e => ({ sell: [], buy: [] })),
                 stockService.getMyOrders(stockId, user?.id).catch(e => []),
-                assetService.getMyAsset(user?.id).catch(e => null)
+                assetService.getMyAsset(user?.id).catch(e => null),
+                stockService.getStockTransactions(stockId).catch(e => [])
             ]);
             
             if (!info) {
@@ -150,6 +153,7 @@ const StockDetail = () => {
             });
 
             setMyOrders(Array.isArray(myOrdersData) ? myOrdersData : []);
+            setTransactions(Array.isArray(txData) ? txData : []);
             
         } catch (err) {
             console.error('Fetch Stock Detail Error:', err);
@@ -454,52 +458,53 @@ const StockDetail = () => {
                 </div>
             )}
 
-            <button className="back-btn" onClick={() => navigate(-1)}>
-                <ArrowLeft size={18} /> 뒤로 가기
-            </button>
-            
-            {/* 1. Global Stock Header Bar */}
+            {/* 1. Global Stock Header Bar (Slim Inline) */}
             <div className="glass-panel stock-header">
-                <div className="stock-title">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <h1>{stockInfo.stockName}</h1>
-                        {stockInfo.marketStatus === 'STATIC_VI' && (
-                            <div style={{
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                background: '#f59e0b',
-                                color: '#fff',
-                                fontSize: '0.75rem',
-                                fontWeight: 'bold',
-                                letterSpacing: '0.02em',
-                                boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
-                                animation: 'pulse-amber 2s infinite'
-                            }}>
-                                정적 VI 발동 중
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button className="back-btn-inline" onClick={() => navigate(-1)} title="종목 목록으로 뒤로 가기">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="stock-title">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <h1>{stockInfo.stockName}</h1>
+                            {stockInfo.marketStatus === 'STATIC_VI' && (
+                                <div style={{
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    background: '#f59e0b',
+                                    color: '#fff',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '0.02em',
+                                    boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
+                                    animation: 'pulse-amber 2s infinite'
+                                }}>
+                                    정적 VI 발동 중
+                                </div>
+                            )}
+                            <div 
+                                className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
+                                title={
+                                    wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
+                                    wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
+                                    wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
+                                    wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
+                                }
+                            >
+                                <span className="ws-pulse-dot"></span>
                             </div>
-                        )}
-                        <div 
-                            className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
-                            title={
-                                wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
-                                wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
-                                wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
-                                wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
-                            }
-                        >
-                            <span className="ws-pulse-dot"></span>
                         </div>
+                        {stockInfo.content && (
+                            <p className="stock-description" style={{
+                                margin: '2px 0 0 0',
+                                color: 'var(--text-muted)',
+                                fontSize: '0.85rem',
+                                lineHeight: '1.2'
+                            }}>
+                                {stockInfo.content}
+                            </p>
+                        )}
                     </div>
-                    {stockInfo.content && (
-                        <p className="stock-description" style={{
-                            margin: '4px 0 0 0',
-                            color: 'var(--text-muted)',
-                            fontSize: '0.95rem',
-                            lineHeight: '1.4'
-                        }}>
-                            {stockInfo.content}
-                        </p>
-                    )}
                 </div>
                 <div className="stock-price-info">
                     <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
@@ -509,7 +514,7 @@ const StockDetail = () => {
                 </div>
             </div>
 
-            {/* 2. Trading Desk: Chart | Orderbook | Trading Panel */}
+            {/* 2. Trading Desk: [Chart + Grid] | Orderbook | Trading Panel */}
             <div 
                 className={`detail-layout-scroll-wrapper ${isDragging ? 'dragging' : ''}`}
                 ref={scrollContainerRef}
@@ -519,8 +524,10 @@ const StockDetail = () => {
                 onMouseMove={handleMouseMove}
             >
                 <div className="detail-layout">
-                    {/* 1. Chart Box */}
-                    <div className="glass-panel chart-box">
+                    {/* Left Column: Chart + Execution/Orders Grid */}
+                    <div className="chart-and-orders-section">
+                        {/* 1. Chart Box */}
+                        <div className="glass-panel chart-box">
                         <div className="chart-controls-header">
                             <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
                                 <div className="chart-timeframe-tabs">
@@ -576,7 +583,7 @@ const StockDetail = () => {
                             </div>
                         </div>
 
-                        <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
+                        <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '220px' }}>
                             <ReactApexChart 
                                 key={`candlestick-${activeTimeframeId}`}
                                 options={chartOptions} 
@@ -587,7 +594,110 @@ const StockDetail = () => {
                         </div>
                     </div>
 
-                    {/* 2. Orderbook Panel */}
+                    {/* 2. Integrated Execution & Orders Grid */}
+                    <div className="glass-panel execution-grid-panel">
+                        <div className="execution-grid-header">
+                            <div className="grid-tabs">
+                                <button 
+                                    type="button" 
+                                    className={`grid-tab-btn ${activeGridTab === 'MY_ORDERS' ? 'active' : ''}`}
+                                    onClick={() => setActiveGridTab('MY_ORDERS')}
+                                >
+                                    📋 내 미체결 주문 ({myOrders.length})
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className={`grid-tab-btn ${activeGridTab === 'RECENT_TRADES' ? 'active' : ''}`}
+                                    onClick={() => setActiveGridTab('RECENT_TRADES')}
+                                >
+                                    ⚡ 실시간 체결 내역 ({transactions.length})
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="execution-grid-body">
+                            {activeGridTab === 'MY_ORDERS' ? (
+                                myOrders.length === 0 ? (
+                                    <div className="empty-grid-msg">현재 체결 대기 중인 예약 주문이 없습니다.</div>
+                                ) : (
+                                    <div className="mini-table-scroll">
+                                        <table className="execution-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>구분</th>
+                                                    <th>단가</th>
+                                                    <th>잔여</th>
+                                                    <th>주문시간</th>
+                                                    <th>관리</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {myOrders.map(ord => {
+                                                    const isBuy = ord.content === '매수' || ord.type === 'BUY' || ord.orderType === 'BUY';
+                                                    return (
+                                                        <tr key={ord.orderId || ord.id}>
+                                                            <td>
+                                                                <span className={`order-type-badge-mini ${isBuy ? 'buy' : 'sell'}`}>
+                                                                    {isBuy ? '매수' : '매도'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="price-cell">{(ord.price || 0).toLocaleString()} P</td>
+                                                            <td className="amount-cell">{ord.amount} 주</td>
+                                                            <td className="time-cell">
+                                                                {ord.createdDate ? new Date(ord.createdDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                                                            </td>
+                                                            <td>
+                                                                <button 
+                                                                    type="button"
+                                                                    className="cancel-order-mini-btn" 
+                                                                    onClick={() => handleCancelOrder(ord.orderId || ord.id)}
+                                                                    title="주문 취소 및 환불"
+                                                                >
+                                                                    취소
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )
+                            ) : (
+                                transactions.length === 0 ? (
+                                    <div className="empty-grid-msg">최근 발생한 실시간 체결 내역이 없습니다.</div>
+                                ) : (
+                                    <div className="mini-table-scroll">
+                                        <table className="execution-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>체결시간</th>
+                                                    <th>체결단가</th>
+                                                    <th>체결수량</th>
+                                                    <th>총 체결금액</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {transactions.map(tx => (
+                                                    <tr key={tx.id}>
+                                                        <td className="time-cell">
+                                                            {tx.createdAt ? new Date(tx.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                                                        </td>
+                                                        <td className="price-cell">{(tx.tradePrice || 0).toLocaleString()} P</td>
+                                                        <td className="amount-cell">{tx.tradeAmount} 주</td>
+                                                        <td className="total-cell">{((tx.tradePrice || 0) * (tx.tradeAmount || 0)).toLocaleString()} P</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Orderbook Panel */}
                     <div className="glass-panel orderbook-panel">
                         <h3>호가</h3>
                         <div className="orderbook-container">
@@ -794,73 +904,6 @@ const StockDetail = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* 4. My Pending Orders Panel */}
-            <div className="glass-panel my-orders-panel" style={{ marginTop: '24px', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    📋 내 미체결 (예약) 주문 목록 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(체결 전까지 취소 가능)</span>
-                </h3>
-                {myOrders.length === 0 ? (
-                    <div style={{ padding: '30px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem', background: 'var(--bg-main)', borderRadius: '10px', border: '1px dashed var(--bg-panel-border)' }}>
-                        현재 체결 대기 중인 예약 주문이 없습니다.
-                    </div>
-                ) : (
-                    <div className="my-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {myOrders.map(ord => {
-                            const isBuy = ord.content === '매수';
-                            return (
-                                <div key={ord.orderId} className="my-order-item" style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '12px 16px',
-                                    background: 'var(--bg-main)',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--bg-panel-border)'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <span className={`order-type-badge ${isBuy ? 'buy' : 'sell'}`} style={{
-                                            padding: '4px 10px',
-                                            borderRadius: '6px',
-                                            fontWeight: '700',
-                                            fontSize: '0.85rem',
-                                            background: isBuy ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                                            color: isBuy ? 'var(--accent-red)' : 'var(--accent-blue)'
-                                        }}>
-                                            {ord.content}
-                                        </span>
-                                        <span style={{ fontWeight: '700', fontSize: '1rem' }}>
-                                            {(ord.price || 0).toLocaleString()} P
-                                        </span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                            {ord.amount} 주
-                                        </span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                            {ord.createdDate ? new Date(ord.createdDate).toLocaleTimeString('ko-KR') : ''}
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleCancelOrder(ord.orderId)}
-                                        style={{
-                                            padding: '6px 14px',
-                                            background: '#ef4444',
-                                            color: 'white',
-                                            borderRadius: '6px',
-                                            fontWeight: '600',
-                                            fontSize: '0.85rem',
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            transition: 'opacity 0.15s ease'
-                                        }}
-                                    >
-                                        주문 취소
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
         </div>
     );
