@@ -66,34 +66,6 @@ const StockDetail = () => {
     const [quantity, setQuantity] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Mobile/Desktop Drag-to-Scroll for Detail Layout
-    const scrollContainerRef = useRef(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
-
-    const handleMouseDown = (e) => {
-        // Prevent dragging when clicking interactive elements (buttons, inputs, order rows)
-        if (['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A'].includes(e.target.tagName) || e.target.closest('.order-row') || e.target.closest('.trade-form') || e.target.closest('.chart-controls-header')) {
-            return;
-        }
-        if (!scrollContainerRef.current) return;
-        setIsDragging(true);
-        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-        setScrollLeft(scrollContainerRef.current.scrollLeft);
-    };
-
-    const handleMouseLeaveOrUp = () => {
-        setIsDragging(false);
-    };
-
-    const handleMouseMove = (e) => {
-        if (!isDragging || !scrollContainerRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 1.5; // Scroll speed multiplier
-        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-    };
 
     // Fetch initial data
     const fetchAllData = async () => {
@@ -510,15 +482,7 @@ const StockDetail = () => {
             </div>
 
             {/* 2. Trading Desk: Chart | Orderbook | Trading Panel */}
-            <div 
-                className={`detail-layout-scroll-wrapper ${isDragging ? 'dragging' : ''}`}
-                ref={scrollContainerRef}
-                onMouseDown={handleMouseDown}
-                onMouseLeave={handleMouseLeaveOrUp}
-                onMouseUp={handleMouseLeaveOrUp}
-                onMouseMove={handleMouseMove}
-            >
-                <div className="detail-layout">
+            <div className="detail-layout">
                     {/* 1. Chart Box */}
                     <div className="glass-panel chart-box">
                         <div className="chart-controls-header">
@@ -794,7 +758,6 @@ const StockDetail = () => {
                         </div>
                     </div>
                 </div>
-            </div>
 
             {/* 4. My Pending Orders Panel */}
             <div className="glass-panel my-orders-panel" style={{ marginTop: '24px', padding: '24px' }}>
