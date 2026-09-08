@@ -151,34 +151,6 @@ export const stockService = {
     },
 
     /**
-     * 특정 종목 체결 거래 내역(최근 30건) 조회
-     */
-    async getStockTransactions(stockId) {
-        if (isSupabaseMode) {
-            const { data, error } = await supabase
-                .from('order_trades')
-                .select('*')
-                .eq('stock_id', Number(stockId))
-                .order('created_at', { ascending: false })
-                .limit(30);
-
-            if (error) return [];
-
-            return (data || []).map((tx) => ({
-                id: tx.id,
-                tradePrice: tx.trade_price,
-                tradeAmount: tx.trade_amount,
-                createdAt: tx.created_at,
-                buyerId: tx.buyer_id,
-                sellerId: tx.seller_id
-            }));
-        }
-
-        const res = await api.get(`/stock/${stockId}/transactions`).catch(() => ({ data: { data: [] } }));
-        return Array.isArray(res.data?.data) ? res.data.data : [];
-    },
-
-    /**
      * 종목 시세 히스토리 조회
      */
     async getStockHistory(stockId) {
