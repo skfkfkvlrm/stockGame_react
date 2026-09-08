@@ -458,6 +458,58 @@ const StockDetail = () => {
                 <ArrowLeft size={18} /> 뒤로 가기
             </button>
             
+            {/* 1. Global Stock Header Bar */}
+            <div className="glass-panel stock-header">
+                <div className="stock-title">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h1>{stockInfo.stockName}</h1>
+                        {stockInfo.marketStatus === 'STATIC_VI' && (
+                            <div style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                background: '#f59e0b',
+                                color: '#fff',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.02em',
+                                boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
+                                animation: 'pulse-amber 2s infinite'
+                            }}>
+                                정적 VI 발동 중
+                            </div>
+                        )}
+                        <div 
+                            className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
+                            title={
+                                wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
+                                wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
+                                wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
+                                wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
+                            }
+                        >
+                            <span className="ws-pulse-dot"></span>
+                        </div>
+                    </div>
+                    {stockInfo.content && (
+                        <p className="stock-description" style={{
+                            margin: '4px 0 0 0',
+                            color: 'var(--text-muted)',
+                            fontSize: '0.95rem',
+                            lineHeight: '1.4'
+                        }}>
+                            {stockInfo.content}
+                        </p>
+                    )}
+                </div>
+                <div className="stock-price-info">
+                    <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
+                    <span className={`price-change ${colorClass}`}>
+                        {isUp ? '+' : ''}{changeAmount.toLocaleString()} ({isUp ? '+' : ''}{changeRate}%)
+                    </span>
+                </div>
+            </div>
+
+            {/* 2. Trading Desk: Chart | Orderbook | Trading Panel */}
             <div 
                 className={`detail-layout-scroll-wrapper ${isDragging ? 'dragging' : ''}`}
                 ref={scrollContainerRef}
@@ -467,126 +519,71 @@ const StockDetail = () => {
                 onMouseMove={handleMouseMove}
             >
                 <div className="detail-layout">
-                    {/* 1. Chart Section */}
-                    <div className="chart-section">
-                        <div className="glass-panel stock-header">
-                            <div className="stock-title">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <h1>{stockInfo.stockName}</h1>
-                                    {stockInfo.marketStatus === 'STATIC_VI' && (
-                                        <div style={{
-                                            padding: '4px 8px',
-                                            borderRadius: '6px',
-                                            background: '#f59e0b',
-                                            color: '#fff',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 'bold',
-                                            letterSpacing: '0.02em',
-                                            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
-                                            animation: 'pulse-amber 2s infinite'
-                                        }}>
-                                            정적 VI 발동 중
-                                        </div>
-                                    )}
-                                    <div 
-                                        className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
-                                        title={
-                                            wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
-                                            wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
-                                            wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
-                                            wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
-                                        }
+                    {/* 1. Chart Box */}
+                    <div className="glass-panel chart-box">
+                        <div className="chart-controls-header">
+                            <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
+                                <div className="chart-timeframe-tabs">
+                                    {quickTabs.map(id => {
+                                        const tf = ALL_TIMEFRAMES.find(t => t.id === id);
+                                        return (
+                                            <button 
+                                                key={id}
+                                                type="button"
+                                                className={`timeframe-tab-btn ${activeTimeframeId === id ? 'active' : ''}`}
+                                                onClick={() => { setActiveTimeframeId(id); setIsPopoverOpen(false); }}
+                                            >
+                                                {tf.label}
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        type="button"
+                                        className={`timeframe-tab-btn ${!quickTabs.includes(activeTimeframeId) ? 'active' : ''}`}
+                                        onClick={() => setIsPopoverOpen(!isPopoverOpen)}
                                     >
-                                        <span className="ws-pulse-dot"></span>
-                                    </div>
+                                        {(!quickTabs.includes(activeTimeframeId)) ? activeTimeframe.label : '더보기 ▼'}
+                                    </button>
                                 </div>
-                                {stockInfo.content && (
-                                    <p className="stock-description" style={{
-                                        margin: '4px 0 0 0',
-                                        color: 'var(--text-muted)',
-                                        fontSize: '0.95rem',
-                                        lineHeight: '1.4'
+
+                                {isPopoverOpen && (
+                                    <div className="timeframe-popover" style={{
+                                        position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+                                        padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
+                                        width: '320px'
                                     }}>
-                                        {stockInfo.content}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="stock-price-info">
-                                <h2 className={`current-price ${colorClass}`}>{stockInfo.nowPrice.toLocaleString()}</h2>
-                                <span className={`price-change ${colorClass}`}>
-                                    {isUp ? '+' : ''}{changeAmount.toLocaleString()} ({isUp ? '+' : ''}{changeRate}%)
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Chart Box with Timeframe Gauge & Type Selector */}
-                        <div className="glass-panel chart-box">
-                            <div className="chart-controls-header">
-                                
-
-                                <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
-                                    <div className="chart-timeframe-tabs">
-                                        {quickTabs.map(id => {
-                                            const tf = ALL_TIMEFRAMES.find(t => t.id === id);
-                                            return (
-                                                <button 
-                                                    key={id}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
+                                            <button onClick={() => setIsPopoverOpen(false)} style={{ background:'none', border:'none', cursor:'pointer' }}>✕</button>
+                                        </div>
+                                        
+                                        <div className="popover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                                            {ALL_TIMEFRAMES.map(tf => (
+                                                <button
+                                                    key={tf.id}
                                                     type="button"
-                                                    className={`timeframe-tab-btn ${activeTimeframeId === id ? 'active' : ''}`}
-                                                    onClick={() => { setActiveTimeframeId(id); setIsPopoverOpen(false); }}
+                                                    className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
+                                                    style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
+                                                    onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
                                                 >
                                                     {tf.label}
                                                 </button>
-                                            );
-                                        })}
-                                        <button 
-                                            type="button"
-                                            className={`timeframe-tab-btn ${!quickTabs.includes(activeTimeframeId) ? 'active' : ''}`}
-                                            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-                                        >
-                                            {(!quickTabs.includes(activeTimeframeId)) ? activeTimeframe.label : '더보기 ▼'}
-                                        </button>
-                                    </div>
-
-                                    {isPopoverOpen && (
-                                        <div className="timeframe-popover" style={{
-                                            position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
-                                            padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
-                                            width: '320px'
-                                        }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                                <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
-                                                <button onClick={() => setIsPopoverOpen(false)} style={{ background:'none', border:'none', cursor:'pointer' }}>✕</button>
-                                            </div>
-                                            
-                                            <div className="popover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                                                {ALL_TIMEFRAMES.map(tf => (
-                                                    <button
-                                                        key={tf.id}
-                                                        type="button"
-                                                        className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
-                                                        style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
-                                                        onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
-                                                    >
-                                                        {tf.label}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                            ))}
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
+                        </div>
 
-                            <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
-                                <ReactApexChart 
-                                    key={`candlestick-${activeTimeframeId}`}
-                                    options={chartOptions} 
-                                    series={chartData} 
-                                    type="candlestick" 
-                                    height="100%" 
-                                />
-                            </div>
+                        <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
+                            <ReactApexChart 
+                                key={`candlestick-${activeTimeframeId}`}
+                                options={chartOptions} 
+                                series={chartData} 
+                                type="candlestick" 
+                                height="100%" 
+                            />
                         </div>
                     </div>
 
