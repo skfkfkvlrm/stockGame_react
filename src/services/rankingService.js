@@ -1,6 +1,12 @@
 import { supabase, isSupabaseMode } from '../lib/supabaseClient';
 import api from '../api/axios';
 
+const isTestAccount = (studentId, name) => {
+    const sId = (studentId || '').toLowerCase();
+    const sName = (name || '').toLowerCase();
+    return sId.includes('test') || sName.includes('테스트') || sName.includes('검증');
+};
+
 /**
  * 전교생 실시간 랭킹 서비스 (Dual-Run: Supabase Cloud & Spring Boot 지원)
  */
@@ -15,18 +21,20 @@ export const rankingService = {
                 // 1. PostgreSQL get_student_rankings RPC 호출 (총자산 기준 정렬)
                 const { data, error } = await supabase.rpc('get_student_rankings');
                 if (!error && Array.isArray(data) && data.length > 0) {
-                    return data.map((item) => ({
-                        id: item.id,
-                        rank: Number(item.rank),
-                        studentId: item.student_id,
-                        name: item.name,
-                        grade: item.grade,
-                        className: item.class_name,
-                        classNumber: item.class_number,
-                        totalPoint: Number(item.total_asset ?? item.total_point ?? 0),
-                        cashPoint: Number(item.total_point ?? 0),
-                        totalCoupon: Number(item.total_coupon ?? 0)
-                    }));
+                    return data
+                        .filter(item => !isTestAccount(item.student_id, item.name))
+                        .map((item, idx) => ({
+                            id: item.id,
+                            rank: idx + 1,
+                            studentId: item.student_id,
+                            name: item.name,
+                            grade: item.grade,
+                            className: item.class_name,
+                            classNumber: item.class_number,
+                            totalPoint: Number(item.total_asset ?? item.total_point ?? 0),
+                            cashPoint: Number(item.total_point ?? 0),
+                            totalCoupon: Number(item.total_coupon ?? 0)
+                        }));
                 }
 
                 if (error) {
@@ -42,6 +50,7 @@ export const rankingService = {
                 .select('*')
                 .eq('role', 'ROLE_STUDENT')
                 .eq('status', 'ACTIVE')
+                .not('student_id', 'ilike', '%test%')
                 .order('total_point', { ascending: false });
 
             if (profileErr) {
@@ -49,28 +58,33 @@ export const rankingService = {
                 throw profileErr;
             }
 
-            return (profiles || []).map((p, idx) => ({
-                id: p.id,
-                rank: idx + 1,
-                studentId: p.student_id,
-                name: p.name,
-                grade: p.grade,
-                className: p.class_name,
-                classNumber: p.class_number,
-                totalPoint: Number(p.total_point || 0),
-                cashPoint: Number(p.total_point || 0),
-                totalCoupon: Number(p.total_coupon || 0)
-            }));
+            return (profiles || [])
+                .filter(p => !isTestAccount(p.student_id, p.name))
+                .map((p, idx) => ({
+                    id: p.id,
+                    rank: idx + 1,
+                    studentId: p.student_id,
+                    name: p.name,
+                    grade: p.grade,
+                    className: p.class_name,
+                    classNumber: p.class_number,
+                    totalPoint: Number(p.total_point || 0),
+                    cashPoint: Number(p.total_point || 0),
+                    totalCoupon: Number(p.total_coupon || 0)
+                }));
         }
 
         // Spring Boot Gateway API Fallback
         const res = await api.get('/members/ranking');
+        let list = [];
         if (res.data && res.data.success) {
-            return res.data.data || [];
+            list = res.data.data || [];
         } else if (Array.isArray(res.data)) {
-            return res.data;
+            list = res.data;
         }
-        return [];
+        return list
+            .filter(item => !isTestAccount(item.studentId, item.name))
+            .map((item, idx) => ({ ...item, rank: idx + 1 }));
     },
 
     /**
