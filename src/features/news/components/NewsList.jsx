@@ -132,8 +132,8 @@ const NewsList = () => {
         }
 
         // 2. 정확한 실제 일시(rawDate) 산정
-        if (typeof item === 'object' && item.createdDate) {
-            let dateStr = String(item.createdDate);
+        if (typeof item === 'object' && (item.createdDate || item.createdAt)) {
+            let dateStr = String(item.createdDate || item.createdAt);
             // 만약 'YYYY-MM-DD HH:mm:ss' 형태라면 ISO 'YYYY-MM-DDTHH:mm:ss' 표준 형태로 보정
             if (dateStr.includes(' ') && !dateStr.includes('T')) {
                 dateStr = dateStr.replace(' ', 'T');
@@ -193,7 +193,7 @@ const NewsList = () => {
 
     const parsedList = newsData
         .map((item, idx) => parseNewsItem(item, idx))
-        .filter(item => item && item.date && item.date !== '오늘');
+        .filter(item => item && item.date);
 
     const currentGaugeMinutes = GAUGE_STEPS[sliderStepIndex]?.minutes || 0;
     const currentGaugeLabel = GAUGE_STEPS[sliderStepIndex]?.label || '전체';
@@ -366,22 +366,28 @@ const NewsList = () => {
                             선택하신 기간에 등록된 뉴스가 없습니다.
                         </div>
                     ) : (
-                        filteredList.map(news => (
-                            <div key={news.id} className="news-card glass-panel">
-                                <div className="news-card-header">
-                                    <span className="news-tag market">{news.tag}</span>
-                                    <div className="news-date">
-                                        <Clock size={14} /> {news.date}
+                        filteredList.map(news => {
+                            const isPositive = news.sentiment === 'POSITIVE' || news.tag?.includes('호재');
+                            const isNegative = news.sentiment === 'NEGATIVE' || news.tag?.includes('악재');
+                            const sentimentClass = isPositive ? 'up' : isNegative ? 'down' : '';
+
+                            return (
+                                <div key={news.id} className={`news-card glass-panel ${sentimentClass}`}>
+                                    <div className="news-card-header">
+                                        <span className={`news-tag market ${sentimentClass}`}>{news.tag}</span>
+                                        <div className="news-date">
+                                            <Clock size={14} /> {news.date}
+                                        </div>
+                                    </div>
+                                    <h3 className="news-title">{news.title}</h3>
+                                    <div className="news-footer">
+                                        <button className="read-more-btn" onClick={() => setSelectedNews(news)}>
+                                            자세히 보기 <ChevronRight size={16} />
+                                        </button>
                                     </div>
                                 </div>
-                                <h3 className="news-title">{news.title}</h3>
-                                <div className="news-footer">
-                                    <button className="read-more-btn" onClick={() => setSelectedNews(news)}>
-                                        자세히 보기 <ChevronRight size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>
@@ -399,8 +405,11 @@ const NewsList = () => {
                     'AI로봇선생님', '드론배달소', '스마트책상', '급식우선권', '자리선택권', '청소면제권'
                 ];
                 
-                // 종목명 추출: 제목에서 일치하는 실제 종목 탐색, 없으면 앞부분 콜론/공백 분리
-                let matchedStock = stockKeywords.find(k => title.includes(k));
+                // 종목명 추출: selectedNews.stockName 우선 사용, 없으면 제목에서 일치하는 실제 종목 탐색
+                let matchedStock = selectedNews.stockName;
+                if (!matchedStock) {
+                    matchedStock = stockKeywords.find(k => title.includes(k));
+                }
                 if (!matchedStock) {
                     const colonMatch = title.match(/^\[?([^:\]]+)\]?:/);
                     if (colonMatch) {
@@ -411,8 +420,8 @@ const NewsList = () => {
                 }
 
                 // 호재 / 악재 판별
-                const isPositive = tag.includes('호재') || title.includes('호재') || title.includes('상승') || title.includes('급증') || title.includes('호조') || title.includes('인기') || title.includes('수혜') || title.includes('신제품');
-                const isNegative = tag.includes('악재') || title.includes('악재') || title.includes('하락') || title.includes('둔화') || title.includes('우려') || title.includes('불만') || title.includes('장애') || title.includes('손실');
+                const isPositive = selectedNews.sentiment === 'POSITIVE' || tag.includes('호재') || title.includes('호재') || title.includes('상승') || title.includes('급증') || title.includes('호조') || title.includes('인기') || title.includes('수혜') || title.includes('신제품');
+                const isNegative = selectedNews.sentiment === 'NEGATIVE' || tag.includes('악재') || title.includes('악재') || title.includes('하락') || title.includes('둔화') || title.includes('우려') || title.includes('불만') || title.includes('장애') || title.includes('손실');
 
                 // 감성에 맞춘 맞춤형 투자 분석 및 장려/반려 권고 멘트 생성
                 let analysisBg = '#f8fafc';
