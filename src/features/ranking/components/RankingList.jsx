@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, Search, RefreshCw, Crown } from 'lucide-react';
-import api from '../../../api/axios';
+import rankingService from '../../../services/rankingService';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './RankingList.css';
 
@@ -15,12 +15,8 @@ const RankingList = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await api.get('/members/ranking');
-            if (res.data && res.data.success) {
-                setRankings(res.data.data || []);
-            } else if (Array.isArray(res.data)) {
-                setRankings(res.data);
-            }
+            const data = await rankingService.getRankings();
+            setRankings(data || []);
         } catch (err) {
             console.error('Failed to fetch rankings:', err);
             setError('실시간 랭킹 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -31,6 +27,12 @@ const RankingList = () => {
 
     useEffect(() => {
         fetchRankings();
+        const unsubscribe = rankingService.subscribeRankings(() => {
+            fetchRankings();
+        });
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     const filteredRankings = rankings.filter(r =>
