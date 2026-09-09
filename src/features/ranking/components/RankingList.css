@@ -45,11 +45,12 @@
 
 /* Podium Section */
 .podium-section {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    display: flex;
+    justify-content: center;
     align-items: flex-end;
+    gap: 1.25rem;
     margin-top: 0.5rem;
+    width: 100%;
 }
 
 .podium-card {
@@ -64,6 +65,9 @@
     background: #ffffff;
     border: 1px solid var(--bg-panel-border, rgba(0,0,0,0.08));
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    flex: 1 1 0;
+    max-width: 360px;
+    width: 100%;
 }
 
 .podium-card:hover {
@@ -334,7 +338,11 @@
 
 @media (max-width: 768px) {
     .podium-section {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: center;
+    }
+    .podium-card {
+        max-width: 100%;
     }
     .podium-card.first-place {
         transform: none;

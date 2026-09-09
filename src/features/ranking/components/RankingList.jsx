@@ -41,11 +41,9 @@ const RankingList = () => {
     );
 
     const topThree = rankings.slice(0, 3);
-    const podiumOrder = [
-        topThree[1], // 2등 (좌측)
-        topThree[0], // 1등 (중앙)
-        topThree[2]  // 3등 (우측)
-    ].filter(Boolean);
+    const podiumOrder = topThree.length === 3
+        ? [topThree[1], topThree[0], topThree[2]] // 3명일 때: 2등(좌), 1등(중앙), 3등(우)
+        : topThree; // 1명 또는 2명일 때: 순위순 정렬
 
     return (
         <div className="ranking-container">
