@@ -121,29 +121,39 @@ export const stockService = {
      */
     async getMyOrders(stockId, userId) {
         if (isSupabaseMode) {
-            if (!userId) return [];
+            let targetUserId = userId;
+            if (!targetUserId) {
+                const { data: { session } } = await supabase.auth.getSession();
+                targetUserId = session?.user?.id;
+            }
+            if (!targetUserId) return [];
+
             const { data, error } = await supabase
                 .from('orders')
                 .select('*')
                 .eq('stock_id', stockId)
-                .eq('user_id', userId)
+                .eq('user_id', targetUserId)
                 .in('status', ['PENDING', 'PARTIAL'])
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            return (data || []).map(o => ({
-                orderId: o.id,
-                id: o.id,
-                stockId: o.stock_id,
-                price: o.price,
-                amount: o.remain_amount,
-                initialAmount: o.amount,
-                type: o.order_type,
-                orderType: o.order_type,
-                status: o.status,
-                createdDate: o.created_at
-            }));
+            return (data || []).map(o => {
+                const isBuy = o.order_type === 'BUY';
+                return {
+                    orderId: o.id,
+                    id: o.id,
+                    stockId: o.stock_id,
+                    price: o.price,
+                    amount: o.remain_amount,
+                    initialAmount: o.amount,
+                    type: o.order_type,
+                    orderType: o.order_type,
+                    content: isBuy ? '매수' : '매도',
+                    status: o.status,
+                    createdDate: o.created_at
+                };
+            });
         }
 
         const res = await api.get(`/stock/${stockId}/orders/my`);

@@ -353,6 +353,47 @@
     font-weight: 500;
 }
 
+/* My Order in Orderbook */
+.order-row.my-order-row {
+    position: relative;
+    font-weight: 700;
+}
+
+.order-row.sell.my-order-row {
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.order-row.buy.my-order-row {
+    background: rgba(239, 68, 68, 0.08);
+    box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.my-order-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: 6px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    line-height: 1.3;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.my-order-badge.sell {
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
+}
+
+.my-order-badge.buy {
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+}
+
 .orderbook-divider {
     height: 1px;
     background: var(--bg-panel-border);

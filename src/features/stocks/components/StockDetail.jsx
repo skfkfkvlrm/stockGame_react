@@ -434,8 +434,11 @@ const StockDetail = () => {
         1
     );
 
-    const mySellPrices = myOrders.filter(o => o.content === 'SELL' || o.content === '매도').map(o => o.price);
-    const myBuyPrices = myOrders.filter(o => o.content === 'BUY' || o.content === '매수').map(o => o.price);
+    const isSellOrder = (o) => o.content === 'SELL' || o.content === '매도' || o.orderType === 'SELL' || o.type === 'SELL';
+    const isBuyOrder = (o) => o.content === 'BUY' || o.content === '매수' || o.orderType === 'BUY' || o.type === 'BUY';
+
+    const mySellPrices = myOrders.filter(isSellOrder).map(o => Number(o.price));
+    const myBuyPrices = myOrders.filter(isBuyOrder).map(o => Number(o.price));
 
     const currentPriceVal = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
     const availablePoints = user?.totalPoint ?? user?.point ?? 0;
@@ -600,13 +603,13 @@ const StockDetail = () => {
                             <>
                                 {/* Sell Orders (Descending) */}
                                 {orderbook.sell.map((order, idx) => {
-                                    const isMyOrder = mySellPrices.includes(order.price);
+                                    const isMyOrder = mySellPrices.includes(Number(order.price));
                                     return (
-                                        <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                        <div key={`sell-${idx}`} className={`order-row sell ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)} title={isMyOrder ? '내가 예약한 매도 주문입니다.' : ''}>
                                             <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
                                             <span className="order-price">
                                                 {order.price.toLocaleString()}
-                                                {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#3b82f6', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                                {isMyOrder && <span className="my-order-badge sell">내 예약</span>}
                                             </span>
                                             <span className="order-amount">{order.amount.toLocaleString()}</span>
                                         </div>
@@ -617,13 +620,13 @@ const StockDetail = () => {
 
                                 {/* Buy Orders (Descending) */}
                                 {orderbook.buy.map((order, idx) => {
-                                    const isMyOrder = myBuyPrices.includes(order.price);
+                                    const isMyOrder = myBuyPrices.includes(Number(order.price));
                                     return (
-                                        <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)}>
+                                        <div key={`buy-${idx}`} className={`order-row buy ${isMyOrder ? 'my-order-row' : ''}`} onClick={() => handleOrderbookClick(order.price)} title={isMyOrder ? '내가 예약한 매수 주문입니다.' : ''}>
                                             <div className="bg-bar" style={{ width: `${(order.amount / maxOrderAmount) * 100}%` }}></div>
                                             <span className="order-price">
                                                 {order.price.toLocaleString()}
-                                                {isMyOrder && <span style={{ fontSize: '0.7rem', marginLeft: '4px', background: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>내 예약</span>}
+                                                {isMyOrder && <span className="my-order-badge buy">내 예약</span>}
                                             </span>
                                             <span className="order-amount">{order.amount.toLocaleString()}</span>
                                         </div>
@@ -796,7 +799,8 @@ const StockDetail = () => {
                 ) : (
                     <div className="my-orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {myOrders.map(ord => {
-                            const isBuy = ord.content === '매수';
+                            const isBuy = ord.content === '매수' || ord.content === 'BUY' || ord.orderType === 'BUY' || ord.type === 'BUY';
+                            const typeLabel = ord.content === '매수' || ord.content === '매도' ? ord.content : (isBuy ? '매수' : '매도');
                             return (
                                 <div key={ord.orderId} className="my-order-item" style={{
                                     display: 'flex',
@@ -816,7 +820,7 @@ const StockDetail = () => {
                                             background: isBuy ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
                                             color: isBuy ? 'var(--accent-red)' : 'var(--accent-blue)'
                                         }}>
-                                            {ord.content}
+                                            {typeLabel}
                                         </span>
                                         <span style={{ fontWeight: '700', fontSize: '1rem' }}>
                                             {(ord.price || 0).toLocaleString()} P
