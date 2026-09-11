@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Newspaper, ChevronRight, Clock } from 'lucide-react';
+import { Newspaper, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import newsService from '../../../services/newsService';
 import './NewsList.css';
 
@@ -8,6 +8,8 @@ const NewsList = () => {
     const [selectedNews, setSelectedNews] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isGeneratingNews, setIsGeneratingNews] = useState(false);
+    const [actionMsg, setActionMsg] = useState('');
     const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | '1D' | '1W' | '1M' | 'CUSTOM'
     const [isCustomMenuOpen, setIsCustomMenuOpen] = useState(false);
     const [startDate, setStartDate] = useState('');
@@ -24,6 +26,28 @@ const NewsList = () => {
     ];
     const [sliderStepIndex, setSliderStepIndex] = useState(0); // 기본값: 전체 (날짜 선택 시 제한 없이 모든 뉴스 노출)
     const customFilterRef = React.useRef(null);
+
+    const handleTriggerAiNews = async () => {
+        if (isGeneratingNews) return;
+        setIsGeneratingNews(true);
+        setActionMsg('AI 속보 생성 중...');
+        try {
+            const res = await newsService.triggerNews();
+            if (res) {
+                setActionMsg('새로운 AI 속보가 발행되었습니다!');
+                const refreshed = await newsService.getNews();
+                setNewsData(refreshed || []);
+            } else {
+                setActionMsg('뉴스 생성 완료');
+            }
+        } catch (err) {
+            console.error('AI news trigger failed:', err);
+            setActionMsg('뉴스 생성 실패');
+        } finally {
+            setIsGeneratingNews(false);
+            setTimeout(() => setActionMsg(''), 3500);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -246,8 +270,41 @@ const NewsList = () => {
             <header className="page-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
-                        <h1 className="page-title">시장 뉴스</h1>
-                        <p className="page-subtitle">시장에 영향을 미치는 주요 뉴스를 실시간으로 확인하세요.</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <h1 className="page-title" style={{ margin: 0 }}>시장 뉴스</h1>
+                            <button
+                                type="button"
+                                onClick={handleTriggerAiNews}
+                                disabled={isGeneratingNews}
+                                className="btn-trigger-ai-news"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '6px 14px',
+                                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '0.82rem',
+                                    fontWeight: '700',
+                                    cursor: isGeneratingNews ? 'not-allowed' : 'pointer',
+                                    opacity: isGeneratingNews ? 0.7 : 1,
+                                    boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                                    transition: 'all 0.2s ease',
+                                }}
+                                title="AI가 최신 시황을 분석하여 새로운 속보를 즉시 발행합니다"
+                            >
+                                <Sparkles size={14} />
+                                {isGeneratingNews ? 'AI 속보 발행 중...' : '⚡ AI 속보 즉시 생성'}
+                            </button>
+                            {actionMsg && (
+                                <span style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: '600' }}>
+                                    {actionMsg}
+                                </span>
+                            )}
+                        </div>
+                        <p className="page-subtitle" style={{ marginTop: '6px' }}>시장에 영향을 미치는 주요 뉴스를 실시간으로 확인하세요.</p>
                     </div>
 
                     {/* 기간 필터 컨트롤 */}

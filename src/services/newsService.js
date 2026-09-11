@@ -132,6 +132,51 @@ export const newsService = {
             }
         }
         return null;
+    },
+
+    /**
+     * 무인 자동 뉴스 생성 스케줄러 (Auto News Generator)
+     * 기본 주기: 3분 (180,000ms)
+     * 최신 뉴스 발행 시각을 조회하여 3분 이상 경과했을 때만 RPC 호출 (다중 탭/유저 중복 방지)
+     */
+    startAutoNewsScheduler(intervalMs = 180000) {
+        if (!isSupabaseMode) return () => {};
+
+        const checkAndGenerate = async () => {
+            try {
+                // 1. 가장 최근에 발행된 뉴스의 생성 시각 확인
+                const { data, error } = await supabase
+                    .from('news')
+                    .select('created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (!error && data && data.created_at) {
+                    const lastCreatedTime = new Date(data.created_at).getTime();
+                    const now = Date.now();
+                    // 최근 뉴스가 발행된 지 아직 intervalMs(기본 3분)가 지나지 않았으면 스킵
+                    if (now - lastCreatedTime < intervalMs) {
+                        return;
+                    }
+                }
+
+                // 2. intervalMs 이상 경과했거나 뉴스가 없으면 신규 AI 속보 자동 생성
+                console.log('[newsService] ⏰ Auto-generating periodic AI stock market news...');
+                await this.triggerNews();
+            } catch (err) {
+                console.warn('[newsService] Auto news scheduler cycle failed:', err);
+            }
+        };
+
+        // 페이지 마운트 5초 후 최초 1회 체크, 이후 intervalMs 마다 주기적 실행
+        const initialTimer = setTimeout(checkAndGenerate, 5000);
+        const timerId = setInterval(checkAndGenerate, intervalMs);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(timerId);
+        };
     }
 };
 
