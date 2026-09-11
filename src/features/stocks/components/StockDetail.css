@@ -578,6 +578,14 @@
     background: var(--accent-blue);
 }
 
+.submit-trade-btn.reservation-mode.buy {
+    background: linear-gradient(135deg, #ef4444, #7c3aed);
+}
+
+.submit-trade-btn.reservation-mode.sell {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+}
+
 .submit-trade-btn:hover {
     opacity: 0.9;
 }

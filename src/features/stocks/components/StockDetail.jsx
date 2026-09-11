@@ -307,13 +307,21 @@ const StockDetail = () => {
             return;
         }
 
+        const isReservation = !marketOpen;
         const tradeTypeText = tradeType === 'BUY' ? '매수' : '매도';
-        const confirmMessage = `[${stockInfo.name}] 종목을 다음과 같이 ${tradeTypeText} 주문하시겠습니까?\n\n` +
-            `• 주문 유형: ${tradeTypeText} 주문\n` +
-            `• 주문 가격: ${prc.toLocaleString()} P\n` +
-            `• 주문 수량: ${qty.toLocaleString()} 주\n` +
-            `• 총 주문 금액: ${totalAmount.toLocaleString()} P\n\n` +
-            `확인 시 잔고 및 주문이 즉시 반영됩니다.`;
+        const confirmMessage = isReservation
+            ? `[${stockInfo.name}] 종목을 다음과 같이 [장 마감 예약 ${tradeTypeText}] 주문하시겠습니까?\n\n` +
+              `• 주문 유형: 장 마감 예약 ${tradeTypeText} 주문\n` +
+              `• 주문 가격: ${prc.toLocaleString()} P\n` +
+              `• 주문 수량: ${qty.toLocaleString()} 주\n` +
+              `• 총 주문 금액: ${totalAmount.toLocaleString()} P\n\n` +
+              `※ 예약 주문은 증거금(포인트/주식)이 안전하게 잠금 처리되며, 다음 개장 시 동시호가(단일가)로 자동 일괄 체결됩니다.\n(개장 전까지 미체결 주문 목록에서 언제든 취소 가능)`
+            : `[${stockInfo.name}] 종목을 다음과 같이 ${tradeTypeText} 주문하시겠습니까?\n\n` +
+              `• 주문 유형: ${tradeTypeText} 주문\n` +
+              `• 주문 가격: ${prc.toLocaleString()} P\n` +
+              `• 주문 수량: ${qty.toLocaleString()} 주\n` +
+              `• 총 주문 금액: ${totalAmount.toLocaleString()} P\n\n` +
+              `확인 시 잔고 및 주문이 즉시 반영됩니다.`;
 
         if (!window.confirm(confirmMessage)) {
             return;
@@ -321,14 +329,16 @@ const StockDetail = () => {
 
         setIsSubmitting(true);
         try {
-            await stockService.placeOrder({
+            const res = await stockService.placeOrder({
                 stockId: parseInt(stockId, 10),
                 orderType: tradeType,
                 price: prc,
                 amount: qty
             });
             setIsSubmitting(false);
-            const successMsg = tradeType === 'BUY' ? '매수 주문이 접수되었습니다.' : '매도 주문이 접수되었습니다.';
+            const successMsg = res?.message || (isReservation
+                ? `장 마감 예약 ${tradeTypeText} 주문이 정상 접수되었습니다.`
+                : (tradeType === 'BUY' ? '매수 주문이 접수되었습니다.' : '매도 주문이 접수되었습니다.'));
             showToast(successMsg, 'success');
             setQuantity(1);
             fetchAllData();
@@ -739,7 +749,7 @@ const StockDetail = () => {
                             </div>
                         )}
 
-                        {(!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) && (
+                        {stockInfo.status && stockInfo.status !== 'LISTED' ? (
                             <div style={{
                                 padding: '12px 16px',
                                 borderRadius: '8px',
@@ -747,35 +757,46 @@ const StockDetail = () => {
                                 fontWeight: 'bold',
                                 fontSize: '0.85rem',
                                 textAlign: 'center',
-                                background: !marketOpen ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                color: !marketOpen ? '#dc2626' : '#d97706',
-                                border: `1px solid ${!marketOpen ? '#fca5a5' : '#fcd34d'}`
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                color: '#dc2626',
+                                border: '1px solid #fca5a5'
                             }}>
-                                {!marketOpen
-                                    ? (statusCode === 'MANUAL_PAUSE'
-                                        ? '🚨 교사 긴급 점검으로 인해 전 종목 시장 거래가 일시 정지되었습니다. 모든 신규 주문 접수가 차단됩니다.'
-                                        : `🔴 현재 장 마감/휴장 중입니다 (${statusCode === 'HOLIDAY' ? '주말 휴장' : `정규장: ${openTime}~${closeTime}`}). 주문을 접수할 수 없습니다.`)
-                                    : (stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.')
-                                }
+                                {stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.'}
                             </div>
-                        )}
+                        ) : !marketOpen ? (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                fontWeight: '600',
+                                fontSize: '0.85rem',
+                                textAlign: 'center',
+                                lineHeight: '1.5',
+                                background: 'rgba(99, 102, 241, 0.1)',
+                                color: '#4f46e5',
+                                border: '1px solid #c7d2fe'
+                            }}>
+                                🌙 <strong>현재 정규장 운영 시간이 아닙니다 ({openTime || '09:00'}~{closeTime || '15:30'}).</strong><br />
+                                지금 주문하시면 <span style={{ color: '#4338ca', fontWeight: 'bold' }}>[장 마감 예약 주문]</span>으로 접수되며, 다음 개장 시 동시호가(단일가)로 자동 일괄 체결됩니다.
+                            </div>
+                        ) : null}
 
                         <button
                             type="button"
-                            className={`submit-trade-btn ${tradeType.toLowerCase()}`}
+                            className={`submit-trade-btn ${tradeType.toLowerCase()} ${!marketOpen ? 'reservation-mode' : ''}`}
                             onClick={handleTrade}
-                            disabled={isSubmitting || !marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')}
+                            disabled={isSubmitting || (stockInfo.status && stockInfo.status !== 'LISTED')}
                             style={{
-                                opacity: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 0.5 : 1,
-                                cursor: (!marketOpen || (stockInfo.status && stockInfo.status !== 'LISTED')) ? 'not-allowed' : 'pointer'
+                                opacity: (stockInfo.status && stockInfo.status !== 'LISTED') ? 0.5 : 1,
+                                cursor: (stockInfo.status && stockInfo.status !== 'LISTED') ? 'not-allowed' : 'pointer'
                             }}
                         >
                             {isSubmitting
                                 ? '처리 중...'
-                                : !marketOpen
-                                    ? (statusCode === 'MANUAL_PAUSE' ? '거래 일시정지 (점검 중)' : '장 마감 (주문 불가)')
-                                    : (stockInfo.status && stockInfo.status !== 'LISTED')
-                                        ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨')
+                                : (stockInfo.status && stockInfo.status !== 'LISTED')
+                                    ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨')
+                                    : !marketOpen
+                                        ? (tradeType === 'BUY' ? '🌙 예약 매수 주문' : '🌙 예약 매도 주문')
                                         : (stockInfo.marketStatus === 'STATIC_VI'
                                             ? (tradeType === 'BUY' ? '단일가 매수 접수' : '단일가 매도 접수')
                                             : (statusCode === 'CALL_AUCTION'
@@ -831,6 +852,19 @@ const StockDetail = () => {
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                             {ord.createdDate ? new Date(ord.createdDate).toLocaleTimeString('ko-KR') : ''}
                                         </span>
+                                        {!marketOpen && (
+                                            <span style={{
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600',
+                                                background: 'rgba(99, 102, 241, 0.15)',
+                                                color: '#6366f1',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)'
+                                            }}>
+                                                동시호가 대기
+                                            </span>
+                                        )}
                                     </div>
                                     <button
                                         onClick={() => handleCancelOrder(ord.orderId)}
