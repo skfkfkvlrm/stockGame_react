@@ -43,7 +43,7 @@ const StockDetail = () => {
 
     const [activeTimeframeId, setActiveTimeframeId] = useState('1W');
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const activeTimeframe = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
+    const activeTimeframe = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
 
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
     const [myOrders, setMyOrders] = useState([]);
@@ -175,10 +175,16 @@ const StockDetail = () => {
     // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
     useEffect(() => {
         const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
-        const currentStep = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
+        const currentStep = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
         const now = Date.now();
-        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
         const isIntraday = activeTimeframeId.endsWith('M') || activeTimeframeId.endsWith('H') || activeTimeframeId === '1D';
+        const cutoffTime = currentStep.days > 0
+            ? (isIntraday
+                ? now - (currentStep.days * 24 * 60 * 60 * 1000)
+                : todayStart.getTime() - ((currentStep.days - 1) * 24 * 60 * 60 * 1000))
+            : 0;
 
         let filtered = rawHistoryData.filter(item => {
             const d = item.baseDate || item.date || item.createdDate;
@@ -197,9 +203,19 @@ const StockDetail = () => {
             const dayGroups = {};
             filtered.forEach(item => {
                 const d = item.baseDate || item.date || item.createdDate;
-                const dateObj = new Date(d || Date.now());
-                const dateKey = d ? dateObj.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-                const label = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
+                let dateKey;
+                if (typeof d === 'string' && d.length >= 10) {
+                    dateKey = d.slice(0, 10);
+                } else {
+                    const dateObj = new Date(d || Date.now());
+                    const y = dateObj.getFullYear();
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    dateKey = `${y}-${m}-${day}`;
+                }
+                const parts = dateKey.split('-');
+                const label = parts.length >= 3 ? `${parts[1]}/${parts[2]}` : dateKey;
+                const rawTime = new Date(dateKey).getTime();
                 const p = item.closePrice ?? item.price ?? initialPrice;
                 const open = item.openPrice ?? p;
                 const high = item.highPrice ?? Math.max(open, p);
@@ -207,7 +223,7 @@ const StockDetail = () => {
                 const close = item.closePrice ?? p;
 
                 if (!dayGroups[dateKey]) {
-                    dayGroups[dateKey] = { label, rawTime: dateObj.getTime(), open, high, low, close };
+                    dayGroups[dateKey] = { label, rawTime, open, high, low, close };
                 } else {
                     dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
                     dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
@@ -218,19 +234,12 @@ const StockDetail = () => {
             let finalCandles;
 
             if (activeTimeframeId === '1W') {
-                // 1주: 7일 전체를 반드시 표시. 거래 없는 날은 null 캔들로 채움
-                finalCandles = [];
-                const rangeStart = new Date(cutoffTime);
-                const rangeEnd = new Date(now);
-                for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
-                    const dateKey = d.toISOString().slice(0, 10);
-                    const label = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-                    const g = dayGroups[dateKey];
-                    finalCandles.push({
-                        x: label,
-                        y: g ? [g.open, g.high, g.low, g.close] : [null, null, null, null]
-                    });
-                }
+                // 1주: 최근 최대 7개 거래일을 순서대로 구성 (null 캔들 없이 완전한 일봉 표시)
+                const sortedDays = Object.values(dayGroups).sort((a, b) => a.rawTime - b.rawTime);
+                finalCandles = sortedDays.slice(-7).map(g => ({
+                    x: g.label,
+                    y: [g.open, g.high, g.low, g.close]
+                }));
             } else {
                 // 1MO, 3MO, ALL: 실제 거래일만 표시
                 finalCandles = Object.values(dayGroups)
@@ -353,7 +362,7 @@ const StockDetail = () => {
         return 6;
     };
 
-    const currentStepConfig = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[7];
+    const currentStepConfig = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
     const nowTime = Date.now();
     const minTime = currentStepConfig.days > 0 ? nowTime - (currentStepConfig.days * 24 * 60 * 60 * 1000) : undefined;
 
