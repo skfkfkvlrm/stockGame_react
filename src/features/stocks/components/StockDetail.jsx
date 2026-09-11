@@ -397,6 +397,18 @@ const StockDetail = () => {
                 trim: false
             }
         },
+        responsive: [
+            {
+                breakpoint: 1280,
+                options: {
+                    xaxis: {
+                        labels: {
+                            style: { fontSize: '0.65rem' }
+                        }
+                    }
+                }
+            }
+        ],
         yaxis: {
             labels: {
                 style: { colors: '#64748b' },
