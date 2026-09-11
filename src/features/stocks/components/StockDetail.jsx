@@ -553,7 +553,7 @@ const StockDetail = () => {
                         </div>
                     </div>
 
-                    <div className="chart-canvas-wrapper" style={{ flexGrow: 5, minHeight: '300px' }}>
+                    <div className="chart-canvas-wrapper" style={{ flexGrow: 1, minHeight: '300px' }}>
                         <ReactApexChart
                             key={`candlestick-${activeTimeframeId}`}
                             options={chartOptions}

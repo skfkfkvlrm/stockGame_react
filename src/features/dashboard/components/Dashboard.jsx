@@ -132,8 +132,8 @@ const Dashboard = () => {
 
     // 초기 회원가입/기초 지급 포인트를 제외한 실제 자산 변동 내역 필터링
     const isInitialGrant = (item) => {
-        const content = item.historyContent || item.reason || item.description || '';
-        return content.includes('회원가입') || content.includes('기초') || content.includes('초기') || content.includes('가입 지원');
+        const content = item.historyContent || item.reason || item.description || item.reasonType || '';
+        return content.includes('회원가입') || content.includes('기초') || content.includes('초기') || content.includes('가입 지원') || content === 'INITIAL_GRANT';
     };
 
     const actualHistoryData = (historyData || []).filter(item => !isInitialGrant(item));
@@ -150,8 +150,9 @@ const Dashboard = () => {
         let monthChange = 0;
 
         actualHistoryData.forEach((item) => {
-            const itemTime = new Date(item.historyDate || 0).getTime();
-            const change = item.pointChange || 0;
+            const rawDate = item.historyDate || item.createdDate || item.date;
+            const itemTime = rawDate ? new Date(rawDate).getTime() : 0;
+            const change = item.pointChange ?? item.amount ?? 0;
             if (itemTime >= startOfToday) {
                 todayChange += change;
             }
@@ -197,47 +198,69 @@ const Dashboard = () => {
         const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
 
         if (!historyData || historyData.length === 0) {
-            return [{ x: now, y: totalAsset }];
+            return [
+                { x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: availablePoints },
+                { x: now, y: availablePoints }
+            ];
         }
 
-        // 1. 기간 필터링 + 과거순 정렬
-        const sortedHistory = [...historyData]
+        // 1. 기간 필터링 및 유효 날짜 정렬 (오래된 순)
+        const validHistory = historyData
             .filter(item => {
-                if (!item.historyDate) return true;
-                return new Date(item.historyDate).getTime() >= cutoffTime;
+                const dateStr = item.historyDate || item.createdDate || item.date;
+                if (!dateStr) return false;
+                const t = new Date(dateStr).getTime();
+                if (isNaN(t) || t <= 0) return false;
+                return t >= cutoffTime;
             })
-            .sort((a, b) => new Date(a.historyDate || 0).getTime() - new Date(b.historyDate || 0).getTime());
+            .sort((a, b) => {
+                const tA = new Date(a.historyDate || a.createdDate || a.date).getTime();
+                const tB = new Date(b.historyDate || b.createdDate || b.date).getTime();
+                return tA - tB;
+            });
 
-        // 역방향 추적 기법 (Reverse Tracking from actual current cash)
-        // 백엔드 내역 누락이나 초기값 불일치로 인한 오차를 방지하기 위해 
-        // 실제 현재 현금(availablePoints)에서 시작하여 과거로 되돌아가는 방식으로 계산합니다.
-        let cumulative = availablePoints;
-        
-        // 내역을 역순으로 탐색
-        const reverseHistory = [...sortedHistory].reverse();
-        const reversePoints = [];
-        
-        for (const item of reverseHistory) {
-            reversePoints.push({
-                x: new Date(item.historyDate || 0).getTime(),
-                y: Math.max(0, cumulative)
-            });
-            cumulative -= (item.pointChange || 0); // 과거 잔고로 되돌림
+        if (validHistory.length === 0) {
+            return [
+                { x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: availablePoints },
+                { x: now, y: availablePoints }
+            ];
         }
-        
-        // 다시 시간순으로 정렬
-        const points = reversePoints.reverse();
-        
-        // 맨 처음 시작점 (가장 오래된 내역의 직전)
-        if (points.length > 0) {
-            points.unshift({
-                x: cutoffTime === 0 ? points[0].x - 86400000 : cutoffTime,
-                y: Math.max(0, cumulative)
+
+        // 2. 각 변동 시점의 잔고(balanceAfter) 사용 (없을 경우 역방향 추적)
+        const hasDirectBalances = validHistory.some(h => (h.balanceAfter !== undefined && h.balanceAfter !== null) || (h.currentPoint !== undefined && h.currentPoint !== null));
+
+        let points = [];
+
+        if (hasDirectBalances) {
+            validHistory.forEach((item) => {
+                const dateStr = item.historyDate || item.createdDate || item.date;
+                const t = new Date(dateStr).getTime();
+                const bal = item.balanceAfter ?? item.currentPoint ?? availablePoints;
+                points.push({ x: t, y: Math.max(0, Number(bal)) });
             });
-            // 차트의 끝이 현재 시간까지 자연스럽게 이어지도록 최신 점 추가
+        } else {
+            let cumulative = availablePoints;
+            const reversed = [...validHistory].reverse();
+            const temp = [];
+            for (const item of reversed) {
+                const dateStr = item.historyDate || item.createdDate || item.date;
+                const t = new Date(dateStr).getTime();
+                temp.push({ x: t, y: Math.max(0, cumulative) });
+                cumulative -= (item.pointChange ?? item.amount ?? 0);
+            }
+            points = temp.reverse();
+        }
+
+        // 3. 차트 시작점과 종료 시점 자연스럽게 연결
+        if (points.length > 0) {
+            const firstTime = points[0].x;
+            const startX = cutoffTime > 0 ? cutoffTime : firstTime - (2 * 60 * 60 * 1000); // 2시간 전
+            if (startX < firstTime) {
+                points.unshift({ x: startX, y: points[0].y });
+            }
             points.push({ x: now, y: Math.max(0, availablePoints) });
         } else {
-            points.push({ x: cutoffTime === 0 ? now - 86400000 : cutoffTime, y: Math.max(0, availablePoints) });
+            points.push({ x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: Math.max(0, availablePoints) });
             points.push({ x: now, y: Math.max(0, availablePoints) });
         }
 
@@ -247,7 +270,7 @@ const Dashboard = () => {
     const chartSeriesData = computeChartData();
     const nowTime = Date.now();
     const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
-    const minTime = currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : undefined;
+    const minTime = currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : (chartSeriesData.length > 0 ? chartSeriesData[0].x : undefined);
 
     const dynamicChartOptions = {
         ...chartOptions,

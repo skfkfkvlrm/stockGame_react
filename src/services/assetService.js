@@ -113,15 +113,24 @@ export const assetService = {
                 return [];
             }
 
-            return (data || []).map(tx => ({
-                id: tx.id,
-                amount: tx.amount,
-                balanceAfter: tx.balance_after,
-                reason: tx.reason_type,
-                historyContent: tx.description || tx.reason_type,
-                description: tx.description,
-                createdDate: tx.created_at
-            }));
+            return (data || []).map(tx => {
+                const amount = Number(tx.amount) || 0;
+                const desc = tx.description || (tx.reason_type === 'INITIAL_GRANT' ? '기초 투자금 지급' : (tx.reason_type === 'COUPON_PURCHASE' ? '상점 쿠폰 구매' : (tx.reason_type === 'STOCK_BUY_ESCROW' ? '주식 매수 체결/증거금' : (tx.reason_type === 'STOCK_SELL_SETTLEMENT' ? '주식 매도 정산' : (amount >= 0 ? '포인트 지급' : '포인트 차감')))));
+                return {
+                    id: tx.id,
+                    amount: amount,
+                    pointChange: amount,
+                    balanceAfter: tx.balance_after,
+                    currentPoint: tx.balance_after,
+                    reason: tx.reason_type,
+                    reasonType: tx.reason_type,
+                    historyContent: desc,
+                    description: desc,
+                    createdDate: tx.created_at,
+                    historyDate: tx.created_at,
+                    date: tx.created_at
+                };
+            });
         }
 
         const res = await api.get('/history').catch(() => ({ data: { data: [] } }));
