@@ -391,8 +391,8 @@ const StockDetail = () => {
             tickAmount: getTickAmount(activeTimeframeId),
             labels: {
                 rotate: 0,
-                rotateAlways: false,
-                style: { colors: '#64748b', fontSize: '0.75rem' },
+                rotateAlways: true,
+                style: { colors: '#64748b', fontSize: '0.72rem' },
                 hideOverlappingLabels: true,
                 trim: false
             }

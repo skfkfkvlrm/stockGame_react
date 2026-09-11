@@ -281,6 +281,8 @@ const Dashboard = () => {
             min: minTime,
             max: nowTime,
             labels: {
+                rotate: 0,
+                rotateAlways: true,
                 style: { colors: '#94a3b8' },
                 datetimeUTC: false,
                 hideOverlappingLabels: true,
