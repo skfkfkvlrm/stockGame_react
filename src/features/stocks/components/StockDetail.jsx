@@ -356,7 +356,7 @@ const StockDetail = () => {
     const getTickAmount = (tfId) => {
         if (tfId === '10M') return 5;
         if (tfId === '1H' || tfId === '3H' || tfId === '6H' || tfId === '12H' || tfId === '1D') return 6;
-        if (tfId === '1W') return 7; // 1주일은 7일 전체 표시
+        if (tfId === '1W') return undefined; // 1주일은 7개 일봉 라벨 전체를 가로로 표기
         if (tfId === '1MO') return 6;
         if (tfId === '3MO') return 6;
         return 6;
@@ -388,9 +388,13 @@ const StockDetail = () => {
         },
         xaxis: {
             type: 'category',
+            tickAmount: getTickAmount(activeTimeframeId),
             labels: {
-                style: { colors: '#64748b', fontSize: '0.8rem' },
+                rotate: 0,
+                rotateAlways: false,
+                style: { colors: '#64748b', fontSize: '0.75rem' },
                 hideOverlappingLabels: true,
+                trim: false
             }
         },
         yaxis: {
