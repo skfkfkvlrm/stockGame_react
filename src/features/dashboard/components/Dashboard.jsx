@@ -272,32 +272,46 @@ const Dashboard = () => {
     const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
     const minTime = currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : (chartSeriesData.length > 0 ? chartSeriesData[0].x : undefined);
 
+    const spanDays = minTime ? Math.max(1, (nowTime - minTime) / (24 * 60 * 60 * 1000)) : 7;
+    const calcTickAmount = timeframeIndex === 0 ? 6 : Math.min(6, Math.max(3, Math.round(spanDays)));
+
     const dynamicChartOptions = {
         ...chartOptions,
         chart: { ...chartOptions.chart, type: 'area' },
         stroke: { curve: 'smooth', width: 3 },
         xaxis: {
             type: 'datetime',
+            tickAmount: calcTickAmount,
             min: minTime,
             max: nowTime,
             labels: {
                 rotate: 0,
                 rotateAlways: true,
-                style: { colors: '#94a3b8' },
+                style: { colors: '#94a3b8', fontSize: '11px', fontWeight: 500 },
                 datetimeUTC: false,
-                hideOverlappingLabels: true,
-                formatter: (val) => {
-                    if (!val) return '';
-                    const d = new Date(val);
-                    if (isNaN(d.getTime())) return val;
+                hideOverlappingLabels: false,
+                showDuplicates: false,
+                formatter: (val, timestamp) => {
+                    const raw = timestamp !== undefined && timestamp !== null ? timestamp : (typeof val === 'number' ? val : Date.parse(val));
+                    if (!raw || isNaN(raw)) return String(val || '');
+                    const d = new Date(raw);
+                    if (isNaN(d.getTime())) return String(val || '');
                     if (timeframeIndex === 0) {
                         return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                     }
                     return `${d.getMonth() + 1}/${d.getDate()}`;
                 }
             },
-            axisBorder: { show: false },
-            axisTicks: { show: false }
+            axisBorder: { show: true, color: '#e2e8f0' },
+            axisTicks: { show: true, color: '#cbd5e1' }
+        },
+        grid: {
+            ...chartOptions.grid,
+            padding: {
+                bottom: 12,
+                left: 10,
+                right: 15
+            }
         }
     };
     const chartSeries = [{ name: '총 자산 추이', data: chartSeriesData }];
