@@ -88,7 +88,7 @@ src/
 
 ---
 
-## 🔒 5. 프론트엔드 안전 가드 (Guardrails)
+## 🔒 5. 프론트엔드 안전 가드
 
 1. **Vercel SPA 404 NOT_FOUND 원천 방지**:
    - `vercel.json` 내 전역 Rewrite 규칙(`"/(.*)" -> "/index.html"`) 및 `App.jsx` 루트 레벨 전역 와일드카드 Fallback 라우트(`<Route path="*" element={<Navigate to="/" replace />} />`) 배치로 브라우저 새로고침(F5) 및 뒤로가기 시 404 완전 차단.
