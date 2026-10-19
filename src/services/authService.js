@@ -178,6 +178,76 @@ export const authService = {
     },
 
     /**
+     * 채용담당자 전용 1클릭 학생 데모 로그인 (3단계 자가 치유 지원)
+     */
+    async loginAsDemo() {
+        let user;
+        try {
+            user = await this.login('demo', '1234');
+        } catch (loginErr) {
+            try {
+                await this.register({
+                    studentId: 'demo',
+                    name: '채용담당자(데모)',
+                    grade: 3,
+                    className: '1',
+                    classNumber: 99,
+                    password: '1234'
+                });
+                user = await this.login('demo', '1234');
+            } catch (fallbackErr) {
+                throw loginErr;
+            }
+        }
+
+        if (user && Number(user.totalPoint ?? 0) < 100000) {
+            try {
+                const rechargeRes = await this.rechargeDemoPoints(1000000);
+                if (rechargeRes?.totalPoint !== undefined) {
+                    user = {
+                        ...user,
+                        totalPoint: rechargeRes.totalPoint
+                    };
+                }
+            } catch (rechargeErr) {
+                console.warn('Demo auto top-up skipped:', rechargeErr?.message || rechargeErr);
+            }
+        }
+
+        return user;
+    },
+
+    /**
+     * 데모 계정 전용 원터치 포인트 충전 (+1,000,000 P 기본)
+     */
+    async rechargeDemoPoints(amount = 1000000) {
+        const cleanAmount = Number(amount) || 1000000;
+        if (isSupabaseMode) {
+            const { data, error } = await supabase.rpc('recharge_demo_points', {
+                p_amount: cleanAmount
+            });
+
+            if (error) {
+                throw new Error(error.message || '데모 포인트 충전에 실패했습니다.');
+            }
+
+            return {
+                success: true,
+                rechargedAmount: Number(data?.rechargedAmount ?? cleanAmount),
+                totalPoint: Number(data?.totalPoint ?? 0)
+            };
+        }
+
+        const currentUser = await this.getCurrentUser();
+        const nextPoint = Number(currentUser?.totalPoint ?? 0) + cleanAmount;
+        return {
+            success: true,
+            rechargedAmount: cleanAmount,
+            totalPoint: nextPoint
+        };
+    },
+
+    /**
      * 로그아웃
      */
     async logout() {

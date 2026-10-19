@@ -60,6 +60,40 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    loginAsDemo: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const user = await authService.loginAsDemo();
+            set({ user, isAuthenticated: true, error: null });
+            return { success: true, user };
+        } catch (error) {
+            const msg = error.message || '데모 로그인에 실패했습니다.';
+            set({ error: msg, isLoading: false });
+            return { success: false, message: msg };
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    rechargeDemoPoints: async (amount = 1000000) => {
+        try {
+            const res = await authService.rechargeDemoPoints(amount);
+            set((state) => ({
+                user: state.user
+                    ? { ...state.user, totalPoint: res.totalPoint }
+                    : state.user
+            }));
+            return {
+                success: true,
+                rechargedAmount: res.rechargedAmount,
+                totalPoint: res.totalPoint
+            };
+        } catch (error) {
+            const msg = error.message || '포인트 충전에 실패했습니다.';
+            return { success: false, message: msg };
+        }
+    },
+
     logout: async () => {
         set({ isLoading: true });
         try {
