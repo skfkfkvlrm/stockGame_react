@@ -81,17 +81,19 @@ const StockList = () => {
     };
 
     useEffect(() => {
-        let unsubscribe = () => {};
+        let unsubscribeStocks = () => {};
+        let unsubscribeIndices = () => {};
+
         const fetchStocks = async () => {
             try {
-                const [stocksData, indicesRes] = await Promise.all([
+                const [stocksData, indicesData] = await Promise.all([
                     stockService.getStocks(),
-                    api.get('/stock/market-index').catch(() => ({ data: { data: [] } }))
+                    stockService.getMarketIndices()
                 ]);
                 const activeStocks = (stocksData || []).filter(stock => stock.status !== 'DELISTED');
                 setStocks(activeStocks);
-                if (indicesRes.data && Array.isArray(indicesRes.data.data)) {
-                    setMarketIndices(indicesRes.data.data);
+                if (Array.isArray(indicesData) && indicesData.length > 0) {
+                    setMarketIndices(indicesData);
                 }
             } catch (err) {
                 console.error('Fetch stocks error:', err);
@@ -128,13 +130,26 @@ const StockList = () => {
                 )
                 .subscribe();
 
-            unsubscribe = () => {
+            unsubscribeStocks = () => {
                 supabase.removeChannel(channel);
             };
+
+            unsubscribeIndices = stockService.subscribeMarketIndices((updatedIdx) => {
+                setMarketIndices(prev => {
+                    const idxPos = prev.findIndex(item => item.name === updatedIdx.name);
+                    if (idxPos >= 0) {
+                        const copy = [...prev];
+                        copy[idxPos] = { ...copy[idxPos], ...updatedIdx };
+                        return copy;
+                    }
+                    return [...prev, updatedIdx];
+                });
+            });
         }
 
         return () => {
-            unsubscribe();
+            unsubscribeStocks();
+            unsubscribeIndices();
         };
     }, []);
 
@@ -231,7 +246,12 @@ const StockList = () => {
                                 <div className="index-title-group">
                                     <span className="index-flag">{idxItem.name === 'KOSPI' ? '🏛️' : '🚀'}</span>
                                     <div>
-                                        <h3>{idxItem.name} 종합 지수</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <h3>{idxItem.name} 종합 지수</h3>
+                                            <span className="index-live-tag">
+                                                <span className="live-dot"></span> 실시간
+                                            </span>
+                                        </div>
                                         <span className="index-sub-label">{idxItem.name === 'KOSPI' ? '유가증권시장' : '코스닥시장'}</span>
                                     </div>
                                 </div>
@@ -281,6 +301,14 @@ const StockList = () => {
                                     <span className="sub-val">{idxItem.tradingValue ? `${(idxItem.tradingValue / 1000000000000).toFixed(1)}조` : '8.5조'}</span>
                                 </div>
                             </div>
+
+                            <button
+                                type="button"
+                                className="btn-index-analysis"
+                                onClick={() => setSelectedIndexModal(idxItem)}
+                            >
+                                📊 {idxItem.name} 7일 추이 및 상세 지표
+                            </button>
                         </div>
                     );
                 })}
@@ -489,6 +517,142 @@ const StockList = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* 시장 지수 상세 분석 모달 */}
+            {selectedIndexModal && (
+                <div className="index-modal-overlay" onClick={() => setSelectedIndexModal(null)}>
+                    <div className="index-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div className="modal-title-with-badge">
+                                <span style={{ fontSize: '1.6rem' }}>{selectedIndexModal.name === 'KOSPI' ? '🏛️' : '🚀'}</span>
+                                <div>
+                                    <h2 style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0 }}>
+                                        {selectedIndexModal.name} 종합 시장 지수
+                                    </h2>
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                        {selectedIndexModal.korName || (selectedIndexModal.name === 'KOSPI' ? '유가증권시장' : '코스닥시장')} | {selectedIndexModal.updatedAt ? new Date(selectedIndexModal.updatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준' : '실시간 연동'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="btn-popover-close"
+                                onClick={() => setSelectedIndexModal(null)}
+                                style={{ fontSize: '1.1rem', cursor: 'pointer', border: 'none', background: '#f1f5f9', borderRadius: '50%', width: '32px', height: '32px' }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* 가격 및 등락률 하이라이트 */}
+                        <div className="modal-index-highlight">
+                            <div>
+                                <span className="hl-label">현재 지수</span>
+                                <span className={`hl-val ${(selectedIndexModal.change ?? 0) >= 0 ? 'profit-up' : 'profit-down'}`}>
+                                    {(selectedIndexModal.value ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="hl-label">전일 대비</span>
+                                <span className={`hl-diff ${(selectedIndexModal.change ?? 0) >= 0 ? 'profit-up' : 'profit-down'}`}>
+                                    {(selectedIndexModal.change ?? 0) >= 0 ? '+' : ''}
+                                    {(selectedIndexModal.change ?? 0).toFixed(2)} ({(selectedIndexModal.changeRate ?? 0) >= 0 ? '+' : ''}{(selectedIndexModal.changeRate ?? 0).toFixed(2)}%)
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 7일 추이 스파크라인 차트 */}
+                        {Array.isArray(selectedIndexModal.chartHistory) && selectedIndexModal.chartHistory.length > 0 && (() => {
+                            const hist = selectedIndexModal.chartHistory;
+                            const minVal = Math.min(...hist);
+                            const maxVal = Math.max(...hist);
+                            const diff = maxVal - minVal || 1;
+                            const pts = hist.map((val, idx) => {
+                                const x = (idx / (hist.length - 1)) * 480 + 20;
+                                const y = 95 - ((val - minVal) / diff) * 70;
+                                return `${x},${y}`;
+                            }).join(' ');
+
+                            const isUp = (selectedIndexModal.change ?? 0) >= 0;
+                            const strokeColor = isUp ? '#ef4444' : '#3b82f6';
+
+                            return (
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.82rem', fontWeight: '700', color: '#475569' }}>
+                                        <span>📈 최근 7영업일 지수 추이 (일봉 종가)</span>
+                                        <span>저 {minVal.toLocaleString('ko-KR', { minimumFractionDigits: 1 })} ~ 고 {maxVal.toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</span>
+                                    </div>
+                                    <div style={{ width: '100%', overflowX: 'auto' }}>
+                                        <svg viewBox="0 0 520 120" style={{ width: '100%', height: '110px' }}>
+                                            <polyline
+                                                fill="none"
+                                                stroke={strokeColor}
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                points={pts}
+                                            />
+                                            {hist.map((val, idx) => {
+                                                const x = (idx / (hist.length - 1)) * 480 + 20;
+                                                const y = 95 - ((val - minVal) / diff) * 70;
+                                                return (
+                                                    <g key={idx}>
+                                                        <circle cx={x} cy={y} r="4" fill="#ffffff" stroke={strokeColor} strokeWidth="2.5" />
+                                                        <text x={x} y={y - 8} fontSize="10" textAnchor="middle" fill="#64748b" fontWeight="600">
+                                                            {val.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}
+                                                        </text>
+                                                    </g>
+                                                );
+                                            })}
+                                        </svg>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* 상세 데이터 테이블 (OHLC + 52주 + 거래대금) */}
+                        <div className="index-ohlc-table-section">
+                            <h3>📊 시장 상세 데이터</h3>
+                            <table className="index-stat-table">
+                                <tbody>
+                                    <tr>
+                                        <th>시가</th>
+                                        <td>{(selectedIndexModal.openPrice ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                        <th>전일종가</th>
+                                        <td>{(selectedIndexModal.prevClose ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>당일 고가</th>
+                                        <td className="profit-up">{(selectedIndexModal.highPrice ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                        <th>당일 저가</th>
+                                        <td className="profit-down">{(selectedIndexModal.lowPrice ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>52주 최고</th>
+                                        <td>{(selectedIndexModal.high52w ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                        <th>52주 최저</th>
+                                        <td>{(selectedIndexModal.low52w ?? 0).toLocaleString('ko-KR', { minimumFractionDigits: 1 })}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>거래량</th>
+                                        <td>{selectedIndexModal.volume ? `${(selectedIndexModal.volume / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}만주` : '-'}</td>
+                                        <th>거래대금</th>
+                                        <td>{selectedIndexModal.tradingValue ? `${(selectedIndexModal.tradingValue / 1000000000000).toFixed(2)}조원` : '-'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="api-ready-notice">
+                            <div className="api-notice-header">✅ 실시간 시장 지표 동기화</div>
+                            <p>
+                                Supabase Cloud 실시간 캐시 및 증권사 데이터 동기화 파이프라인(Node sync 스크립트)을 통해 
+                                정기적으로 갱신되는 대한민국 공식 거래소 시장 지표입니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

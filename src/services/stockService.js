@@ -267,6 +267,105 @@ export const stockService = {
         return () => {
             supabase.removeChannel(channel);
         };
+    },
+
+    /**
+     * KOSPI / KOSDAQ 시장 지수 목록 조회 (실시간 데이터 연동)
+     */
+    async getMarketIndices() {
+        if (isSupabaseMode) {
+            try {
+                const { data, error } = await supabase
+                    .from('market_indices')
+                    .select('*');
+
+                if (error) {
+                    console.warn('Failed to fetch market indices from Supabase:', error);
+                    return [];
+                }
+
+                const list = (data || []).map(idx => ({
+                    name: idx.name,
+                    korName: idx.kor_name || (idx.name === 'KOSPI' ? '코스피' : '코스닥'),
+                    marketType: idx.market_type || idx.name,
+                    value: parseFloat(idx.value || 0),
+                    change: parseFloat(idx.change_val || 0),
+                    changeRate: parseFloat(idx.change_rate || 0),
+                    prevClose: parseFloat(idx.prev_close || 0),
+                    openPrice: parseFloat(idx.open_price || 0),
+                    highPrice: parseFloat(idx.high_price || 0),
+                    lowPrice: parseFloat(idx.low_price || 0),
+                    high52w: parseFloat(idx.high_52w || 0),
+                    low52w: parseFloat(idx.low_52w || 0),
+                    volume: parseInt(idx.volume || 0, 10),
+                    tradingValue: parseInt(idx.trading_value || 0, 10),
+                    marketStatus: idx.market_status || 'CLOSED',
+                    chartHistory: Array.isArray(idx.chart_history) ? idx.chart_history : [],
+                    updatedAt: idx.updated_at
+                }));
+
+                // KOSPI가 항상 첫 번째, KOSDAQ이 두 번째로 오도록 정렬
+                const priority = { 'KOSPI': 1, 'KOSDAQ': 2 };
+                return list.sort((a, b) => (priority[a.name] || 99) - (priority[b.name] || 99));
+            } catch (err) {
+                console.error('getMarketIndices error:', err);
+                return [];
+            }
+        }
+
+        try {
+            const res = await api.get('/stock/market-index');
+            return res.data?.data || [];
+        } catch (err) {
+            console.warn('Failed to fetch market indices from Spring Boot API:', err);
+            return [];
+        }
+    },
+
+    /**
+     * KOSPI / KOSDAQ 시장 지수 실시간 업데이트 구독 (Supabase Realtime)
+     */
+    subscribeMarketIndices(onUpdate) {
+        if (!isSupabaseMode) {
+            return () => {};
+        }
+
+        const channel = supabase
+            .channel('market_indices_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'market_indices' },
+                (payload) => {
+                    if (payload.new) {
+                        const row = payload.new;
+                        const formatted = {
+                            name: row.name,
+                            korName: row.kor_name || (row.name === 'KOSPI' ? '코스피' : '코스닥'),
+                            marketType: row.market_type || row.name,
+                            value: parseFloat(row.value || 0),
+                            change: parseFloat(row.change_val || 0),
+                            changeRate: parseFloat(row.change_rate || 0),
+                            prevClose: parseFloat(row.prev_close || 0),
+                            openPrice: parseFloat(row.open_price || 0),
+                            highPrice: parseFloat(row.high_price || 0),
+                            lowPrice: parseFloat(row.low_price || 0),
+                            high52w: parseFloat(row.high_52w || 0),
+                            low52w: parseFloat(row.low_52w || 0),
+                            volume: parseInt(row.volume || 0, 10),
+                            tradingValue: parseInt(row.trading_value || 0, 10),
+                            marketStatus: row.market_status || 'CLOSED',
+                            chartHistory: Array.isArray(row.chart_history) ? row.chart_history : [],
+                            updatedAt: row.updated_at
+                        };
+                        onUpdate(formatted);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }
 };
 
