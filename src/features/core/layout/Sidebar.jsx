@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck, Trophy, Ticket, Zap } from 'lucide-react';
+import { isSupabaseMode, supabase } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
 import useMarketStore from '../../admin/store/useMarketStore';
 import './Sidebar.css';
@@ -13,6 +14,7 @@ const Sidebar = () => {
     const logout = useAuthStore((state) => state.logout);
     const fetchMe = useAuthStore((state) => state.fetchMe);
     const rechargeDemoPoints = useAuthStore((state) => state.rechargeDemoPoints);
+    const updateUserProfile = useAuthStore((state) => state.updateUserProfile);
 
     const marketOpen = useMarketStore((state) => state.marketOpen);
     const openTime = useMarketStore((state) => state.openTime);
@@ -22,11 +24,46 @@ const Sidebar = () => {
 
     const [isRecharging, setIsRecharging] = useState(false);
     const [rechargeNotice, setRechargeNotice] = useState(null);
+    const [isPointFlashing, setIsPointFlashing] = useState(false);
+    const prevPointRef = useRef(user?.totalPoint);
 
     useEffect(() => {
         fetchMe();
         fetchMarketStatus();
     }, [location.pathname]);
+
+    // Supabase Realtime User Profile Subscription (글로벌 포인트 및 프로필 실시간 동기화)
+    useEffect(() => {
+        if (!isSupabaseMode || !user?.id) return;
+
+        const channel = supabase
+            .channel(`sidebar_profile_${user.id}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+                (payload) => {
+                    if (payload?.new) {
+                        updateUserProfile(payload.new);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id, updateUserProfile]);
+
+    // 포인트 변동 시각 피드백 효과 (Pulse animation)
+    useEffect(() => {
+        if (prevPointRef.current !== undefined && prevPointRef.current !== user?.totalPoint) {
+            setIsPointFlashing(true);
+            const timer = setTimeout(() => setIsPointFlashing(false), 1200);
+            prevPointRef.current = user?.totalPoint;
+            return () => clearTimeout(timer);
+        }
+        prevPointRef.current = user?.totalPoint;
+    }, [user?.totalPoint]);
 
     const getMarketStatusLabel = () => {
         if (statusCode === 'HOLIDAY') return '주말 정기 휴장';
@@ -89,7 +126,7 @@ const Sidebar = () => {
                     <p className="point-label">보유 포인트</p>
                     {isDemoUser && <span className="demo-badge-pill">체험 모드</span>}
                 </div>
-                <h3 className="point-amount">{user.totalPoint ? user.totalPoint.toLocaleString() : 0} <span className="currency">P</span></h3>
+                <h3 className={`point-amount ${isPointFlashing ? 'point-flash' : ''}`}>{user.totalPoint ? user.totalPoint.toLocaleString() : 0} <span className="currency">P</span></h3>
                 {isDemoUser && (
                     <div className="demo-recharge-box">
                         <button

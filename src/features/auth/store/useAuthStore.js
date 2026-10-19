@@ -75,6 +75,23 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    updateUserProfile: (profile) => {
+        if (!profile) return;
+        set((state) => ({
+            user: state.user
+                ? {
+                    ...state.user,
+                    totalPoint: profile.total_point !== undefined ? profile.total_point : (profile.totalPoint !== undefined ? profile.totalPoint : state.user.totalPoint),
+                    totalCoupon: profile.total_coupon !== undefined ? profile.total_coupon : (profile.totalCoupon !== undefined ? profile.totalCoupon : state.user.totalCoupon),
+                    name: profile.name ?? state.user.name,
+                    grade: profile.grade ?? state.user.grade,
+                    className: profile.class_name ?? profile.className ?? state.user.className,
+                    classNumber: profile.class_number ?? profile.classNumber ?? state.user.classNumber,
+                }
+                : state.user
+        }));
+    },
+
     rechargeDemoPoints: async (amount = 1000000) => {
         try {
             const res = await authService.rechargeDemoPoints(amount);
