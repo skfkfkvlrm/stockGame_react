@@ -15,7 +15,8 @@ export const useStompResilience = ({
     subscriptions = [],
     maxReconnectAttempts = 5,
     initialDelay = 1000,
-    maxDelay = 30000
+    maxDelay = 30000,
+    enabled = true
 }) => {
     const [status, setStatus] = useState(ConnectionStatus.DISCONNECTED);
     const [retryCount, setRetryCount] = useState(0);
@@ -32,6 +33,7 @@ export const useStompResilience = ({
     subscriptionsRef.current = subscriptions;
 
     const connect = useCallback(() => {
+        if (!enabled || !url) return;
         if (clientRef.current && clientRef.current.active) return;
 
         setStatus(ConnectionStatus.CONNECTING);
@@ -119,11 +121,13 @@ export const useStompResilience = ({
     }, [connect, status]);
 
     useEffect(() => {
-        connect();
+        if (enabled && url) {
+            connect();
+        }
         return () => {
             disconnect();
         };
-    }, []);
+    }, [connect, disconnect, enabled, url]);
 
     return { status, retryCount, reconnect: connect, disconnect };
 };

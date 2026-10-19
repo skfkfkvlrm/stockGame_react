@@ -5,7 +5,7 @@ import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import api from '../../../api/axios';
 import stockService from '../../../services/stockService';
 import assetService from '../../../services/assetService';
-import { isSupabaseMode } from '../../../lib/supabaseClient';
+import { isSupabaseMode, supabase } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
 import useMarketStore from '../../admin/store/useMarketStore';
 import { useStompResilience, ConnectionStatus } from '../../core/hooks/useStompResilience';
@@ -50,6 +50,7 @@ const StockDetail = () => {
     const [myStockAmount, setMyStockAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [realtimeStatus, setRealtimeStatus] = useState(isSupabaseMode ? ConnectionStatus.CONNECTING : ConnectionStatus.DISCONNECTED);
 
     // Toast notification
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -135,25 +136,79 @@ const StockDetail = () => {
         fetchAllData();
     }, [stockId, user?.id]);
 
-    // Supabase Realtime Subscription Hook
+    // Supabase Realtime Subscription Hook (호가, 체결, VI/거래정지 변동 실시간 감지)
     useEffect(() => {
         if (!isSupabaseMode || !stockId) return;
 
-        const unsubscribe = stockService.subscribeOrderbook(stockId, (eventType) => {
-            fetchAllData();
-            if (eventType === 'TRADE_UPDATED') {
-                showToast('새로운 주식 체결이 발생하여 호가창이 실시간 갱신되었습니다.', 'success');
+        const unsubscribe = stockService.subscribeOrderbook(
+            stockId,
+            (eventType, payload) => {
+                fetchAllData();
+                if (eventType === 'TRADE_UPDATED') {
+                    showToast('새로운 주식 체결이 발생하여 호가창이 실시간 갱신되었습니다.', 'success');
+                } else if (eventType === 'STOCK_UPDATED') {
+                    const newMarketStatus = payload?.new?.market_status;
+                    const oldMarketStatus = payload?.old?.market_status;
+                    const newStatus = payload?.new?.status;
+
+                    if (newMarketStatus === 'STATIC_VI' && oldMarketStatus !== 'STATIC_VI') {
+                        showToast('정적 VI(변동성 완화장치)가 발동되었습니다. 2분간 단일가 매매로 전환됩니다.', 'error');
+                    } else if (newMarketStatus === 'NORMAL' && oldMarketStatus === 'STATIC_VI') {
+                        showToast('정적 VI가 해제되어 정규장(연속매매)으로 복귀했습니다.', 'success');
+                    }
+
+                    if (newStatus === 'SUSPENDED') {
+                        showToast('해당 종목의 거래가 일시 정지되었습니다.', 'error');
+                    }
+                }
+            },
+            (status) => {
+                if (status === 'SUBSCRIBED') {
+                    setRealtimeStatus(ConnectionStatus.CONNECTED);
+                } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+                    setRealtimeStatus(ConnectionStatus.RECONNECTING);
+                } else if (status === 'CHANNEL_ERROR') {
+                    setRealtimeStatus(ConnectionStatus.FAILED);
+                }
             }
-        });
+        );
 
         return () => {
             unsubscribe();
         };
     }, [stockId]);
 
-    // Resilience STOMP Hook
+    // Supabase Realtime User Profile & Holdings Subscription (보유 포인트 및 주식 잔고 실시간 동기화)
+    useEffect(() => {
+        if (!isSupabaseMode || !user?.id) return;
+
+        const userChannel = supabase
+            .channel(`user_realtime_${user.id}_${stockId}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+                () => {
+                    checkAuthStatus();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'user_holdings', filter: `user_id=eq.${user.id}` },
+                () => {
+                    fetchAllData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(userChannel);
+        };
+    }, [user?.id, stockId]);
+
+    // Resilience STOMP Hook (Spring Boot 백엔드 연동 모드 전용)
     const { status: wsStatus, retryCount } = useStompResilience({
         url: 'http://localhost:8082/ws',
+        enabled: !isSupabaseMode,
         subscriptions: [
             {
                 topic: `/topic/orders/${stockId}`,
@@ -171,6 +226,8 @@ const StockDetail = () => {
         ],
         maxReconnectAttempts: 5
     });
+
+    const effectiveWsStatus = isSupabaseMode ? realtimeStatus : wsStatus;
 
     // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
     useEffect(() => {
@@ -489,12 +546,12 @@ const StockDetail = () => {
                             </div>
                         )}
                         <div
-                            className={`ws-status-badge status-${wsStatus ? wsStatus.toLowerCase() : 'disconnected'}`}
+                            className={`ws-status-badge status-${effectiveWsStatus ? effectiveWsStatus.toLowerCase() : 'disconnected'}`}
                             title={
-                                wsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
-                                    wsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
-                                        wsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
-                                            wsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
+                                effectiveWsStatus === ConnectionStatus.CONNECTED ? '실시간 시세 정상 연결됨' :
+                                    effectiveWsStatus === ConnectionStatus.CONNECTING ? '실시간 시세 연결 중...' :
+                                        effectiveWsStatus === ConnectionStatus.RECONNECTING ? `실시간 시세 재연결 중... (${retryCount}/5)` :
+                                            effectiveWsStatus === ConnectionStatus.FAILED ? '실시간 연결 실패 (새로고침 필요)' : '연결 종료'
                             }
                         >
                             <span className="ws-pulse-dot"></span>

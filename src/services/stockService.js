@@ -241,7 +241,7 @@ export const stockService = {
     /**
      * Supabase Realtime 호가 및 체결 변동 구독
      */
-    subscribeOrderbook(stockId, onUpdate) {
+    subscribeOrderbook(stockId, onUpdate, onStatusChange) {
         if (!isSupabaseMode || !stockId) {
             return () => {};
         }
@@ -262,7 +262,18 @@ export const stockService = {
                     onUpdate('TRADE_UPDATED', payload);
                 }
             )
-            .subscribe();
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'stocks', filter: `id=eq.${stockId}` },
+                (payload) => {
+                    onUpdate('STOCK_UPDATED', payload);
+                }
+            )
+            .subscribe((status) => {
+                if (onStatusChange) {
+                    onStatusChange(status);
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
