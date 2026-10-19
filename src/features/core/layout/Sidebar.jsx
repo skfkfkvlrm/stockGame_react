@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck, Trophy, Ticket } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck, Trophy, Ticket, Zap } from 'lucide-react';
 import useAuthStore from '../../auth/store/useAuthStore';
 import useMarketStore from '../../admin/store/useMarketStore';
 import './Sidebar.css';
@@ -12,12 +12,16 @@ const Sidebar = () => {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const fetchMe = useAuthStore((state) => state.fetchMe);
+    const rechargeDemoPoints = useAuthStore((state) => state.rechargeDemoPoints);
 
     const marketOpen = useMarketStore((state) => state.marketOpen);
     const openTime = useMarketStore((state) => state.openTime);
     const closeTime = useMarketStore((state) => state.closeTime);
     const statusCode = useMarketStore((state) => state.statusCode);
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
+
+    const [isRecharging, setIsRecharging] = useState(false);
+    const [rechargeNotice, setRechargeNotice] = useState(null);
 
     useEffect(() => {
         fetchMe();
@@ -36,11 +40,33 @@ const Sidebar = () => {
         navigate('/login');
     };
 
+    const handleRechargeDemo = async () => {
+        if (isRecharging) return;
+        setIsRecharging(true);
+        setRechargeNotice(null);
+        try {
+            const result = await rechargeDemoPoints(1000000);
+            if (result.success) {
+                setRechargeNotice({ type: 'success', text: '⚡ +1,000,000 P 충전 완료!' });
+                setTimeout(() => {
+                    setRechargeNotice(null);
+                }, 3000);
+            } else {
+                setRechargeNotice({ type: 'error', text: result.message || '충전 실패' });
+            }
+        } catch (err) {
+            setRechargeNotice({ type: 'error', text: '충전 중 오류 발생' });
+        } finally {
+            setIsRecharging(false);
+        }
+    };
+
     const isActive = (path) => location.pathname === path ? 'active' : '';
 
     if (!user) return <aside className="right-sidebar glass-panel"><div className="loading-spinner"></div></aside>;
 
     const isAdmin = user && (user.role === 'ROLE_ADMIN' || user.role === 'ROLE_MANAGER' || user.studentId === 'admin' || user.username === 'admin');
+    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter');
 
     return (
         <aside className="right-sidebar glass-panel">
@@ -59,8 +85,30 @@ const Sidebar = () => {
             </div>
 
             <div className="point-card glass-panel">
-                <p className="point-label">보유 포인트</p>
+                <div className="point-card-header">
+                    <p className="point-label">보유 포인트</p>
+                    {isDemoUser && <span className="demo-badge-pill">체험 모드</span>}
+                </div>
                 <h3 className="point-amount">{user.totalPoint ? user.totalPoint.toLocaleString() : 0} <span className="currency">P</span></h3>
+                {isDemoUser && (
+                    <div className="demo-recharge-box">
+                        <button
+                            type="button"
+                            className="btn-recharge-demo"
+                            onClick={handleRechargeDemo}
+                            disabled={isRecharging}
+                            title="체험용 포인트를 100만 P 즉시 충전합니다"
+                        >
+                            <Zap size={14} className={isRecharging ? 'spin-icon' : ''} />
+                            <span>{isRecharging ? '충전 중...' : '+100만 P 원터치 충전'}</span>
+                        </button>
+                        {rechargeNotice && (
+                            <div className={`recharge-notice ${rechargeNotice.type}`}>
+                                {rechargeNotice.text}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className={`market-status ${marketOpen ? 'open' : 'closed'}`}>
