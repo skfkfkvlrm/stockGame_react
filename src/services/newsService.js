@@ -3,9 +3,9 @@ import api from '../api/axios';
 
 export const newsService = {
     /**
-     * 뉴스 목록 조회
+     * 뉴스 목록 조회 (기본 500건: 최근 약 42시간 치 뉴스 전수 조회로 어제/오늘 뉴스 완벽 커버)
      */
-    async getNews(limit = 50) {
+    async getNews(limit = 500) {
         if (isSupabaseMode) {
             let { data, error } = await supabase
                 .from('news')
