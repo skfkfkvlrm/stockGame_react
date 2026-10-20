@@ -298,6 +298,16 @@ export const authService = {
      */
     async logout() {
         if (isSupabaseMode) {
+            // 데모 계정인 경우 로그아웃 시 자산 및 포인트 변동 이력(차트) 클린 초기화
+            try {
+                const currentUser = await this.getCurrentUser();
+                if (currentUser?.studentId === 'demo' || currentUser?.student_id === 'demo') {
+                    await this.resetDemoAccount();
+                }
+            } catch (resetErr) {
+                console.warn('Demo reset on logout warning:', resetErr);
+            }
+
             await supabase.auth.signOut();
             localStorage.removeItem('jwt_token');
             return;
