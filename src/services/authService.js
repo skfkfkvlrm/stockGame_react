@@ -178,7 +178,7 @@ export const authService = {
     },
 
     /**
-     * 채용담당자 전용 1클릭 학생 데모 로그인 (로그인 시 100만 P 자동 리셋 & 3단계 자가 치유 지원)
+     * 채용담당자 전용 1클릭 학생 데모 로그인 (창 닫기 무손실 보장 & 자가 치유 지원)
      */
     async loginAsDemo() {
         let user;
@@ -200,36 +200,8 @@ export const authService = {
             }
         }
 
-        // 데모 계정 자동 초기화 (언제나 깨끗한 100만 P, 0 보유주식, 0 미체결 주문 보장)
-        if (user) {
-            try {
-                const resetRes = await this.resetDemoAccount();
-                if (resetRes?.totalPoint !== undefined) {
-                    user = {
-                        ...user,
-                        totalPoint: resetRes.totalPoint,
-                        totalCoupon: 0
-                    };
-                }
-            } catch (resetErr) {
-                console.warn('Demo auto reset warning:', resetErr?.message || resetErr);
-                // RPC 실패 시 비상 보정: 잔액이 부족하면 기존 rechargeFallback 시도
-                if (Number(user.totalPoint ?? 0) < 100000) {
-                    try {
-                        const rechargeRes = await this.rechargeDemoPoints(1000000);
-                        if (rechargeRes?.totalPoint !== undefined) {
-                            user = {
-                                ...user,
-                                totalPoint: rechargeRes.totalPoint
-                            };
-                        }
-                    } catch (rechargeErr) {
-                        console.warn('Demo auto top-up fallback skipped:', rechargeErr?.message || rechargeErr);
-                    }
-                }
-            }
-        }
-
+        // [창 닫기 무손실 원칙]: 로그인 시점에는 절대 resetDemoAccount()를 호출하지 않음!
+        // 브라우저를 닫거나 타 계정과 교차 체결 후 재로그인 시 기존 체결 결과와 잔액을 100% 보존
         return user;
     },
 
@@ -252,15 +224,25 @@ export const authService = {
             };
         }
 
-        const currentUser = await this.getCurrentUser();
-        return {
-            success: true,
-            totalPoint: 1000000,
-            clearedOrders: 0,
-            clearedStocks: 0,
-            clearedCoupons: 0,
-            resetAt: new Date().toISOString()
-        };
+        // Spring Boot 모드 (MSA & Monolith): 백엔드 대칭 리셋 API 병렬 호출
+        try {
+            await Promise.all([
+                api.post('/members/demo/reset'),
+                api.post('/stock/demo/reset'),
+                api.post('/coupons/demo/reset')
+            ]);
+            return {
+                success: true,
+                totalPoint: 1000000,
+                clearedOrders: 0,
+                clearedStocks: 0,
+                clearedCoupons: 0,
+                resetAt: new Date().toISOString()
+            };
+        } catch (err) {
+            console.error('Spring Boot demo reset failed:', err);
+            throw new Error(err.response?.data?.message || err.message || '데모 계정 초기화 실패');
+        }
     },
 
     /**
@@ -284,30 +266,34 @@ export const authService = {
             };
         }
 
-        const currentUser = await this.getCurrentUser();
-        const nextPoint = Number(currentUser?.totalPoint ?? 0) + cleanAmount;
-        return {
-            success: true,
-            rechargedAmount: cleanAmount,
-            totalPoint: nextPoint
-        };
+        // Spring Boot 모드: 백엔드 충전 API 호출
+        const response = await api.post('/members/demo/recharge', { amount: cleanAmount });
+        if (response.data && response.data.success) {
+            return {
+                success: true,
+                rechargedAmount: cleanAmount,
+                totalPoint: response.data.data?.totalPoint ?? 0
+            };
+        }
+        throw new Error(response.data?.message || '포인트 충전에 실패했습니다.');
     },
 
     /**
      * 로그아웃
      */
     async logout() {
-        if (isSupabaseMode) {
-            // 데모 계정인 경우 로그아웃 시 자산 및 포인트 변동 이력(차트) 초기화
-            try {
-                const currentUser = await this.getCurrentUser();
-                if (currentUser?.studentId === 'demo' || currentUser?.student_id === 'demo') {
-                    await this.resetDemoAccount();
-                }
-            } catch (resetErr) {
-                console.warn('Demo reset on logout warning:', resetErr);
+        // [명시적 로그아웃 리셋 원칙]: 오직 'demo' 계정일 때만 자산 롤백 수행
+        try {
+            const currentUser = await this.getCurrentUser();
+            const studentId = currentUser?.studentId || currentUser?.student_id;
+            if (studentId === 'demo') {
+                await this.resetDemoAccount();
             }
+        } catch (resetErr) {
+            console.warn('Demo reset on logout warning:', resetErr);
+        }
 
+        if (isSupabaseMode) {
             await supabase.auth.signOut();
             localStorage.removeItem('jwt_token');
             return;
