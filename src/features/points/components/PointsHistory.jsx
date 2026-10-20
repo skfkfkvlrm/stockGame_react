@@ -4,6 +4,20 @@ import assetService from '../../../services/assetService';
 import useAuthStore from '../../auth/store/useAuthStore';
 import './PointsHistory.css';
 
+const formatReasonType = (reason) => {
+    switch (reason) {
+        case 'INITIAL_GRANT': return '기초 자금 지급';
+        case 'STOCK_SELL_SETTLEMENT': return '주식 매도 정산';
+        case 'STOCK_BUY_ESCROW': return '주식 매수 체결';
+        case 'STOCK_BUY_CANCEL_REFUND': return '주문 취소 환불';
+        case 'COUPON_PURCHASE': return '상점 쿠폰 구매';
+        case 'ADMIN_GRANT': return '관리자 지급';
+        case 'ADMIN_DEDUCT': return '관리자 차감';
+        case 'ADMIN_ROLLBACK': return '관리자 복구';
+        default: return reason || '변동 내역';
+    }
+};
+
 const PointsHistory = () => {
     const user = useAuthStore((state) => state.user);
     const [history, setHistory] = useState([]);
@@ -48,13 +62,19 @@ const PointsHistory = () => {
                         const rawDate = item.historyDate || item.createdDate;
                         const formattedDate = rawDate ? new Date(rawDate).toLocaleString('ko-KR') : '-';
                         
+                        const rawBalance = item.balanceAfter ?? item.currentPoint;
+                        const hasBalance = rawBalance !== undefined && rawBalance !== null;
+                        const displaySubText = hasBalance
+                            ? `잔액 ${Number(rawBalance).toLocaleString()} P`
+                            : (item.historyType || formatReasonType(item.reason));
+
                         return (
                             <div key={index} className="history-item">
                                 <div className={`history-icon ${isEarn ? 'earn' : 'use'}`}>
                                     {isEarn ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
                                 </div>
                                 <div className="history-details">
-                                    <h3>{item.historyContent || item.description || item.historyType || item.reason || '포인트 변동'}</h3>
+                                    <h3>{item.historyContent || item.description || item.historyType || formatReasonType(item.reason)}</h3>
                                     <div className="history-meta">
                                         <Clock size={14} />
                                         <span>{formattedDate}</span>
@@ -65,7 +85,7 @@ const PointsHistory = () => {
                                         {pointChange > 0 ? '+' : ''}{pointChange.toLocaleString()} P
                                     </div>
                                     <div className="amount-balance">
-                                        구분: {item.historyType || item.reason || '변동 내역'}
+                                        {displaySubText}
                                     </div>
                                 </div>
                             </div>
