@@ -104,12 +104,22 @@ export const newsService = {
     },
 
     /**
-     * [테스트/관리자] 가상 AI 시황 뉴스 즉시 생성 요청 (Supabase RPC 및 Edge Function 호환)
+     * [테스트/관리자] 가상 AI 시황 뉴스 즉시 생성 요청 (Google Gemini API 탑재 Edge Function 최우선 호출)
      */
     async triggerNews(options = {}) {
         if (isSupabaseMode) {
+            // 1. Google Gemini 2.5 Flash Lite 탑재 Edge Function 최우선 호출
             try {
-                // 1. Supabase RPC generate_ai_news 직접 호출
+                const { data, error } = await supabase.functions.invoke('generate-news', {
+                    body: options
+                });
+                if (!error && data) return data;
+            } catch (fnErr) {
+                console.warn('[newsService] Edge function invoke fallback:', fnErr);
+            }
+
+            // 2. Edge Function 장애 시 Supabase RPC generate_ai_news 폴백
+            try {
                 const { data, error } = await supabase.rpc('generate_ai_news', {
                     p_stock_id: options.stockId || options.stock_id || null,
                     p_sentiment: options.sentiment || options.forceSentiment || null
@@ -118,17 +128,7 @@ export const newsService = {
                     return data;
                 }
             } catch (rpcErr) {
-                console.warn('[newsService] RPC generate_ai_news fallback:', rpcErr);
-            }
-
-            // 2. Edge Function 호출 폴백 (배포되어 있을 경우)
-            try {
-                const { data, error } = await supabase.functions.invoke('generate-news', {
-                    body: options
-                });
-                if (!error) return data;
-            } catch (fnErr) {
-                console.warn('[newsService] Edge function invoke fallback failed:', fnErr);
+                console.warn('[newsService] RPC generate_ai_news fallback failed:', rpcErr);
             }
         }
         return null;
