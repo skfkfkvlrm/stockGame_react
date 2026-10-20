@@ -212,18 +212,17 @@ const Dashboard = () => {
     };
 
     const chartSeriesData = computeChartData();
-    const nowTime = Date.now();
-    const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
-    const minTime = chartSeriesData.length > 0 
-        ? chartSeriesData[0].x 
-        : (currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : undefined);
-
-    const spanDays = minTime ? Math.max(1, (nowTime - minTime) / (24 * 60 * 60 * 1000)) : 7;
-    const calcTickAmount = timeframeIndex === 0 ? 6 : Math.min(6, Math.max(3, Math.round(spanDays)));
+    // 당일(0)과 1주일(1)은 정각(HH:00) / 7일치 일별 라벨이므로 tickAmount: undefined로 전수 출력
+    // 1개월(2), 3개월(3), 전체(4)는 라벨 겹침 방지를 위해 6개 내외로 균등 샘플링
+    const calcTickAmount = (timeframeIndex === 0 || timeframeIndex === 1) ? undefined : 6;
 
     const dynamicChartOptions = {
         ...chartOptions,
-        chart: { ...chartOptions.chart, type: 'area' },
+        chart: { 
+            ...chartOptions.chart, 
+            type: 'area',
+            toolbar: { show: false }
+        },
         stroke: { curve: 'stepline', width: 2.5 },
         fill: { 
             type: 'gradient', 
@@ -235,27 +234,13 @@ const Dashboard = () => {
             } 
         },
         xaxis: {
-            type: 'datetime',
+            type: 'category',
             tickAmount: calcTickAmount,
-            min: minTime,
-            max: nowTime,
             labels: {
                 rotate: 0,
-                rotateAlways: true,
-                style: { colors: '#94a3b8', fontSize: '11px', fontWeight: 500 },
-                datetimeUTC: false,
-                hideOverlappingLabels: false,
-                showDuplicates: false,
-                formatter: (val, timestamp) => {
-                    const raw = timestamp !== undefined && timestamp !== null ? timestamp : (typeof val === 'number' ? val : Date.parse(val));
-                    if (!raw || isNaN(raw)) return String(val || '');
-                    const d = new Date(raw);
-                    if (isNaN(d.getTime())) return String(val || '');
-                    if (timeframeIndex === 0) {
-                        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                    }
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                }
+                rotateAlways: false,
+                style: { colors: '#64748b', fontSize: '11px', fontWeight: 500 },
+                hideOverlappingLabels: true
             },
             axisBorder: { show: true, color: '#e2e8f0' },
             axisTicks: { show: true, color: '#cbd5e1' }
@@ -264,16 +249,11 @@ const Dashboard = () => {
             theme: 'light',
             x: {
                 formatter: (val) => {
-                    const d = new Date(val);
-                    if (isNaN(d.getTime())) return '';
-                    const month = d.getMonth() + 1;
-                    const date = d.getDate();
-                    const hours = String(d.getHours()).padStart(2, '0');
-                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    if (!val) return '';
                     if (timeframeIndex === 0) {
-                        return `${month}월 ${date}일 ${hours}:${minutes} (정각 잔고)`;
+                        return `${val} (정각 잔고)`;
                     }
-                    return `${d.getFullYear()}년 ${month}월 ${date}일 (마감 잔고)`;
+                    return `${val} (마감 잔고)`;
                 }
             },
             y: {

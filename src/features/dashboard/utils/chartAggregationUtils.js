@@ -39,16 +39,15 @@ function getBalanceBeforeOrAt(sortedHistoryAsc, targetTime, fallbackBalance) {
 /**
  * 1. [당일 (1D)] 1시간 단위 정각 스냅샷 집계
  * - 09:00(또는 장 시작/00:00)부터 현재 시각까지 매 정각(HH:00) 시점의 잔고 매핑
- * - 마지막에 현재 시각(Now)의 실시간 잔고를 연결하여 직각 스텝 렌더링
+ * - X축은 'HH:00' 형식의 정각 카테고리만 엄격히 출력
  * 
  * @param {Array} historyData - 포인트 변동 트랜잭션 이력
  * @param {number} currentBalance - 현재 실시간 가용 자산
  * @param {Date} [baseNow=new Date()] - 기준 시각 (테스트용 주입 가능)
- * @returns {Array<{x: number, y: number}>} ApexCharts 시계열 데이터 포인트 배열
+ * @returns {Array<{x: string, y: number}>} ApexCharts 카테고리 시계열 데이터 포인트 배열
  */
 export function aggregateHourlyToday(historyData, currentBalance, baseNow = new Date()) {
     const now = new Date(baseNow);
-    const nowTime = now.getTime();
     const curBal = Math.max(0, Number(currentBalance || 0));
 
     // 유효한 날짜를 가진 이력만 오름차순 정렬
@@ -69,26 +68,28 @@ export function aggregateHourlyToday(historyData, currentBalance, baseNow = new 
     const currentHour = now.getHours();
 
     const points = [];
-    let lastBalance = curBal;
 
     for (let h = startHour; h <= currentHour; h++) {
-        const hourDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 0, 0, 0);
-        const hourTime = hourDate.getTime();
+        const hourLabel = `${String(h).padStart(2, '0')}:00`;
+        const hourTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 0, 0, 0).getTime();
 
-        const balanceAtHour = getBalanceBeforeOrAt(sortedHistory, hourTime, curBal);
-        points.push({ x: hourTime, y: balanceAtHour });
-        lastBalance = balanceAtHour;
+        // 현재 진행 중인 시간대(currentHour)는 실시간 잔고(curBal)를 반영
+        // 과거 정각은 해당 정각 시점까지의 잔고를 매핑
+        const balanceAtHour = (h === currentHour)
+            ? curBal
+            : getBalanceBeforeOrAt(sortedHistory, hourTime, curBal);
+
+        points.push({ x: hourLabel, y: balanceAtHour });
     }
 
-    // 현재 시각이 정각과 차이가 난다면(분/초 존재 시) 현재 시점의 실시간 포인트 추가
-    if (now.getMinutes() > 0 || now.getSeconds() > 0) {
-        points.push({ x: nowTime, y: curBal });
-    }
-
-    // 최소 2개 포인트 보장
+    // 최소 2개 포인트 보장 (09:00 시작인데 아직 09시대인 경우 08:00 시작점 보장)
     if (points.length === 1) {
-        const prevHour = points[0].x - (60 * 60 * 1000);
-        points.unshift({ x: prevHour, y: points[0].y });
+        const h = parseInt(points[0].x.split(':')[0], 10);
+        const prevH = Math.max(0, h - 1);
+        const prevLabel = `${String(prevH).padStart(2, '0')}:00`;
+        const prevTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), prevH, 0, 0, 0).getTime();
+        const prevBal = getBalanceBeforeOrAt(sortedHistory, prevTime, points[0].y);
+        points.unshift({ x: prevLabel, y: prevBal });
     }
 
     return points;
@@ -96,15 +97,16 @@ export function aggregateHourlyToday(historyData, currentBalance, baseNow = new 
 
 /**
  * 2. [1주 / 1개월 / 3개월 / 전체] 일별 최종 마감 금액 단일화 집계
- * - 지정된 기간 내의 각 날짜(YYYY-MM-DD)마다 '그날의 마지막 트랜잭션 잔고' 1개만 추출
+ * - 지정된 기간 내의 각 날짜(YYYY-MM-DD)마다 '그날의 마지막 트랜잭션 잔고' 1개만 추출 (하루 단위)
  * - 거래가 없는 날은 직전일 마감 금액을 Forward-Fill로 승계
  * - 당일(오늘)은 현재 시점의 실시간 자산 금액 매핑
+ * - X축은 'MM/DD' 형식의 날짜 카테고리만 엄격히 출력
  * 
  * @param {Array} historyData - 포인트 변동 트랜잭션 이력
  * @param {number} daysCount - 조회 일수 (7: 1주, 30: 1개월, 90: 3개월, 0: 전체)
  * @param {number} currentBalance - 현재 실시간 가용 자산
  * @param {Date} [baseNow=new Date()] - 기준 시각 (테스트용 주입 가능)
- * @returns {Array<{x: number, y: number}>} ApexCharts 시계열 데이터 포인트 배열
+ * @returns {Array<{x: string, y: number}>} ApexCharts 카테고리 시계열 데이터 포인트 배열
  */
 export function aggregateDailyClosing(historyData, daysCount, currentBalance, baseNow = new Date()) {
     const now = new Date(baseNow);
@@ -146,22 +148,23 @@ export function aggregateDailyClosing(historyData, daysCount, currentBalance, ba
     const iterDate = new Date(startDate);
     while (iterDate <= now) {
         const year = iterDate.getFullYear();
-        const month = iterDate.getMonth();
+        const month = iterDate.getMonth() + 1;
         const day = iterDate.getDate();
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const isToday = (dateKey === todayDateStr);
 
+        // 전체(ALL) 조회 시 시작 연도와 올해가 다르면 연도 구분 추가 (YY/MM/DD), 기본은 MM/DD
+        const label = (daysCount === 0 && startDate.getFullYear() !== now.getFullYear())
+            ? `${String(year).slice(-2)}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
+            : `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+
         if (isToday) {
-            // 오늘은 장 마감 전이므로 현재 시각의 실시간 잔고를 사용
-            dailyPoints.push({ x: now.getTime(), y: curBal });
+            dailyPoints.push({ x: label, y: curBal });
         } else {
             // 해당 날짜의 23:59:59.999 시점 잔고를 당일 최종 마감 금액으로 산출
-            const dayEndTime = new Date(year, month, day, 23, 59, 59, 999).getTime();
+            const dayEndTime = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
             const dayBalance = getBalanceBeforeOrAt(sortedHistory, dayEndTime, runningBalance);
-            
-            // X축 좌표는 해당 일자의 12:00:00(정오) 또는 23:59:59로 안정적 앵커링
-            const anchorTime = new Date(year, month, day, 12, 0, 0, 0).getTime();
-            dailyPoints.push({ x: anchorTime, y: dayBalance });
+            dailyPoints.push({ x: label, y: dayBalance });
             runningBalance = dayBalance;
         }
 
@@ -171,8 +174,11 @@ export function aggregateDailyClosing(historyData, daysCount, currentBalance, ba
 
     // 최소 2개 포인트 보장
     if (dailyPoints.length === 1) {
-        const prevDay = dailyPoints[0].x - (24 * 60 * 60 * 1000);
-        dailyPoints.unshift({ x: prevDay, y: dailyPoints[0].y });
+        const prevDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const prevDay = String(prevDate.getDate()).padStart(2, '0');
+        const prevLabel = `${prevMonth}/${prevDay}`;
+        dailyPoints.unshift({ x: prevLabel, y: dailyPoints[0].y });
     }
 
     return dailyPoints;
