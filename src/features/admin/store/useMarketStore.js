@@ -151,6 +151,54 @@ const useMarketStore = create((set, get) => ({
         }
     },
 
+    updateMarketSettings: async (newSettings) => {
+        try {
+            set({ isLoading: true });
+            if (isSupabaseMode) {
+                const { data, error } = await supabase.rpc('admin_update_market_settings', {
+                    p_mode: newSettings.mode || 'AUTO',
+                    p_open_time: newSettings.openTime || '09:00',
+                    p_close_time: newSettings.closeTime || '15:30',
+                    p_call_auction_start_time: newSettings.callAuctionStartTime || '15:20'
+                });
+                if (error) throw new Error(error.message || '시장 설정 저장 실패');
+                if (data) {
+                    const computed = calculateMarketStatus(data);
+                    set({
+                        marketOpen: computed.marketOpen,
+                        mode: data.mode,
+                        openTime: data.openTime,
+                        closeTime: data.closeTime,
+                        callAuctionStartTime: data.callAuctionStartTime || '15:20',
+                        statusCode: computed.statusCode,
+                        isLoading: false
+                    });
+                    return data;
+                }
+            } else {
+                const res = await api.put('/admin/market/settings', newSettings);
+                const data = res.data?.data;
+                if (data) {
+                    const computed = calculateMarketStatus(data);
+                    set({
+                        marketOpen: computed.marketOpen,
+                        mode: data.mode,
+                        openTime: data.openTime,
+                        closeTime: data.closeTime,
+                        callAuctionStartTime: data.callAuctionStartTime || '15:20',
+                        statusCode: computed.statusCode,
+                        isLoading: false
+                    });
+                    return data;
+                }
+            }
+            set({ isLoading: false });
+        } catch (err) {
+            console.error('Failed to update market settings in store:', err);
+            set({ isLoading: false });
+            throw err;
+        }
+    },
     subscribeMarketEvents: () => {
         if (!periodicTimer) {
             // 30초 주기 AUTO 모드 시간 자동 갱신 (09:00, 15:20, 15:30 실시간 무인 전환)
@@ -178,12 +226,11 @@ const useMarketStore = create((set, get) => ({
                 {
                     event: 'UPDATE',
                     schema: 'public',
-                    table: 'market_settings',
-                    filter: 'id=eq.1'
+                    table: 'market_settings'
                 },
                 (payload) => {
                     const row = payload.new;
-                    if (row) {
+                    if (row && (row.id === 1 || row.id === '1')) {
                         const computed = calculateMarketStatus(row);
                         set({
                             marketOpen: computed.marketOpen,
