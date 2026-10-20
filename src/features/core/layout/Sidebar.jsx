@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck, Trophy, Ticket, Zap } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Newspaper, Wallet, Store, LogOut, ShieldCheck, Trophy, Ticket, Zap, RotateCcw } from 'lucide-react';
 import { isSupabaseMode, supabase } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
 import useMarketStore from '../../admin/store/useMarketStore';
@@ -14,6 +14,7 @@ const Sidebar = () => {
     const logout = useAuthStore((state) => state.logout);
     const fetchMe = useAuthStore((state) => state.fetchMe);
     const rechargeDemoPoints = useAuthStore((state) => state.rechargeDemoPoints);
+    const resetDemoAccount = useAuthStore((state) => state.resetDemoAccount);
     const updateUserProfile = useAuthStore((state) => state.updateUserProfile);
 
     const marketOpen = useMarketStore((state) => state.marketOpen);
@@ -23,6 +24,7 @@ const Sidebar = () => {
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
 
     const [isRecharging, setIsRecharging] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [rechargeNotice, setRechargeNotice] = useState(null);
     const [isPointFlashing, setIsPointFlashing] = useState(false);
     const prevPointRef = useRef(user?.totalPoint);
@@ -77,17 +79,38 @@ const Sidebar = () => {
         navigate('/login');
     };
 
+    const handleResetDemo = async () => {
+        if (isResetting || isRecharging) return;
+        setIsResetting(true);
+        setRechargeNotice(null);
+        try {
+            const result = await resetDemoAccount();
+            if (result.success) {
+                setRechargeNotice({ type: 'success', text: '🔄 1,000,000 P 클린 리셋 완료!' });
+                setTimeout(() => {
+                    setRechargeNotice(null);
+                }, 3500);
+            } else {
+                setRechargeNotice({ type: 'error', text: result.message || '리셋 실패' });
+            }
+        } catch (err) {
+            setRechargeNotice({ type: 'error', text: '리셋 중 오류 발생' });
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
     const handleRechargeDemo = async () => {
-        if (isRecharging) return;
+        if (isRecharging || isResetting) return;
         setIsRecharging(true);
         setRechargeNotice(null);
         try {
             const result = await rechargeDemoPoints(1000000);
             if (result.success) {
-                setRechargeNotice({ type: 'success', text: '⚡ +1,000,000 P 충전 완료!' });
+                setRechargeNotice({ type: 'success', text: '⚡ +1,000,000 P 추가 충전 완료!' });
                 setTimeout(() => {
                     setRechargeNotice(null);
-                }, 3000);
+                }, 3500);
             } else {
                 setRechargeNotice({ type: 'error', text: result.message || '충전 실패' });
             }
@@ -131,13 +154,23 @@ const Sidebar = () => {
                     <div className="demo-recharge-box">
                         <button
                             type="button"
+                            className="btn-reset-demo"
+                            onClick={handleResetDemo}
+                            disabled={isResetting || isRecharging}
+                            title="보유 주식/미체결 호가를 소거하고 100만 P로 완전 복구합니다"
+                        >
+                            <RotateCcw size={14} className={isResetting ? 'spin-icon' : ''} />
+                            <span>{isResetting ? '초기화 중...' : '100만 P 클린 초기화'}</span>
+                        </button>
+                        <button
+                            type="button"
                             className="btn-recharge-demo"
                             onClick={handleRechargeDemo}
-                            disabled={isRecharging}
-                            title="체험용 포인트를 100만 P 즉시 충전합니다"
+                            disabled={isResetting || isRecharging}
+                            title="체험용 포인트를 100만 P 즉시 추가 충전합니다"
                         >
                             <Zap size={14} className={isRecharging ? 'spin-icon' : ''} />
-                            <span>{isRecharging ? '충전 중...' : '+100만 P 원터치 충전'}</span>
+                            <span>{isRecharging ? '충전 중...' : '+100만 P 추가 충전'}</span>
                         </button>
                         {rechargeNotice && (
                             <div className={`recharge-notice ${rechargeNotice.type}`}>

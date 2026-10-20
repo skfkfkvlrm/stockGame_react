@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Activity, RotateCcw, Zap } from 'lucide-react';
 import api from '../../../api/axios';
 import assetService from '../../../services/assetService';
 import { supabase, isSupabaseMode } from '../../../lib/supabaseClient';
@@ -45,12 +45,16 @@ const calculateProfit = (avg, current, amount) => {
 
 const Dashboard = () => {
     const user = useAuthStore((state) => state.user);
+    const resetDemoAccount = useAuthStore((state) => state.resetDemoAccount);
+    const rechargeDemoPoints = useAuthStore((state) => state.rechargeDemoPoints);
     const [assetData, setAssetData] = useState(null);
     const [historyData, setHistoryData] = useState([]);
     const [historyFilter, setHistoryFilter] = useState('1M'); // '1W' | '1M' | '3M' | 'ALL'
     const [activeModalTab, setActiveModalTab] = useState(null); // 'COMPARE' | 'PROFIT' | null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isActionPending, setIsActionPending] = useState(false);
+    const [demoNotice, setDemoNotice] = useState(null);
     
     // 자산 추이 기간 게이지 스텝 정의 (0: 오늘/실시간 ~ 4: 전체/가입이래)
     const TIMEFRAME_STEPS = [
@@ -357,12 +361,99 @@ const Dashboard = () => {
 
     const profitBreakdown = computeProfitBreakdown();
 
+    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter');
+
+    const handleResetDemo = async () => {
+        if (isActionPending) return;
+        setIsActionPending(true);
+        setDemoNotice(null);
+        try {
+            const res = await resetDemoAccount();
+            if (res.success) {
+                setDemoNotice({
+                    type: 'success',
+                    text: '🔄 데모 계정 자산이 100만 P 초기 상태로 완벽히 리셋되었습니다. (보유 주식/미체결 주문 정리 완료)'
+                });
+                setTimeout(() => setDemoNotice(null), 4000);
+            } else {
+                setDemoNotice({ type: 'error', text: res.message || '초기화 실패' });
+            }
+        } catch (err) {
+            setDemoNotice({ type: 'error', text: '초기화 중 오류가 발생했습니다.' });
+        } finally {
+            setIsActionPending(false);
+        }
+    };
+
+    const handleRechargeDemo = async () => {
+        if (isActionPending) return;
+        setIsActionPending(true);
+        setDemoNotice(null);
+        try {
+            const res = await rechargeDemoPoints(1000000);
+            if (res.success) {
+                setDemoNotice({
+                    type: 'success',
+                    text: `⚡ 1,000,000 P가 추가 충전되었습니다! (현재 잔액: ${res.totalPoint.toLocaleString()} P)`
+                });
+                setTimeout(() => setDemoNotice(null), 4000);
+            } else {
+                setDemoNotice({ type: 'error', text: res.message || '충전 실패' });
+            }
+        } catch (err) {
+            setDemoNotice({ type: 'error', text: '충전 중 오류가 발생했습니다.' });
+        } finally {
+            setIsActionPending(false);
+        }
+    };
+
     return (
         <div className="dashboard-container">
             <header className="page-header">
                 <h1 className="page-title">내 자산 대시보드</h1>
                 <p className="page-subtitle">보유 중인 주식 포트폴리오와 자산 현황을 한눈에 확인하세요.</p>
             </header>
+
+            {isDemoUser && (
+                <div className="demo-control-banner glass-panel">
+                    <div className="demo-banner-left">
+                        <div className="demo-banner-badge-group">
+                            <span className="demo-badge-tag">🎮 채용담당자 데모 체험 모드</span>
+                            <span className="demo-seed-indicator">기본 시드머니: <strong>1,000,000 P</strong></span>
+                        </div>
+                        <p className="demo-banner-desc">
+                            체험 및 매매 테스트 후 언제든 초기 상태(100만 P, 클린 잔고, 미체결 호가 소거)로 되돌릴 수 있습니다.
+                        </p>
+                    </div>
+                    <div className="demo-banner-actions">
+                        <button
+                            type="button"
+                            className="btn-demo-action reset"
+                            onClick={handleResetDemo}
+                            disabled={isActionPending}
+                            title="보유 주식과 미체결 주문을 취소/소거하고 100만 P로 완전 복구합니다."
+                        >
+                            <RotateCcw size={15} className={isActionPending ? 'spin-icon' : ''} />
+                            <span>{isActionPending ? '초기화 중...' : '100만 P 클린 초기화'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-demo-action recharge"
+                            onClick={handleRechargeDemo}
+                            disabled={isActionPending}
+                            title="현재 상태에서 100만 P를 즉시 추가 충전합니다."
+                        >
+                            <Zap size={15} className={isActionPending ? 'spin-icon' : ''} />
+                            <span>+100만 P 원터치 충전</span>
+                        </button>
+                    </div>
+                    {demoNotice && (
+                        <div className={`demo-banner-notice ${demoNotice.type}`}>
+                            {demoNotice.text}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="summary-cards">
                 <div className="glass-panel stat-card">

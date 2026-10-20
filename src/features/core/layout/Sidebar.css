@@ -140,6 +140,37 @@
     gap: 6px;
 }
 
+.btn-reset-demo {
+    width: 100%;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+    color: #FFFFFF;
+    border-radius: var(--border-radius-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(109, 40, 217, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-reset-demo:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(109, 40, 217, 0.35);
+}
+
+.btn-reset-demo:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-reset-demo:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btn-recharge-demo {
     width: 100%;
     padding: 7px 10px;
