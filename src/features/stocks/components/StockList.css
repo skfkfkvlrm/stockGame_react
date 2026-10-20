@@ -830,3 +830,22 @@
     line-height: 1.4;
 }
 
+
+/* ── Realtime Stock Price Flash Animation ── */
+@keyframes row-flash-up {
+    0% { background-color: rgba(239, 68, 68, 0.22); }
+    100% { background-color: transparent; }
+}
+
+@keyframes row-flash-down {
+    0% { background-color: rgba(59, 130, 246, 0.22); }
+    100% { background-color: transparent; }
+}
+
+.stock-row.row-flash-up td {
+    animation: row-flash-up 1.2s ease-out;
+}
+
+.stock-row.row-flash-down td {
+    animation: row-flash-down 1.2s ease-out;
+}

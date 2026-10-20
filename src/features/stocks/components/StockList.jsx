@@ -35,6 +35,7 @@ const StockList = () => {
     const [selectedSectors, setSelectedSectors] = useState(['전체']);
     const [sortOption, setSortOption] = useState('NONE'); // 'ASC', 'DESC', 'VOLUME', 'NONE'
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [flashStatus, setFlashStatus] = useState({}); // { [stockId]: 'UP' | 'DOWN' }
     const filterRef = React.useRef(null);
 
     useEffect(() => {
@@ -112,20 +113,95 @@ const StockList = () => {
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'stocks' },
                     (payload) => {
+                        const updated = payload.new;
                         setStocks(prev => prev.map(s => {
-                            if (s.id === payload.new.id) {
+                            if (s.id === updated.id || s.stockId === updated.id) {
+                                const oldPrice = s.nowPrice ?? s.price ?? 0;
+                                const newPrice = updated.current_price ?? 0;
+
+                                if (newPrice !== oldPrice && newPrice > 0 && oldPrice > 0) {
+                                    const dir = newPrice > oldPrice ? 'UP' : 'DOWN';
+                                    setFlashStatus(f => ({ ...f, [updated.id]: dir }));
+                                    setTimeout(() => {
+                                        setFlashStatus(f => {
+                                            const copy = { ...f };
+                                            delete copy[updated.id];
+                                            return copy;
+                                        });
+                                    }, 1200);
+                                }
+
                                 return {
                                     ...s,
-                                    nowPrice: payload.new.current_price,
-                                    price: payload.new.current_price,
-                                    prevPrice: payload.new.prev_price,
-                                    pubAmount: payload.new.publication_balance,
-                                    status: payload.new.status,
-                                    marketStatus: payload.new.market_status
+                                    nowPrice: updated.current_price,
+                                    price: updated.current_price,
+                                    prevPrice: updated.prev_price,
+                                    pubAmount: updated.publication_balance,
+                                    highLimitPrice: updated.high_limit_price,
+                                    lowLimitPrice: updated.low_limit_price,
+                                    status: updated.status,
+                                    marketStatus: updated.market_status,
+                                    name: updated.name || s.name,
+                                    stockName: updated.name || s.stockName
                                 };
                             }
                             return s;
                         }));
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'stocks' },
+                    (payload) => {
+                        const newStock = payload.new;
+                        if (newStock.status !== 'DELISTED') {
+                            setStocks(prev => {
+                                if (prev.some(s => s.id === newStock.id)) return prev;
+                                return [...prev, {
+                                    id: newStock.id,
+                                    stockId: newStock.id,
+                                    name: newStock.name,
+                                    stockName: newStock.name,
+                                    content: newStock.content || '',
+                                    nowPrice: newStock.current_price,
+                                    price: newStock.current_price,
+                                    prevPrice: newStock.prev_price,
+                                    pubPrice: newStock.publication_price,
+                                    pubAmount: newStock.publication_balance,
+                                    tradeVolume: 0,
+                                    highLimitPrice: newStock.high_limit_price,
+                                    lowLimitPrice: newStock.low_limit_price,
+                                    marketStatus: newStock.market_status,
+                                    status: newStock.status,
+                                    createdAt: newStock.created_at
+                                }];
+                            });
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'DELETE', schema: 'public', table: 'stocks' },
+                    (payload) => {
+                        setStocks(prev => prev.filter(s => s.id !== payload.old.id && s.stockId !== payload.old.id));
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'order_trades' },
+                    (payload) => {
+                        const trade = payload.new;
+                        if (trade && trade.stock_id && trade.amount) {
+                            setStocks(prev => prev.map(s => {
+                                if (s.id === trade.stock_id || s.stockId === trade.stock_id) {
+                                    return {
+                                        ...s,
+                                        tradeVolume: (s.tradeVolume || 0) + (trade.amount || 0)
+                                    };
+                                }
+                                return s;
+                            }));
+                        }
                     }
                 )
                 .subscribe();
@@ -462,7 +538,7 @@ const StockList = () => {
                                 const sign = isUp ? '+' : '';
 
                                 return (
-                                    <tr key={stockId} onClick={() => navigate(`/stocks/${stockId}`)}>
+                                    <tr key={stockId} className={`stock-row ${flashStatus[stockId] === 'UP' ? 'row-flash-up' : flashStatus[stockId] === 'DOWN' ? 'row-flash-down' : ''}`} onClick={() => navigate(`/stocks/${stockId}`)}>
                                         <td>
                                             <div className="stock-info">
                                                 <div className="stock-icon-small">{name.charAt(0)}</div>

@@ -113,6 +113,16 @@ const Dashboard = () => {
                     { event: '*', schema: 'public', table: 'user_holdings', filter: `user_id=eq.${user.id}` },
                     () => fetchDashboard()
                 )
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'stocks' },
+                    () => fetchDashboard()
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'order_trades' },
+                    () => fetchDashboard()
+                )
                 .subscribe();
 
             unsubscribe = () => {
