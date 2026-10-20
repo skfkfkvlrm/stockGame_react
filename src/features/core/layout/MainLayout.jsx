@@ -4,7 +4,6 @@ import Sidebar from './Sidebar';
 import { ToastContainer } from 'react-toastify';
 import MarketCircuitBreakerBanner from '../components/MarketCircuitBreakerBanner';
 import useMarketStore from '../../admin/store/useMarketStore';
-import newsService from '../../../services/newsService';
 import './MainLayout.css'; // 공통 레이아웃 스타일용
 
 const MainLayout = () => {
@@ -15,10 +14,8 @@ const MainLayout = () => {
     useEffect(() => {
         fetchMarketStatus();
         subscribeMarketEvents();
-        const stopAutoNews = newsService.startAutoNewsScheduler(180000); // 3분 주기 자동 뉴스 발행
         return () => {
             unsubscribeMarketEvents();
-            if (typeof stopAutoNews === 'function') stopAutoNews();
         };
     }, [fetchMarketStatus, subscribeMarketEvents, unsubscribeMarketEvents]);
 
