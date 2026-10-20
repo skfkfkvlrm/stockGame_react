@@ -91,10 +91,10 @@ const Sidebar = () => {
                     setRechargeNotice(null);
                 }, 3500);
             } else {
-                setRechargeNotice({ type: 'error', text: result.message || '리셋 실패' });
+                setRechargeNotice({ type: 'error', text: result.message || '초기화 실패' });
             }
         } catch (err) {
-            setRechargeNotice({ type: 'error', text: '리셋 중 오류 발생' });
+            setRechargeNotice({ type: 'error', text: '초기화 중 오류 발생' });
         } finally {
             setIsResetting(false);
         }

@@ -372,7 +372,7 @@ const Dashboard = () => {
             if (res.success) {
                 setDemoNotice({
                     type: 'success',
-                    text: '🔄 데모 계정 자산이 100만 P 초기 상태로 완벽히 리셋되었습니다. (보유 주식/미체결 주문 정리 완료)'
+                    text: '🔄 데모 계정 자산이 100만 P 초기 상태로 변경되었습니다. (보유 주식/미체결 주문 정리 완료)'
                 });
                 setTimeout(() => setDemoNotice(null), 4000);
             } else {
