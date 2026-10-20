@@ -589,16 +589,31 @@ const Dashboard = () => {
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="history-table-wrapper">
-                                            <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
-                                                <thead>
-                                                    <tr>
-                                                        <th style={{ width: '35%' }}>일시</th>
-                                                        <th style={{ width: '40%' }}>사유</th>
-                                                        <th style={{ width: '25%', textAlign: 'right' }}>변동 포인트</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
+                                        <div className="history-table-card">
+                                            <div className="history-table-header-wrapper">
+                                                <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
+                                                    <colgroup>
+                                                        <col style={{ width: '35%' }} />
+                                                        <col style={{ width: '40%' }} />
+                                                        <col style={{ width: '25%' }} />
+                                                    </colgroup>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>일시</th>
+                                                            <th>사유</th>
+                                                            <th style={{ textAlign: 'right' }}>변동 포인트</th>
+                                                        </tr>
+                                                    </thead>
+                                                </table>
+                                            </div>
+                                            <div className="history-table-body-scroll">
+                                                <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
+                                                    <colgroup>
+                                                        <col style={{ width: '35%' }} />
+                                                        <col style={{ width: '40%' }} />
+                                                        <col style={{ width: '25%' }} />
+                                                    </colgroup>
+                                                    <tbody>
                                                     {displayedHistory.length === 0 ? (
                                                         <tr>
                                                             <td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
@@ -621,7 +636,8 @@ const Dashboard = () => {
                                                         ))
                                                     )}
                                                 </tbody>
-                                            </table>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -646,19 +662,40 @@ const Dashboard = () => {
                                     </div>
                                     <div className="modal-history-list-section">
                                         <h3>보유 종목별 손익 기여도 현황</h3>
-                                        <div className="history-table-wrapper">
-                                            <table className="modal-history-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>종목명</th>
-                                                        <th>보유 수량</th>
-                                                        <th>매수 평균가</th>
-                                                        <th>현재가</th>
-                                                        <th>평가 손익</th>
-                                                        <th>수익률</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
+                                        <div className="history-table-card">
+                                            <div className="history-table-header-wrapper">
+                                                <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
+                                                    <colgroup>
+                                                        <col style={{ width: '22%' }} />
+                                                        <col style={{ width: '15%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '15%' }} />
+                                                    </colgroup>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>종목명</th>
+                                                            <th>보유 수량</th>
+                                                            <th>매수 평균가</th>
+                                                            <th>현재가</th>
+                                                            <th>평가 손익</th>
+                                                            <th>수익률</th>
+                                                        </tr>
+                                                    </thead>
+                                                </table>
+                                            </div>
+                                            <div className="history-table-body-scroll">
+                                                <table className="modal-history-table" style={{ tableLayout: 'fixed' }}>
+                                                    <colgroup>
+                                                        <col style={{ width: '22%' }} />
+                                                        <col style={{ width: '15%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '16%' }} />
+                                                        <col style={{ width: '15%' }} />
+                                                    </colgroup>
+                                                    <tbody>
                                                     {profitBreakdown.unrealizedList.length === 0 ? (
                                                         <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>보유 중인 주식이 없습니다.</td></tr>
                                                     ) : (
@@ -674,7 +711,8 @@ const Dashboard = () => {
                                                         ))
                                                     )}
                                                 </tbody>
-                                            </table>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -686,10 +724,44 @@ const Dashboard = () => {
 
             <div className="portfolio-section glass-panel">
                 <div className="section-header"><h2>보유 주식 목록</h2></div>
-                <div className="table-responsive">
-                    <table className="portfolio-table">
-                        <thead><tr><th>종목명</th><th>보유 수량</th><th>매수 평균가</th><th>총 구매 금액</th><th>현재가</th><th>평가 손익</th><th>수익률</th></tr></thead>
-                        <tbody>
+                <div className="portfolio-table-card">
+                    <div className="portfolio-table-horizontal-scroll">
+                        <div className="portfolio-table-header-wrapper">
+                            <table className="portfolio-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '18%' }} />
+                                    <col style={{ width: '12%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '16%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '12%' }} />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>종목명</th>
+                                        <th>보유 수량</th>
+                                        <th>매수 평균가</th>
+                                        <th>총 구매 금액</th>
+                                        <th>현재가</th>
+                                        <th>평가 손익</th>
+                                        <th>수익률</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+                        <div className="portfolio-table-body-scroll">
+                            <table className="portfolio-table" style={{ tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '18%' }} />
+                                    <col style={{ width: '12%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '16%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '12%' }} />
+                                </colgroup>
+                                <tbody>
                             {portfolio.length === 0 ? (
                                 <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>보유 중인 주식이 없습니다.</td></tr>
                             ) : (
@@ -716,7 +788,9 @@ const Dashboard = () => {
                                 })
                             )}
                         </tbody>
-                    </table>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -109,49 +109,71 @@ const RankingList = () => {
                 {loading ? (
                     <div className="loading-box"><div className="loading-spinner"></div></div>
                 ) : (
-                    <div className="table-responsive">
-                        <table className="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>순위</th>
-                                    <th>학생 정보</th>
-                                    <th>학번</th>
-                                    <th>학년 / 반 / 번호</th>
-                                    <th>총 보유 포인트</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredRankings.length > 0 ? (
-                                    filteredRankings.map((user) => {
-                                        const isMe = currentUser?.studentId === user.studentId;
-                                        return (
-                                            <tr key={user.studentId} className={isMe ? 'my-row' : ''}>
-                                                <td className="rank-cell">
-                                                    {user.rank === 1 && <span className="rank-tag gold-tag">🥇 1위</span>}
-                                                    {user.rank === 2 && <span className="rank-tag silver-tag">🥈 2위</span>}
-                                                    {user.rank === 3 && <span className="rank-tag bronze-tag">🥉 3위</span>}
-                                                    {user.rank > 3 && <span className="rank-number-tag">{user.rank}위</span>}
-                                                </td>
-                                                <td>
-                                                    <div className="user-name-box">
-                                                        <div className="avatar-mini">{user.name ? user.name.charAt(0) : 'U'}</div>
-                                                        <span className="user-name-text">{user.name}</span>
-                                                        {isMe && <span className="me-badge">나</span>}
-                                                    </div>
-                                                </td>
-                                                <td className="font-mono">{user.studentId}</td>
-                                                <td>{user.grade}학년 {user.className}반 {user.classNumber}번</td>
-                                                <td className="point-text">{user.totalPoint ? user.totalPoint.toLocaleString() : 0} P</td>
+                    <div className="ranking-table-card">
+                        <div className="ranking-table-horizontal-scroll">
+                            <div className="ranking-table-header-wrapper">
+                                <table className="leaderboard-table" style={{ tableLayout: 'fixed' }}>
+                                    <colgroup>
+                                        <col style={{ width: '14%' }} />
+                                        <col style={{ width: '26%' }} />
+                                        <col style={{ width: '18%' }} />
+                                        <col style={{ width: '22%' }} />
+                                        <col style={{ width: '20%' }} />
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>순위</th>
+                                            <th>학생 정보</th>
+                                            <th>학번</th>
+                                            <th>학년 / 반 / 번호</th>
+                                            <th>총 보유 포인트</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div className="ranking-table-body-scroll">
+                                <table className="leaderboard-table" style={{ tableLayout: 'fixed' }}>
+                                    <colgroup>
+                                        <col style={{ width: '14%' }} />
+                                        <col style={{ width: '26%' }} />
+                                        <col style={{ width: '18%' }} />
+                                        <col style={{ width: '22%' }} />
+                                        <col style={{ width: '20%' }} />
+                                    </colgroup>
+                                    <tbody>
+                                        {filteredRankings.length > 0 ? (
+                                            filteredRankings.map((user) => {
+                                                const isMe = currentUser?.studentId === user.studentId;
+                                                return (
+                                                    <tr key={user.studentId} className={isMe ? 'my-row' : ''}>
+                                                        <td className="rank-cell">
+                                                            {user.rank === 1 && <span className="rank-tag gold-tag">🥇 1위</span>}
+                                                            {user.rank === 2 && <span className="rank-tag silver-tag">🥈 2위</span>}
+                                                            {user.rank === 3 && <span className="rank-tag bronze-tag">🥉 3위</span>}
+                                                            {user.rank > 3 && <span className="rank-number-tag">{user.rank}위</span>}
+                                                        </td>
+                                                        <td>
+                                                            <div className="user-name-box">
+                                                                <div className="avatar-mini">{user.name ? user.name.charAt(0) : 'U'}</div>
+                                                                <span className="user-name-text">{user.name}</span>
+                                                                {isMe && <span className="me-badge">나</span>}
+                                                            </div>
+                                                        </td>
+                                                        <td className="font-mono">{user.studentId}</td>
+                                                        <td>{user.grade}학년 {user.className}반 {user.classNumber}번</td>
+                                                        <td className="point-text">{user.totalPoint ? user.totalPoint.toLocaleString() : 0} P</td>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="5" className="empty-cell">검색된 랭킹 정보가 없습니다.</td>
                                             </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan="5" className="empty-cell">검색된 랭킹 정보가 없습니다.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

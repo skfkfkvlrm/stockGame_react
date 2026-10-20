@@ -10,6 +10,7 @@
     max-height: 720px;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     border-radius: var(--border-radius-lg);
     position: relative;
 }
