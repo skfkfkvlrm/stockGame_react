@@ -1,11 +1,12 @@
 .ranking-container {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    gap: 1.25rem;
+    padding: 0;
     max-width: 1200px;
     margin: 0 auto;
     width: 100%;
+    animation: fadeIn 0.4s ease-out;
 }
 
 .ranking-header {
@@ -164,7 +165,7 @@
 /* Ranking Table */
 .ranking-table-section {
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
     background: #ffffff;
     border: 1px solid var(--bg-panel-border, rgba(0,0,0,0.08));
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
@@ -206,11 +207,13 @@
 
 .table-responsive {
     overflow-x: auto;
-    max-height: 580px;
+    max-height: min(390px, calc(100vh - 470px));
+    min-height: 280px;
     overflow-y: auto;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     position: relative;
+    scrollbar-gutter: stable;
 }
 
 /* Custom Scrollbar for Ranking Table */
@@ -226,7 +229,7 @@
     border-radius: 4px;
 }
 .table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #6366f1;
+    background: var(--accent-primary, #6366f1);
 }
 
 .leaderboard-table {
