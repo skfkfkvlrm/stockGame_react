@@ -111,6 +111,31 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    resetDemoAccount: async () => {
+        try {
+            const res = await authService.resetDemoAccount();
+            set((state) => ({
+                user: state.user
+                    ? {
+                        ...state.user,
+                        totalPoint: res.totalPoint,
+                        totalCoupon: 0
+                    }
+                    : state.user
+            }));
+            return {
+                success: true,
+                totalPoint: res.totalPoint,
+                clearedOrders: res.clearedOrders,
+                clearedStocks: res.clearedStocks,
+                clearedCoupons: res.clearedCoupons
+            };
+        } catch (error) {
+            const msg = error.message || '데모 계정 초기화에 실패했습니다.';
+            return { success: false, message: msg };
+        }
+    },
+
     logout: async () => {
         set({ isLoading: true });
         try {

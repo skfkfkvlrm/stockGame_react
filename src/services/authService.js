@@ -178,7 +178,7 @@ export const authService = {
     },
 
     /**
-     * 채용담당자 전용 1클릭 학생 데모 로그인 (3단계 자가 치유 지원)
+     * 채용담당자 전용 1클릭 학생 데모 로그인 (로그인 시 100만 P 자동 리셋 & 3단계 자가 치유 지원)
      */
     async loginAsDemo() {
         let user;
@@ -200,21 +200,67 @@ export const authService = {
             }
         }
 
-        if (user && Number(user.totalPoint ?? 0) < 100000) {
+        // 데모 계정 자동 초기화 (언제나 깨끗한 100만 P, 0 보유주식, 0 미체결 주문 보장)
+        if (user) {
             try {
-                const rechargeRes = await this.rechargeDemoPoints(1000000);
-                if (rechargeRes?.totalPoint !== undefined) {
+                const resetRes = await this.resetDemoAccount();
+                if (resetRes?.totalPoint !== undefined) {
                     user = {
                         ...user,
-                        totalPoint: rechargeRes.totalPoint
+                        totalPoint: resetRes.totalPoint,
+                        totalCoupon: 0
                     };
                 }
-            } catch (rechargeErr) {
-                console.warn('Demo auto top-up skipped:', rechargeErr?.message || rechargeErr);
+            } catch (resetErr) {
+                console.warn('Demo auto reset warning:', resetErr?.message || resetErr);
+                // RPC 실패 시 비상 보정: 잔액이 부족하면 기존 rechargeFallback 시도
+                if (Number(user.totalPoint ?? 0) < 100000) {
+                    try {
+                        const rechargeRes = await this.rechargeDemoPoints(1000000);
+                        if (rechargeRes?.totalPoint !== undefined) {
+                            user = {
+                                ...user,
+                                totalPoint: rechargeRes.totalPoint
+                            };
+                        }
+                    } catch (rechargeErr) {
+                        console.warn('Demo auto top-up fallback skipped:', rechargeErr?.message || rechargeErr);
+                    }
+                }
             }
         }
 
         return user;
+    },
+
+    /**
+     * 데모 계정 데이터 완전 초기화 (예수금 100만 P, 보유 주식/미체결 주문/쿠폰 0건 복구)
+     */
+    async resetDemoAccount() {
+        if (isSupabaseMode) {
+            const { data, error } = await supabase.rpc('reset_demo_account');
+            if (error) {
+                throw new Error(error.message || '데모 계정 초기화에 실패했습니다.');
+            }
+            return {
+                success: true,
+                totalPoint: Number(data?.totalPoint ?? 1000000),
+                clearedOrders: Number(data?.clearedOrders ?? 0),
+                clearedStocks: Number(data?.clearedStocks ?? 0),
+                clearedCoupons: Number(data?.clearedCoupons ?? 0),
+                resetAt: data?.resetAt || new Date().toISOString()
+            };
+        }
+
+        const currentUser = await this.getCurrentUser();
+        return {
+            success: true,
+            totalPoint: 1000000,
+            clearedOrders: 0,
+            clearedStocks: 0,
+            clearedCoupons: 0,
+            resetAt: new Date().toISOString()
+        };
     },
 
     /**
