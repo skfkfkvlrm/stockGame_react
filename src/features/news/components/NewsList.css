@@ -123,13 +123,38 @@
     color: var(--accent-primary);
 }
 
-/* News Filter Controls (Dashboard Style) */
+/* News Header Top Row & Layout */
+.news-header-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    width: 100%;
+}
+
+.news-title-area {
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+}
+
+.news-title-with-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* News Filter Controls (Right Aligned) */
 .news-filter-controls {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    margin-left: auto;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .news-filter-tabs {

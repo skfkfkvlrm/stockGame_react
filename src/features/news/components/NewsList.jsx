@@ -267,10 +267,10 @@ const NewsList = () => {
 
     return (
         <div className="news-list-container">
-            <header className="page-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <header className="page-header news-page-header">
+                <div className="news-header-top-row">
+                    <div className="news-title-area">
+                        <div className="news-title-with-btn">
                             <h1 className="page-title" style={{ margin: 0 }}>시장 뉴스</h1>
                             <button
                                 type="button"
