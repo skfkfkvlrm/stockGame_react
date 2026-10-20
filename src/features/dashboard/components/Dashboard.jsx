@@ -422,7 +422,7 @@ const Dashboard = () => {
                             <span className="demo-seed-indicator">기본 시드머니: <strong>1,000,000 P</strong></span>
                         </div>
                         <p className="demo-banner-desc">
-                            체험 및 매매 테스트 후 언제든 초기 상태(100만 P, 클린 잔고, 미체결 호가 소거)로 되돌릴 수 있습니다.
+                            체험 및 매매 테스트 후 언제든 초기 상태(100만 P, 잔고 초기화, 미체결 호가 소거)로 되돌릴 수 있습니다.
                         </p>
                     </div>
                     <div className="demo-banner-actions">
@@ -434,7 +434,7 @@ const Dashboard = () => {
                             title="보유 주식과 미체결 주문을 취소/소거하고 100만 P로 완전 복구합니다."
                         >
                             <RotateCcw size={15} className={isActionPending ? 'spin-icon' : ''} />
-                            <span>{isActionPending ? '초기화 중...' : '100만 P 클린 초기화'}</span>
+                            <span>{isActionPending ? '초기화 중...' : '100만 P 초기화'}</span>
                         </button>
                         <button
                             type="button"

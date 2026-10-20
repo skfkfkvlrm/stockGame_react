@@ -86,7 +86,7 @@ const Sidebar = () => {
         try {
             const result = await resetDemoAccount();
             if (result.success) {
-                setRechargeNotice({ type: 'success', text: '🔄 1,000,000 P 클린 리셋 완료!' });
+                setRechargeNotice({ type: 'success', text: '🔄 1,000,000 P 초기화 완료!' });
                 setTimeout(() => {
                     setRechargeNotice(null);
                 }, 3500);
@@ -160,7 +160,7 @@ const Sidebar = () => {
                             title="보유 주식/미체결 호가를 소거하고 100만 P로 완전 복구합니다"
                         >
                             <RotateCcw size={14} className={isResetting ? 'spin-icon' : ''} />
-                            <span>{isResetting ? '초기화 중...' : '100만 P 클린 초기화'}</span>
+                            <span>{isResetting ? '초기화 중...' : '100만 P 초기화'}</span>
                         </button>
                         <button
                             type="button"
