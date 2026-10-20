@@ -5,6 +5,7 @@ import api from '../../../api/axios';
 import assetService from '../../../services/assetService';
 import { supabase, isSupabaseMode } from '../../../lib/supabaseClient';
 import useAuthStore from '../../auth/store/useAuthStore';
+import { computeAggregatedChartData } from '../utils/chartAggregationUtils';
 import './Dashboard.css';
 
 // STATIC CONFIGURATIONS
@@ -205,86 +206,17 @@ const Dashboard = () => {
 
     const metrics = computeComparisonMetrics();
 
-    // 동적 차트 옵션 및 데이터 산출 (게이지 슬라이더 기반 시계열 필터링)
+    // 동적 차트 옵션 및 데이터 산출 (시계열 집계: 당일 1시간 정각 / 1주·1개월·3개월·전체 일별 마감 금액 직각 스텝)
     const computeChartData = () => {
-        const now = new Date().getTime();
-        const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
-        const cutoffTime = currentStep.days > 0 ? now - (currentStep.days * 24 * 60 * 60 * 1000) : 0;
-
-        if (!historyData || historyData.length === 0) {
-            return [
-                { x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: availablePoints },
-                { x: now, y: availablePoints }
-            ];
-        }
-
-        // 1. 기간 필터링 및 유효 날짜 정렬 (오래된 순)
-        const validHistory = historyData
-            .filter(item => {
-                const dateStr = item.historyDate || item.createdDate || item.date;
-                if (!dateStr) return false;
-                const t = new Date(dateStr).getTime();
-                if (isNaN(t) || t <= 0) return false;
-                return t >= cutoffTime;
-            })
-            .sort((a, b) => {
-                const tA = new Date(a.historyDate || a.createdDate || a.date).getTime();
-                const tB = new Date(b.historyDate || b.createdDate || b.date).getTime();
-                return tA - tB;
-            });
-
-        if (validHistory.length === 0) {
-            return [
-                { x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: availablePoints },
-                { x: now, y: availablePoints }
-            ];
-        }
-
-        // 2. 각 변동 시점의 잔고(balanceAfter) 사용 (없을 경우 역방향 추적)
-        const hasDirectBalances = validHistory.some(h => (h.balanceAfter !== undefined && h.balanceAfter !== null) || (h.currentPoint !== undefined && h.currentPoint !== null));
-
-        let points = [];
-
-        if (hasDirectBalances) {
-            validHistory.forEach((item) => {
-                const dateStr = item.historyDate || item.createdDate || item.date;
-                const t = new Date(dateStr).getTime();
-                const bal = item.balanceAfter ?? item.currentPoint ?? availablePoints;
-                points.push({ x: t, y: Math.max(0, Number(bal)) });
-            });
-        } else {
-            let cumulative = availablePoints;
-            const reversed = [...validHistory].reverse();
-            const temp = [];
-            for (const item of reversed) {
-                const dateStr = item.historyDate || item.createdDate || item.date;
-                const t = new Date(dateStr).getTime();
-                temp.push({ x: t, y: Math.max(0, cumulative) });
-                cumulative -= (item.pointChange ?? item.amount ?? 0);
-            }
-            points = temp.reverse();
-        }
-
-        // 3. 차트 시작점과 종료 시점 자연스럽게 연결
-        if (points.length > 0) {
-            const firstTime = points[0].x;
-            const startX = cutoffTime > 0 ? cutoffTime : firstTime - (2 * 60 * 60 * 1000); // 2시간 전
-            if (startX < firstTime) {
-                points.unshift({ x: startX, y: points[0].y });
-            }
-            points.push({ x: now, y: Math.max(0, availablePoints) });
-        } else {
-            points.push({ x: cutoffTime === 0 ? now - (24 * 60 * 60 * 1000) : cutoffTime, y: Math.max(0, availablePoints) });
-            points.push({ x: now, y: Math.max(0, availablePoints) });
-        }
-
-        return points;
+        return computeAggregatedChartData(historyData, timeframeIndex, availablePoints);
     };
 
     const chartSeriesData = computeChartData();
     const nowTime = Date.now();
     const currentStep = TIMEFRAME_STEPS[timeframeIndex] || TIMEFRAME_STEPS[4];
-    const minTime = currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : (chartSeriesData.length > 0 ? chartSeriesData[0].x : undefined);
+    const minTime = chartSeriesData.length > 0 
+        ? chartSeriesData[0].x 
+        : (currentStep.days > 0 ? nowTime - (currentStep.days * 24 * 60 * 60 * 1000) : undefined);
 
     const spanDays = minTime ? Math.max(1, (nowTime - minTime) / (24 * 60 * 60 * 1000)) : 7;
     const calcTickAmount = timeframeIndex === 0 ? 6 : Math.min(6, Math.max(3, Math.round(spanDays)));
@@ -292,7 +224,16 @@ const Dashboard = () => {
     const dynamicChartOptions = {
         ...chartOptions,
         chart: { ...chartOptions.chart, type: 'area' },
-        stroke: { curve: 'smooth', width: 3 },
+        stroke: { curve: 'stepline', width: 2.5 },
+        fill: { 
+            type: 'gradient', 
+            gradient: { 
+                shadeIntensity: 1, 
+                opacityFrom: 0.25, 
+                opacityTo: 0.05, 
+                stops: [0, 95, 100] 
+            } 
+        },
         xaxis: {
             type: 'datetime',
             tickAmount: calcTickAmount,
@@ -318,6 +259,26 @@ const Dashboard = () => {
             },
             axisBorder: { show: true, color: '#e2e8f0' },
             axisTicks: { show: true, color: '#cbd5e1' }
+        },
+        tooltip: {
+            theme: 'light',
+            x: {
+                formatter: (val) => {
+                    const d = new Date(val);
+                    if (isNaN(d.getTime())) return '';
+                    const month = d.getMonth() + 1;
+                    const date = d.getDate();
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    if (timeframeIndex === 0) {
+                        return `${month}월 ${date}일 ${hours}:${minutes} (정각 잔고)`;
+                    }
+                    return `${d.getFullYear()}년 ${month}월 ${date}일 (마감 잔고)`;
+                }
+            },
+            y: {
+                formatter: (val) => `${Number(val).toLocaleString()} P`
+            }
         },
         grid: {
             ...chartOptions.grid,
