@@ -26,7 +26,7 @@ export const assetService = {
 
             const totalPoint = profile?.total_point ?? 0;
 
-            // 2. 보유 주식 목록 및 종목 정보 JOIN 조회
+            // 2. 보유 주식 목록 및 종목 정보 JOIN 조회 (0주 초과 보유 종목만 필터링)
             const { data: holdings, error } = await supabase
                 .from('user_holdings')
                 .select(`
@@ -43,7 +43,8 @@ export const assetService = {
                         status
                     )
                 `)
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .or('amount.gt.0,locked_amount.gt.0');
 
             if (error) {
                 console.error('Fetch user holdings error:', error);
@@ -52,12 +53,15 @@ export const assetService = {
             let stockEvaluationTotal = 0;
             let totalInvested = 0;
 
-            const myStocks = (holdings || []).map(h => {
+            // 0주(전량 매도된 고스트 종목) 2중 방어 필터링
+            const activeHoldings = (holdings || []).filter((h) => ((h.amount || 0) + (h.locked_amount || 0)) > 0);
+
+            const myStocks = activeHoldings.map((h) => {
                 const stock = h.stock || {};
                 const currentPrice = stock.current_price || 0;
                 const totalShares = (h.amount || 0) + (h.locked_amount || 0);
                 const evalPrice = currentPrice * totalShares;
-                const invested = Number(h.total_invested_amount || 0);
+                const invested = totalShares > 0 ? (totalShares * (h.average_price || 0)) : 0;
                 const profit = evalPrice - invested;
                 const profitRate = invested > 0 ? ((profit / invested) * 100) : 0;
 
@@ -93,7 +97,12 @@ export const assetService = {
         }
 
         const res = await api.get('/asset').catch(() => ({ data: { data: null } }));
-        return res.data?.data || null;
+        const data = res.data?.data;
+        if (data && Array.isArray(data.myStocks)) {
+            data.myStocks = data.myStocks.filter((s) => ((s.totalAmount ?? s.amount ?? 0) > 0));
+            data.portfolio = data.myStocks;
+        }
+        return data || null;
     },
 
     /**

@@ -143,7 +143,7 @@ const Dashboard = () => {
     const totalAsset = assetData?.totalAsset ?? 0;
     const availablePoints = assetData?.totalPoint ?? assetData?.availablePoints ?? 0;
     const totalProfit = assetData?.totalProfit ?? 0;
-    const portfolio = assetData?.myStocks || assetData?.portfolio || [];
+    const portfolio = (assetData?.myStocks || assetData?.portfolio || []).filter((s) => ((s.totalAmount ?? s.amount ?? 0) > 0));
 
     // 초기 회원가입/기초 지급 포인트를 제외한 실제 자산 변동 내역 필터링
     const isInitialGrant = (item) => {
@@ -697,7 +697,7 @@ const Dashboard = () => {
                                     const name = stock.stockName || stock.name || '주식';
                                     const avgPrice = stock.averagePrice ?? stock.avgPrice ?? 0;
                                     const currentPrice = stock.currentPrice ?? stock.nowPrice ?? avgPrice;
-                                    const amount = stock.amount ?? 0;
+                                    const amount = stock.totalAmount ?? stock.amount ?? 0;
                                     const purchasePrice = avgPrice > 0 ? (avgPrice * amount) : (stock.purchasePrice || 0);
                                     const profit = stock.profit ?? ((currentPrice - avgPrice) * amount);
                                     const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
