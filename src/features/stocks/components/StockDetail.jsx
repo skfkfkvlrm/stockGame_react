@@ -408,12 +408,12 @@ const StockDetail = () => {
     };
 
     const getTickAmount = (tfId) => {
-        if (tfId === '10M') return 5;
-        if (tfId === '1H' || tfId === '3H' || tfId === '6H' || tfId === '12H' || tfId === '1D') return 6;
-        if (tfId === '1W') return undefined; // 1주일은 7개 일봉 라벨 전체를 가로로 표기
-        if (tfId === '1MO') return 6;
-        if (tfId === '3MO') return 6;
-        return 6;
+        if (tfId === '10M' || tfId === '1M' || tfId === '3M') return 5;
+        if (tfId === '1H' || tfId === '3H' || tfId === '6H' || tfId === '12H' || tfId === '1D') return 5;
+        if (tfId === '1W') return 4; // 1주일(7개 일봉)은 4개로 균등 샘플링하여 300px~400px 폭에서 라벨 겹침 방지
+        if (tfId === '1MO') return 5;
+        if (tfId === '3MO') return 5;
+        return 5;
     };
 
     const currentStepConfig = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
@@ -445,8 +445,8 @@ const StockDetail = () => {
             tickAmount: getTickAmount(activeTimeframeId),
             labels: {
                 rotate: 0,
-                rotateAlways: true,
-                style: { colors: '#64748b', fontSize: '0.72rem' },
+                rotateAlways: false,
+                style: { colors: '#64748b', fontSize: '0.70rem' },
                 hideOverlappingLabels: true,
                 trim: false
             }
@@ -456,8 +456,20 @@ const StockDetail = () => {
                 breakpoint: 1280,
                 options: {
                     xaxis: {
+                        tickAmount: 4,
                         labels: {
                             style: { fontSize: '0.65rem' }
+                        }
+                    }
+                }
+            },
+            {
+                breakpoint: 768,
+                options: {
+                    xaxis: {
+                        tickAmount: 3,
+                        labels: {
+                            style: { fontSize: '0.60rem' }
                         }
                     }
                 }
