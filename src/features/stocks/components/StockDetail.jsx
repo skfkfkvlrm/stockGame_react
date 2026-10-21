@@ -73,7 +73,7 @@ const StockDetail = () => {
         try {
             const [info, rawHistory, orderbookData, myOrdersData, assetData] = await Promise.all([
                 stockService.getStockDetail(stockId).catch(e => null),
-                stockService.getStockHistory(stockId).catch(e => []),
+                stockService.getStockHistory(stockId, activeTimeframeId).catch(e => []),
                 stockService.getOrderbook(stockId).catch(e => ({ sell: [], buy: [] })),
                 stockService.getMyOrders(stockId, user?.id).catch(e => []),
                 assetService.getMyAsset(user?.id).catch(e => null)
@@ -135,6 +135,23 @@ const StockDetail = () => {
     useEffect(() => {
         fetchAllData();
     }, [stockId, user?.id]);
+
+    // timeframe 변경 시 OHLCV 히스토리 재조회
+    useEffect(() => {
+        let isMounted = true;
+        const fetchHistory = async () => {
+            try {
+                const history = await stockService.getStockHistory(stockId, activeTimeframeId);
+                if (isMounted) {
+                    setRawHistoryData(Array.isArray(history) ? history : []);
+                }
+            } catch (e) {
+                console.error('Failed to fetch stock history on timeframe change:', e);
+            }
+        };
+        fetchHistory();
+        return () => { isMounted = false; };
+    }, [stockId, activeTimeframeId]);
 
     // Supabase Realtime Subscription Hook (호가, 체결, VI/거래정지 변동 실시간 감지)
     useEffect(() => {
@@ -229,88 +246,31 @@ const StockDetail = () => {
 
     const effectiveWsStatus = isSupabaseMode ? realtimeStatus : wsStatus;
 
-    // 기간 게이지 및 원본 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
+    // 기간 및 원본 OHLCV 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
     useEffect(() => {
         const initialPrice = stockInfo?.nowPrice ?? stockInfo?.pubPrice ?? 0;
-        const currentStep = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
-        const now = Date.now();
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
         const isIntraday = activeTimeframeId.endsWith('M') || activeTimeframeId.endsWith('H') || activeTimeframeId === '1D';
-        const cutoffTime = currentStep.days > 0
-            ? (isIntraday
-                ? now - (currentStep.days * 24 * 60 * 60 * 1000)
-                : todayStart.getTime() - ((currentStep.days - 1) * 24 * 60 * 60 * 1000))
-            : 0;
 
-        let filtered = rawHistoryData.filter(item => {
-            const d = item.baseDate || item.date || item.createdDate;
-            if (!d) return true;
-            const itemTime = new Date(d).getTime();
-            return itemTime >= cutoffTime;
-        });
-
-        if (filtered.length === 0) {
-            filtered = [{ date: new Date(), price: initialPrice }];
+        if (!rawHistoryData || rawHistoryData.length === 0) {
+            const now = new Date();
+            const label = isIntraday 
+                ? `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                : `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+            setChartData([{ data: [{ x: label, y: [initialPrice, initialPrice, initialPrice, initialPrice] }] }]);
+            return;
         }
 
-
         if (!isIntraday) {
-            // 일/주/월/전체: 실제 거래일의 OHLC 집계 (category x축용 문자열 라벨 사용)
-            const dayGroups = {};
-            filtered.forEach(item => {
-                const d = item.baseDate || item.date || item.createdDate;
-                let dateKey;
-                if (typeof d === 'string' && d.length >= 10) {
-                    dateKey = d.slice(0, 10);
-                } else {
-                    const dateObj = new Date(d || Date.now());
-                    const y = dateObj.getFullYear();
-                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                    const day = String(dateObj.getDate()).padStart(2, '0');
-                    dateKey = `${y}-${m}-${day}`;
+            // 일/주/월/전체
+            const candles = rawHistoryData.map(item => {
+                const d = item.baseDate || item.date || '';
+                let label = d;
+                if (typeof d === 'string' && d.includes('-')) {
+                    const parts = d.split('-');
+                    if (parts.length >= 3) {
+                        label = `${parts[1]}/${parts[2].slice(0, 2)}`;
+                    }
                 }
-                const parts = dateKey.split('-');
-                const label = parts.length >= 3 ? `${parts[1]}/${parts[2]}` : dateKey;
-                const rawTime = new Date(dateKey).getTime();
-                const p = item.closePrice ?? item.price ?? initialPrice;
-                const open = item.openPrice ?? p;
-                const high = item.highPrice ?? Math.max(open, p);
-                const low = item.lowPrice ?? Math.min(open, p);
-                const close = item.closePrice ?? p;
-
-                if (!dayGroups[dateKey]) {
-                    dayGroups[dateKey] = { label, rawTime, open, high, low, close };
-                } else {
-                    dayGroups[dateKey].high = Math.max(dayGroups[dateKey].high, high);
-                    dayGroups[dateKey].low = Math.min(dayGroups[dateKey].low, low);
-                    dayGroups[dateKey].close = close;
-                }
-            });
-
-            let finalCandles;
-
-            if (activeTimeframeId === '1W') {
-                // 1주: 최근 최대 7개 거래일을 순서대로 구성 (null 캔들 없이 완전한 일봉 표시)
-                const sortedDays = Object.values(dayGroups).sort((a, b) => a.rawTime - b.rawTime);
-                finalCandles = sortedDays.slice(-7).map(g => ({
-                    x: g.label,
-                    y: [g.open, g.high, g.low, g.close]
-                }));
-            } else {
-                // 1MO, 3MO, ALL: 실제 거래일만 표시
-                finalCandles = Object.values(dayGroups)
-                    .sort((a, b) => a.rawTime - b.rawTime)
-                    .map(g => ({ x: g.label, y: [g.open, g.high, g.low, g.close] }));
-            }
-
-            setChartData([{ data: finalCandles }]);
-        } else {
-            // 당일/시간 단위 (category x축용 시간 문자열 사용)
-            const mappedCandle = filtered.map(item => {
-                const d = item.baseDate || item.date || item.createdDate;
-                const dateObj = new Date(d || Date.now());
-                const label = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
                 const p = item.closePrice ?? item.price ?? initialPrice;
                 const open = item.openPrice ?? p;
                 const high = item.highPrice ?? Math.max(open, p);
@@ -318,7 +278,31 @@ const StockDetail = () => {
                 const close = item.closePrice ?? p;
                 return { x: label, y: [open, high, low, close] };
             });
-            setChartData([{ data: mappedCandle }]);
+            setChartData([{ data: candles }]);
+        } else {
+            // 분/시간/당일
+            const candles = rawHistoryData.map(item => {
+                const d = item.baseDate || item.date || '';
+                let label = d;
+                if (typeof d === 'string' && d.includes(' ')) {
+                    const timePart = d.split(' ')[1];
+                    if (timePart) {
+                        label = timePart.slice(0, 5); // HH:mm
+                    }
+                } else if (d) {
+                    const dateObj = new Date(d);
+                    if (!isNaN(dateObj.getTime())) {
+                        label = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+                    }
+                }
+                const p = item.closePrice ?? item.price ?? initialPrice;
+                const open = item.openPrice ?? p;
+                const high = item.highPrice ?? Math.max(open, p);
+                const low = item.lowPrice ?? Math.min(open, p);
+                const close = item.closePrice ?? p;
+                return { x: label, y: [open, high, low, close] };
+            });
+            setChartData([{ data: candles }]);
         }
     }, [rawHistoryData, activeTimeframeId, stockInfo]);
 
