@@ -139,7 +139,7 @@ const Sidebar = () => {
                 <div className="user-details">
                     <h2 className="user-name">{user.name}</h2>
                     <p className="user-class">
-                        {isAdmin ? '학급 최고 관리자' : `${user.grade || ''}학년 ${user.className ? (String(user.className).endsWith('반') ? user.className : user.className + '반') : ''} ${user.classNumber || ''}번`}
+                        {isAdmin ? '학급 최고 관리자' : (isDemoUser ? '독립 샌드박스 게스트' : `${user.grade || ''}학년 ${user.className ? (String(user.className).endsWith('반') ? user.className : user.className + '반') : ''} ${user.classNumber || ''}번`)}
                     </p>
                 </div>
             </div>

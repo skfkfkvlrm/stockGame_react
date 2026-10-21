@@ -4,7 +4,7 @@ import api from '../api/axios';
 const isTestAccount = (studentId, name) => {
     const sId = (studentId || '').toLowerCase();
     const sName = (name || '').toLowerCase();
-    return sId.includes('test') || sName.includes('테스트') || sName.includes('검증');
+    return sId.includes('test') || sName.includes('테스트') || sName.includes('검증') || sId === 'demo' || sId.startsWith('recruiter_') || sName.includes('데모');
 };
 
 /**

@@ -13,6 +13,11 @@ const useAuthStore = create((set) => ({
         try {
             const user = await authService.getCurrentUser();
             if (user) {
+                if (user.studentId === 'demo' || user.student_id === 'demo') {
+                    const isolatedUser = await authService.loginAsDemo();
+                    set({ user: isolatedUser, isAuthenticated: true });
+                    return;
+                }
                 set({ user, isAuthenticated: true });
             }
         } catch (error) {
@@ -31,6 +36,13 @@ const useAuthStore = create((set) => ({
         try {
             const user = await authService.getCurrentUser();
             if (user) {
+                // 레거시 공용 demo 세션 감지 시 각 브라우저 전용 독립 샌드박스로 자동 전환
+                if (user.studentId === 'demo' || user.student_id === 'demo') {
+                    console.log('[useAuthStore] Legacy shared demo session detected. Migrating to isolated sandbox...');
+                    const isolatedUser = await authService.loginAsDemo();
+                    set({ user: isolatedUser, isAuthenticated: true, error: null });
+                    return;
+                }
                 set({ user, isAuthenticated: true, error: null });
             } else {
                 localStorage.removeItem('jwt_token');

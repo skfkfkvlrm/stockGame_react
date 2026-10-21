@@ -6,14 +6,32 @@ export const authService = {
      * 학생 로그인
      */
     async login(studentId, password) {
+        const cleanId = studentId ? studentId.trim() : '';
+
+        // 사용자가 로그인 폼에서 직접 'demo'를 입력한 경우, 공용 계정 오염을 방지하고 브라우저 격리 샌드박스로 자동 연계
+        if (cleanId.toLowerCase() === 'demo') {
+            return await this.loginAsDemo();
+        }
+
         if (isSupabaseMode) {
-            const cleanId = studentId.trim();
             let email = `${cleanId}@skfkfkvlrm.kr`;
 
             let { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
+
+            // 채용담당자 세션 비밀번호 호환성 (1234 -> recruiter1234!)
+            if (error && cleanId.startsWith('recruiter_') && password === '1234') {
+                const recRes = await supabase.auth.signInWithPassword({
+                    email,
+                    password: 'recruiter1234!'
+                });
+                if (!recRes.error) {
+                    data = recRes.data;
+                    error = null;
+                }
+            }
 
             // 하위 호환성 지원: 이전 .local 도메인 계정 시도
             if (error && error.message === 'Invalid login credentials') {
@@ -182,31 +200,50 @@ export const authService = {
      */
     async loginAsDemo() {
         const RECRUITER_SESSION_KEY = 'stk_recruiter_session_id';
+        const RECRUITER_DEFAULT_PASSWORD = 'recruiter1234!';
         let sessionId = localStorage.getItem(RECRUITER_SESSION_KEY);
-        if (!sessionId) {
+        if (!sessionId || !sessionId.startsWith('recruiter_')) {
             // 브라우저 세션별 고유 8자리 난수 키 발급 (예: recruiter_a1b2c3d4)
             const randomPart = Math.random().toString(36).substring(2, 10);
             sessionId = `recruiter_${randomPart}`;
             localStorage.setItem(RECRUITER_SESSION_KEY, sessionId);
         }
 
+        const shortCode = sessionId.replace('recruiter_', '').substring(0, 4);
+        const displayName = `채용담당자(데모 #${shortCode})`;
+
         let user;
         try {
-            user = await this.login(sessionId, '1234');
+            // 1. 기존 발급된 샌드박스 세션으로 로그인 시도
+            user = await this.login(sessionId, RECRUITER_DEFAULT_PASSWORD);
         } catch (loginErr) {
             try {
+                // 2. 신규 세션인 경우 해당 샌드박스 계정 즉시 자동 생성 (Supabase 비밀번호 6자 이상 규격 준수)
                 await this.register({
                     studentId: sessionId,
-                    name: '채용담당자(데모)',
+                    name: displayName,
                     grade: 3,
                     className: '1',
                     classNumber: 99,
-                    password: '1234'
+                    password: RECRUITER_DEFAULT_PASSWORD
                 });
-                user = await this.login(sessionId, '1234');
-            } catch (fallbackErr) {
-                console.warn('Fallback to default demo account due to:', fallbackErr);
-                user = await this.login('demo', '1234');
+                user = await this.login(sessionId, RECRUITER_DEFAULT_PASSWORD);
+            } catch (registerErr) {
+                console.warn('Recruiter registration failed, retrying with fresh session key:', registerErr);
+                // 만약 기존 세션 키 충돌 등의 이유로 실패 시 즉시 새 세션 키 발급 후 재시도
+                const freshRandomPart = Math.random().toString(36).substring(2, 10);
+                sessionId = `recruiter_${freshRandomPart}`;
+                localStorage.setItem(RECRUITER_SESSION_KEY, sessionId);
+                const freshShortCode = freshRandomPart.substring(0, 4);
+                await this.register({
+                    studentId: sessionId,
+                    name: `채용담당자(데모 #${freshShortCode})`,
+                    grade: 3,
+                    className: '1',
+                    classNumber: 99,
+                    password: RECRUITER_DEFAULT_PASSWORD
+                });
+                user = await this.login(sessionId, RECRUITER_DEFAULT_PASSWORD);
             }
         }
 
