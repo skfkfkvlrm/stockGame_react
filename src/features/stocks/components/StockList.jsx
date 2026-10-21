@@ -498,21 +498,47 @@ const StockList = () => {
                 </div>
             </div>
 
-            <div className="stock-table-wrapper glass-panel">
-                <table className="stock-table">
-                    <thead>
-                        <tr>
-                            <th>종목</th>
-                            <th>분야</th>
-                            <th>현재가</th>
-                            <th>전일비</th>
-                            <th>등락률</th>
-                            <th>발행량</th>
-                            <th>거래량</th>
-                            <th>액션</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div className="stock-table-card glass-panel">
+                <div className="stock-table-horizontal-scroll">
+                    <div className="stock-table-header-wrapper">
+                        <table className="stock-table" style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '23%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '12%' }} />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>종목</th>
+                                    <th>분야</th>
+                                    <th>현재가</th>
+                                    <th>전일비</th>
+                                    <th>등락률</th>
+                                    <th>발행량</th>
+                                    <th>거래량</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div className="stock-table-body-scroll">
+                        <table className="stock-table" style={{ tableLayout: 'fixed' }}>
+                            <colgroup>
+                                <col style={{ width: '23%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '11%' }} />
+                                <col style={{ width: '12%' }} />
+                            </colgroup>
+                            <tbody>
                         {filteredAndSortedStocks.length === 0 ? (
                             <tr>
                                 <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
@@ -591,7 +617,9 @@ const StockList = () => {
                             })
                         )}
                     </tbody>
-                </table>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             {/* 시장 지수 상세 분석 모달 */}
