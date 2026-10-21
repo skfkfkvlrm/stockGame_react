@@ -178,25 +178,35 @@ export const authService = {
     },
 
     /**
-     * 채용담당자 전용 1클릭 학생 데모 로그인 (창 닫기 무손실 보장 & 자가 치유 지원)
+     * 채용담당자 전용 1클릭 학생 데모 로그인 (창 닫기 무손실 보장 & 브라우저 세션 독립 샌드박스)
      */
     async loginAsDemo() {
+        const RECRUITER_SESSION_KEY = 'stk_recruiter_session_id';
+        let sessionId = localStorage.getItem(RECRUITER_SESSION_KEY);
+        if (!sessionId) {
+            // 브라우저 세션별 고유 8자리 난수 키 발급 (예: recruiter_a1b2c3d4)
+            const randomPart = Math.random().toString(36).substring(2, 10);
+            sessionId = `recruiter_${randomPart}`;
+            localStorage.setItem(RECRUITER_SESSION_KEY, sessionId);
+        }
+
         let user;
         try {
-            user = await this.login('demo', '1234');
+            user = await this.login(sessionId, '1234');
         } catch (loginErr) {
             try {
                 await this.register({
-                    studentId: 'demo',
+                    studentId: sessionId,
                     name: '채용담당자(데모)',
                     grade: 3,
                     className: '1',
                     classNumber: 99,
                     password: '1234'
                 });
-                user = await this.login('demo', '1234');
+                user = await this.login(sessionId, '1234');
             } catch (fallbackErr) {
-                throw loginErr;
+                console.warn('Fallback to default demo account due to:', fallbackErr);
+                user = await this.login('demo', '1234');
             }
         }
 
@@ -210,7 +220,11 @@ export const authService = {
      */
     async resetDemoAccount() {
         if (isSupabaseMode) {
-            const { data, error } = await supabase.rpc('reset_demo_account');
+            const currentUser = await this.getCurrentUser();
+            const targetStudentId = currentUser?.studentId || currentUser?.student_id || 'demo';
+            const { data, error } = await supabase.rpc('reset_demo_account', {
+                p_target_student_id: targetStudentId
+            });
             if (error) {
                 throw new Error(error.message || '데모 계정 초기화에 실패했습니다.');
             }

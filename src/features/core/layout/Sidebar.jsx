@@ -126,7 +126,7 @@ const Sidebar = () => {
     if (!user) return <aside className="right-sidebar glass-panel"><div className="loading-spinner"></div></aside>;
 
     const isAdmin = user && (user.role === 'ROLE_ADMIN' || user.role === 'ROLE_MANAGER' || user.studentId === 'admin' || user.username === 'admin');
-    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter');
+    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter' || String(user.studentId || user.student_id).startsWith('recruiter_'));
 
     return (
         <aside className="right-sidebar glass-panel">

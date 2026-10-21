@@ -302,7 +302,7 @@ const Dashboard = () => {
 
     const profitBreakdown = computeProfitBreakdown();
 
-    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter');
+    const isDemoUser = user && (user.studentId === 'demo' || user.username === 'demo' || user.studentId === 'recruiter' || String(user.studentId || user.student_id).startsWith('recruiter_'));
 
     const handleResetDemo = async () => {
         if (isActionPending) return;

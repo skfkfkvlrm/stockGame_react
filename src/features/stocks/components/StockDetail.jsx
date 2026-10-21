@@ -22,7 +22,7 @@ const StockDetail = () => {
     const closeTime = useMarketStore((state) => state.closeTime);
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
 
-    const isDemo = user?.studentId === 'demo' || user?.student_id === 'demo' || user?.id === '00000000-0000-0000-0000-000000000002';
+    const isDemo = user?.studentId === 'demo' || user?.student_id === 'demo' || user?.id === '00000000-0000-0000-0000-000000000002' || String(user?.studentId || user?.student_id).startsWith('recruiter_');
     const effectiveMarketOpen = isDemo ? true : marketOpen;
 
     const [stockInfo, setStockInfo] = useState(null);
