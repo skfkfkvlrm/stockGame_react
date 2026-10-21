@@ -22,6 +22,9 @@ const StockDetail = () => {
     const closeTime = useMarketStore((state) => state.closeTime);
     const fetchMarketStatus = useMarketStore((state) => state.fetchMarketStatus);
 
+    const isDemo = user?.studentId === 'demo' || user?.student_id === 'demo' || user?.id === '00000000-0000-0000-0000-000000000002';
+    const effectiveMarketOpen = isDemo ? true : marketOpen;
+
     const [stockInfo, setStockInfo] = useState(null);
     const [rawHistoryData, setRawHistoryData] = useState([]);
     const [chartData, setChartData] = useState([]);
@@ -348,7 +351,7 @@ const StockDetail = () => {
             return;
         }
 
-        const isReservation = !marketOpen;
+        const isReservation = !effectiveMarketOpen;
         const tradeTypeText = tradeType === 'BUY' ? '매수' : '매도';
         const confirmMessage = isReservation
             ? `[${stockInfo.name}] 종목을 다음과 같이 [장 마감 예약 ${tradeTypeText}] 주문하시겠습니까?\n\n` +
@@ -804,7 +807,23 @@ const StockDetail = () => {
                             }}>
                                 {stockInfo.status === 'SUSPENDED' ? '🟡 현재 이 종목은 거래가 정지되어 주문을 넣을 수 없습니다.' : '🔴 이 종목은 상장 폐지되어 거래가 불가능합니다.'}
                             </div>
-                        ) : !marketOpen ? (
+                        ) : (isDemo && !marketOpen) ? (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                fontWeight: '600',
+                                fontSize: '0.85rem',
+                                textAlign: 'center',
+                                lineHeight: '1.5',
+                                background: 'rgba(16, 185, 129, 0.12)',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0'
+                            }}>
+                                ⚡ <strong>채용담당자 데모 상시 개장 모드 활성화 (24/7 즉시 체결)</strong><br />
+                                정규장 운영 시간({openTime || '09:00'}~{closeTime || '15:30'}) 외에도 예약 대기 없이 <strong>즉시 매수/매도 체결 및 호가 갱신</strong>이 진행됩니다.
+                            </div>
+                        ) : !effectiveMarketOpen ? (
                             <div style={{
                                 padding: '12px 16px',
                                 borderRadius: '8px',
@@ -824,7 +843,7 @@ const StockDetail = () => {
 
                         <button
                             type="button"
-                            className={`submit-trade-btn ${tradeType.toLowerCase()} ${!marketOpen ? 'reservation-mode' : ''}`}
+                            className={`submit-trade-btn ${tradeType.toLowerCase()} ${!effectiveMarketOpen ? 'reservation-mode' : ''}`}
                             onClick={handleTrade}
                             disabled={isSubmitting || (stockInfo.status && stockInfo.status !== 'LISTED')}
                             style={{
@@ -836,7 +855,7 @@ const StockDetail = () => {
                                 ? '처리 중...'
                                 : (stockInfo.status && stockInfo.status !== 'LISTED')
                                     ? (stockInfo.status === 'SUSPENDED' ? '거래 정지됨' : '상장 폐지됨')
-                                    : !marketOpen
+                                    : !effectiveMarketOpen
                                         ? (tradeType === 'BUY' ? '🌙 예약 매수 주문' : '🌙 예약 매도 주문')
                                         : (stockInfo.marketStatus === 'STATIC_VI'
                                             ? (tradeType === 'BUY' ? '단일가 매수 접수' : '단일가 매도 접수')
@@ -893,7 +912,7 @@ const StockDetail = () => {
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                             {ord.createdDate ? new Date(ord.createdDate).toLocaleTimeString('ko-KR') : ''}
                                         </span>
-                                        {!marketOpen && (
+                                        {!effectiveMarketOpen && (
                                             <span style={{
                                                 padding: '2px 8px',
                                                 borderRadius: '4px',
