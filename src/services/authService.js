@@ -282,17 +282,9 @@ export const authService = {
      * 로그아웃
      */
     async logout() {
-        // [명시적 로그아웃 리셋 원칙]: 오직 'demo' 계정일 때만 자산 롤백 수행
-        try {
-            const currentUser = await this.getCurrentUser();
-            const studentId = currentUser?.studentId || currentUser?.student_id;
-            if (studentId === 'demo') {
-                await this.resetDemoAccount();
-            }
-        } catch (resetErr) {
-            console.warn('Demo reset on logout warning:', resetErr);
-        }
-
+        // [창 닫기 및 계정 전환 무손실 원칙]:
+        // 로그아웃 시 데모 계정 자산을 임의로 리셋하지 않으며,
+        // 오직 사용자가 사이드바/대시보드의 '데모 초기화' 버튼을 명시적으로 클릭할 때만 초기화 진행
         if (isSupabaseMode) {
             await supabase.auth.signOut();
             localStorage.removeItem('jwt_token');
