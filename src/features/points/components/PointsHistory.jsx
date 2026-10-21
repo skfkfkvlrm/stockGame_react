@@ -6,10 +6,11 @@ import './PointsHistory.css';
 
 const formatReasonType = (reason) => {
     switch (reason) {
-        case 'INITIAL_GRANT': return '기초 자금 지급';
-        case 'STOCK_SELL_SETTLEMENT': return '주식 매도 정산';
-        case 'STOCK_BUY_ESCROW': return '주식 매수 체결';
-        case 'STOCK_BUY_CANCEL_REFUND': return '주문 취소 환불';
+        case 'INITIAL_GRANT': return '회원가입 축하 기초 투자금 지급';
+        case 'STOCK_SELL_SETTLEMENT': return '[매도 체결] 주식 매도 정산';
+        case 'STOCK_BUY_ESCROW': return '[매수 주문] 주식 매수';
+        case 'STOCK_BUY_CANCEL_REFUND': return '[주문 취소] 주식 주문 환불';
+        case 'STOCK_BUY_DIFF_REFUND': return '[체결 차액] 주식 환불';
         case 'COUPON_PURCHASE': return '상점 쿠폰 구매';
         case 'ADMIN_GRANT': return '관리자 지급';
         case 'ADMIN_DEDUCT': return '관리자 차감';

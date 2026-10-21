@@ -124,7 +124,15 @@ export const assetService = {
 
             return (data || []).map(tx => {
                 const amount = Number(tx.amount) || 0;
-                const desc = tx.description || (tx.reason_type === 'INITIAL_GRANT' ? '기초 투자금 지급' : (tx.reason_type === 'COUPON_PURCHASE' ? '상점 쿠폰 구매' : (tx.reason_type === 'STOCK_BUY_ESCROW' ? '주식 매수 체결/증거금' : (tx.reason_type === 'STOCK_SELL_SETTLEMENT' ? '주식 매도 정산' : (amount >= 0 ? '포인트 지급' : '포인트 차감')))));
+                const desc = tx.description || (
+                    tx.reason_type === 'INITIAL_GRANT' ? '회원가입 축하 기초 투자금 지급' :
+                    tx.reason_type === 'COUPON_PURCHASE' ? '상점 쿠폰 구매' :
+                    tx.reason_type === 'STOCK_BUY_ESCROW' ? '[매수 주문] 주식 매수' :
+                    tx.reason_type === 'STOCK_SELL_SETTLEMENT' ? '[매도 체결] 주식 매도 정산' :
+                    tx.reason_type === 'STOCK_BUY_CANCEL_REFUND' ? '[주문 취소] 주식 주문 환불' :
+                    tx.reason_type === 'STOCK_BUY_DIFF_REFUND' ? '[체결 차액] 주식 환불' :
+                    (amount >= 0 ? '포인트 지급' : '포인트 차감')
+                );
                 return {
                     id: tx.id,
                     amount: amount,
