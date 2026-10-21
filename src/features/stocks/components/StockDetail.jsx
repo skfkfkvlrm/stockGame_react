@@ -46,6 +46,7 @@ const StockDetail = () => {
 
     const [activeTimeframeId, setActiveTimeframeId] = useState('1W');
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    const popoverRef = useRef(null);
     const activeTimeframe = ALL_TIMEFRAMES.find(t => t.id === activeTimeframeId) || ALL_TIMEFRAMES[8];
 
     const [orderbook, setOrderbook] = useState({ buy: [], sell: [] });
@@ -248,6 +249,18 @@ const StockDetail = () => {
     });
 
     const effectiveWsStatus = isSupabaseMode ? realtimeStatus : wsStatus;
+
+    // 드롭다운(상세 기간 팝오버) 외부 클릭 시 자동 닫기 훅 (최상단 훅 영역)
+    useEffect(() => {
+        if (!isPopoverOpen) return;
+        const handleClickOutside = (e) => {
+            if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+                setIsPopoverOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isPopoverOpen]);
 
     // 기간 및 원본 OHLCV 히스토리에 따른 차트 데이터 변환 (항상 최상단 훅 영역에서 실행)
     useEffect(() => {
@@ -580,7 +593,7 @@ const StockDetail = () => {
                 {/* 1. Chart Box */}
                 <div className="glass-panel chart-box">
                     <div className="chart-controls-header">
-                        <div className="chart-timeframe-controls" style={{ position: 'relative' }}>
+                        <div className="chart-timeframe-controls" ref={popoverRef} style={{ position: 'relative' }}>
                             <div className="chart-timeframe-tabs">
                                 {quickTabs.map(id => {
                                     const tf = ALL_TIMEFRAMES.find(t => t.id === id);
@@ -606,10 +619,18 @@ const StockDetail = () => {
 
                             {isPopoverOpen && (
                                 <div className="timeframe-popover" style={{
-                                    position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
-                                    padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50,
-                                    width: '320px'
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '8px',
+                                    background: 'white',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
+                                    zIndex: 50,
+                                    width: '280px',
+                                    maxWidth: 'calc(100vw - 48px)'
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                                         <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>상세 기간 설정</span>
@@ -622,7 +643,7 @@ const StockDetail = () => {
                                                 key={tf.id}
                                                 type="button"
                                                 className={`timeframe-tab-btn ${activeTimeframeId === tf.id ? 'active' : ''}`}
-                                                style={{ padding: '6px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0' }}
+                                                style={{ padding: '6px 4px', fontSize: '0.75rem', width: '100%', border: '1px solid #e2e8f0', textAlign: 'center' }}
                                                 onClick={() => { setActiveTimeframeId(tf.id); setIsPopoverOpen(false); }}
                                             >
                                                 {tf.label}
